@@ -20,6 +20,7 @@ const DAILY_SCRIPTURE_HISTORY_KEY = "sanctuaryDailyScriptureHistoryV1";
 const SESSION_NOTES_KEY = "sanctuarySessionNotesV1";
 const ACHIEVEMENTS_KEY = "sanctuaryAchievementsV1";
 const GUEST_MODE_KEY = "sanctuaryGuestModeV1";
+const THEME_PREF_KEY = "theme";
 
 const GRAPH_DAYS = 60;
 const POPUP_SECONDS = 5;
@@ -215,7 +216,7 @@ const defaultSettings = {
   studyMinutes: 25,
   breakMinutes: 5,
   dailyGoalMinutes: 60,
-  theme: "light",
+  theme: "dark",
   focusMode: "partial",
   alarmMode: "mixkit_chime",
   customAlarmUrl: "",
@@ -234,7 +235,7 @@ const homeSection = document.getElementById("homeSection");
 const navButtons = Array.from(document.querySelectorAll(".nav-btn"));
 const logoHomeBtn = document.getElementById("logoHomeBtn");
 const homeNavBtn = document.getElementById("homeNavBtn");
-const themeToggleBtn = document.getElementById("themeToggleBtn");
+const themeToggleBtn = document.getElementById("theme-toggle");
 const themeToggleIcon = document.getElementById("themeToggleIcon");
 const themeToggleText = document.getElementById("themeToggleText");
 const authActionBtn = document.getElementById("authActionBtn");
@@ -419,7 +420,9 @@ function init() {
     saveSettings(settings);
   }
 
-  applyTheme(settings.theme);
+  const savedTheme = localStorage.getItem(THEME_PREF_KEY);
+  setTheme(savedTheme || "dark");
+  settings.theme = document.body.dataset.theme === "light" ? "light" : "dark";
   populateLofiPresetSelect();
   fillSettingsForm();
   wireEvents();
@@ -443,10 +446,6 @@ function init() {
   renderSessionNotes();
   loadScriptureOfTheDay();
   initializeAuthenticationFlow();
-  // Re-apply once more after first paint to avoid stale visual state from cached styles.
-  window.requestAnimationFrame(() => {
-    applyTheme(settings.theme);
-  });
 }
 
 function hasAppAccess() {
@@ -683,7 +682,12 @@ function wireEvents() {
   authActionBtn.addEventListener("click", () => {
     handleAuthActionClick();
   });
-  themeToggleBtn.addEventListener("click", toggleThemeFromTopBar);
+  themeToggleBtn.addEventListener("click", () => {
+    const next = document.body.dataset.theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    settings.theme = next;
+    saveSettings(settings);
+  });
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
       loadScriptureOfTheDay();
@@ -769,7 +773,8 @@ function wireEvents() {
 
   settingsForm.addEventListener("submit", onSettingsSubmit);
   themeSetting.addEventListener("change", () => {
-    applyTheme(themeSetting.value);
+    setTheme(themeSetting.value);
+    settings.theme = document.body.dataset.theme === "light" ? "light" : "dark";
   });
   focusModeSetting.addEventListener("change", () => {
     if (focusModeSetting.value === "complete") {
@@ -2380,7 +2385,7 @@ function onSettingsSubmit(event) {
   };
 
   saveSettings(settings);
-  applyTheme(settings.theme);
+  setTheme(settings.theme);
   fillSettingsForm();
   applyPresetByMinutes(settings.studyMinutes, settings.breakMinutes);
   updateCustomAlarmVisibility();
@@ -2481,25 +2486,19 @@ function saveSettings(nextSettings) {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(nextSettings));
 }
 
-function applyTheme(theme) {
-  const resolvedTheme = theme === "dark" ? "dark" : "light";
-  document.documentElement.dataset.theme = resolvedTheme;
+function setTheme(theme) {
+  const resolvedTheme = theme === "light" ? "light" : "dark";
   document.body.dataset.theme = resolvedTheme;
-  document.body.classList.remove("theme-dark", "theme-light");
-  themeSetting.value = resolvedTheme;
+  localStorage.setItem(THEME_PREF_KEY, resolvedTheme);
+  if (themeSetting) {
+    themeSetting.value = resolvedTheme;
+  }
   updateThemeToggleUi(resolvedTheme);
-}
-
-function toggleThemeFromTopBar() {
-  const nextTheme = document.body.dataset.theme === "dark" ? "light" : "dark";
-  settings.theme = nextTheme;
-  saveSettings(settings);
-  applyTheme(nextTheme);
 }
 
 function updateThemeToggleUi(theme) {
   if (theme === "dark") {
-    themeToggleText.textContent = "Light Mode";
+    themeToggleText.textContent = "Dark Mode";
     themeToggleIcon.innerHTML = `
       <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
@@ -2508,7 +2507,7 @@ function updateThemeToggleUi(theme) {
     return;
   }
 
-  themeToggleText.textContent = "Dark Mode";
+  themeToggleText.textContent = "Light Mode";
   themeToggleIcon.innerHTML = `
     <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.36 6.36-1.42-1.42M7.05 7.05 5.64 5.64m12.72 0-1.42 1.41M7.05 16.95l-1.41 1.41" />
