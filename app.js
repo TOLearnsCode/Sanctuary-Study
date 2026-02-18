@@ -11,12 +11,6 @@ Single-file JS app logic for:
 - YouTube iframe API background music dock
 */
 
-import { app, auth } from "./firebase.js";
-import {
-  onAuthStateChanged,
-  signOut
-} from "firebase/auth";
-
 const STUDY_LOG_KEY = "sanctuaryStudyLogV1";
 const TAG_LOG_KEY = "sanctuaryTagLogV1";
 const SETTINGS_KEY = "sanctuaryStudySettingsV1";
@@ -397,9 +391,6 @@ const timerState = {
 init();
 
 function init() {
-  // Ensure Firebase app import is initialized before auth observers attach.
-  void app;
-
   if (!settings.musicPresetId && !settings.youtubeMusicUrl) {
     settings.musicPresetId = defaultSettings.musicPresetId;
     saveSettings(settings);
@@ -496,7 +487,13 @@ function updateAuthUi() {
   if (authMode === "user") {
     authActionText.textContent = "Sign Out";
     authActionBtn.setAttribute("aria-label", "Sign out");
-    const userLabel = currentUser && currentUser.email ? `Signed in as ${currentUser.email}` : "Signed in";
+    const hasName = currentUser && (currentUser.firstName || currentUser.lastName);
+    const fullName = hasName
+      ? `${currentUser.firstName || ""} ${currentUser.lastName || ""}`.trim()
+      : "";
+    const userLabel = fullName
+      ? `Signed in as ${fullName}`
+      : (currentUser && currentUser.email ? `Signed in as ${currentUser.email}` : "Signed in");
     authModeNotice.textContent = userLabel;
     authModeNotice.classList.remove("hidden");
   } else if (authMode === "guest") {
@@ -512,10 +509,19 @@ function updateAuthUi() {
 }
 
 function initializeAuthenticationFlow() {
-  onAuthStateChanged(auth, (user) => {
-    currentUser = user || null;
+  const onAuthChanged = (event) => {
+    const detail = event && event.detail ? event.detail : {};
+    const mode = String(detail.mode || "");
 
-    if (user) {
+    if (mode === "user") {
+      const detailUser = detail.user && typeof detail.user === "object" ? detail.user : {};
+      const profile = detail.profile && typeof detail.profile === "object" ? detail.profile : {};
+      currentUser = {
+        uid: String(detailUser.uid || ""),
+        email: String(detail.email || detailUser.email || profile.email || ""),
+        firstName: String(profile.firstName || "").trim(),
+        lastName: String(profile.lastName || "").trim()
+      };
       authMode = "user";
       saveGuestModePreference(false);
       authSection.classList.add("hidden");
@@ -527,19 +533,44 @@ function initializeAuthenticationFlow() {
       return;
     }
 
-    if (loadGuestModePreference()) {
-      authMode = "guest";
-      authSection.classList.add("hidden");
-      setAuthMessage("");
-      showHomeView({ forceStopTypeEffect: true });
+    if (mode === "signed_out") {
+      currentUser = null;
+      if (loadGuestModePreference()) {
+        authMode = "guest";
+        authSection.classList.add("hidden");
+        setAuthMessage("");
+        showHomeView({ forceStopTypeEffect: true });
+        renderAnalytics();
+        updateAuthUi();
+        return;
+      }
+
+      showAuthScreen("Sign in with email and password, or continue as guest.");
       renderAnalytics();
       updateAuthUi();
-      return;
     }
+  };
 
-    showAuthScreen("Sign in with email and password, or continue as guest.");
+  window.addEventListener("sanctuary:auth-changed", onAuthChanged);
+
+  if (window.__SANCTUARY_AUTH_STATE && typeof window.__SANCTUARY_AUTH_STATE === "object") {
+    onAuthChanged({ detail: window.__SANCTUARY_AUTH_STATE });
+    return;
+  }
+
+  if (loadGuestModePreference()) {
+    authMode = "guest";
+    authSection.classList.add("hidden");
+    setAuthMessage("");
+    showHomeView({ forceStopTypeEffect: true });
     renderAnalytics();
-  });
+    updateAuthUi();
+    return;
+  }
+
+  showAuthScreen("Sign in with email and password, or continue as guest.");
+  renderAnalytics();
+  updateAuthUi();
 }
 
 function enterGuestMode() {
@@ -554,17 +585,22 @@ function enterGuestMode() {
   showToastMessage("Guest mode active. Sign in any time to unlock analytics and achievements.");
 }
 
-async function handleAuthActionClick() {
+function requestAuthSignOut() {
+  try {
+    window.dispatchEvent(new CustomEvent("sanctuary:request-signout"));
+  } catch (error) {
+    // No-op when auth module is unavailable.
+  }
+
+  currentUser = null;
+  showAuthScreen("You are signed out. Sign in again or continue as guest.");
+  updateAuthUi();
+}
+
+function handleAuthActionClick() {
   if (authMode === "user") {
-    try {
-      await signOut(auth);
-      showAuthScreen("You are signed out. Sign in again or continue as guest.");
-      updateAuthUi();
-      return;
-    } catch (error) {
-      showToastMessage("Could not sign out right now. Try again.");
-      return;
-    }
+    requestAuthSignOut();
+    return;
   }
 
   showAuthScreen("Sign in to save analytics and achievements.");
@@ -593,6 +629,18 @@ function wireEvents() {
   authGuestBtn.addEventListener("click", () => {
     enterGuestMode();
   });
+  const handleAuthFallbackClick = () => {
+    if (window.__SANCTUARY_AUTH_READY) {
+      return;
+    }
+    showToastMessage("Auth is still loading. If this continues, refresh and check your internet.");
+  };
+  authSignInBtn.addEventListener("click", handleAuthFallbackClick);
+  authSignUpBtn.addEventListener("click", handleAuthFallbackClick);
+  const authGoogleBtn = document.getElementById("authGoogleBtn");
+  if (authGoogleBtn) {
+    authGoogleBtn.addEventListener("click", handleAuthFallbackClick);
+  }
 
   homeBeginBtn.addEventListener("click", beginStudyExperience);
   homeSettingsBtn.addEventListener("click", () => switchSection("settings"));
