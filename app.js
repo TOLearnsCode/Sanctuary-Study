@@ -13,9 +13,7 @@ Single-file JS app logic for:
 
 import { app, auth } from "./firebase.js";
 import {
-  createUserWithEmailAndPassword,
   onAuthStateChanged,
-  signInWithEmailAndPassword,
   signOut
 } from "firebase/auth";
 
@@ -544,56 +542,6 @@ function initializeAuthenticationFlow() {
   });
 }
 
-async function handleAuthSignIn() {
-  const email = String(authEmailInput.value || "").trim();
-  const password = String(authPasswordInput.value || "");
-  if (!email || password.length < 6) {
-    setAuthMessage("Enter a valid email and password (minimum 6 characters).", true);
-    return;
-  }
-
-  authSignInBtn.disabled = true;
-  authSignUpBtn.disabled = true;
-  authGuestBtn.disabled = true;
-  setAuthMessage("Signing in...");
-
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-    setAuthMessage("Signed in successfully.");
-  } catch (error) {
-    setAuthMessage(getAuthFriendlyError(error), true);
-  } finally {
-    authSignInBtn.disabled = false;
-    authSignUpBtn.disabled = false;
-    authGuestBtn.disabled = false;
-  }
-}
-
-async function handleAuthSignUp() {
-  const email = String(authEmailInput.value || "").trim();
-  const password = String(authPasswordInput.value || "");
-  if (!email || password.length < 6) {
-    setAuthMessage("Enter a valid email and a password with at least 6 characters.", true);
-    return;
-  }
-
-  authSignInBtn.disabled = true;
-  authSignUpBtn.disabled = true;
-  authGuestBtn.disabled = true;
-  setAuthMessage("Creating your account...");
-
-  try {
-    await createUserWithEmailAndPassword(auth, email, password);
-    setAuthMessage("Account created. Welcome to Sanctuary Study.");
-  } catch (error) {
-    setAuthMessage(getAuthFriendlyError(error), true);
-  } finally {
-    authSignInBtn.disabled = false;
-    authSignUpBtn.disabled = false;
-    authGuestBtn.disabled = false;
-  }
-}
-
 function enterGuestMode() {
   authMode = "guest";
   currentUser = null;
@@ -622,27 +570,6 @@ async function handleAuthActionClick() {
   showAuthScreen("Sign in to save analytics and achievements.");
 }
 
-function getAuthFriendlyError(error) {
-  const code = error && typeof error.code === "string" ? error.code : "";
-  if (code === "auth/invalid-credential") {
-    return "Incorrect email or password.";
-  }
-  if (code === "auth/email-already-in-use") {
-    return "This email already has an account. Try signing in.";
-  }
-  if (code === "auth/weak-password") {
-    return "Password is too weak. Use at least 6 characters.";
-  }
-  if (code === "auth/invalid-email") {
-    return "That email format is invalid.";
-  }
-  if (code === "auth/network-request-failed") {
-    return "Network error. Check your connection and try again.";
-  }
-
-  return "Authentication failed. Please try again.";
-}
-
 function wireEvents() {
   navButtons.forEach((button) => {
     button.addEventListener("click", () => {
@@ -663,18 +590,8 @@ function wireEvents() {
     }
   });
 
-  authSignInBtn.addEventListener("click", () => {
-    handleAuthSignIn();
-  });
-  authSignUpBtn.addEventListener("click", () => {
-    handleAuthSignUp();
-  });
   authGuestBtn.addEventListener("click", () => {
     enterGuestMode();
-  });
-  authForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    handleAuthSignIn();
   });
 
   homeBeginBtn.addEventListener("click", beginStudyExperience);

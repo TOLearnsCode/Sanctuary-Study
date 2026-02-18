@@ -109,13 +109,14 @@
         </label>
         <label>
           Password
-          <input id="authPasswordInput" type="password" autocomplete="current-password" placeholder="At least 6 characters" />
+          <input id="authPasswordInput" type="password" autocomplete="current-password" placeholder="At least 8 chars, upper/lower, number, special" />
         </label>
       </form>
 
       <div class="auth-gate-actions">
         <button id="authSignInBtn" class="btn btn-primary" type="button">Sign In</button>
         <button id="authSignUpBtn" class="btn btn-glass" type="button">Sign Up</button>
+        <button id="authGoogleBtn" class="btn btn-glass" type="button">Sign In with Google</button>
         <button id="authGuestBtn" class="btn btn-glass" type="button">Continue as Guest</button>
       </div>
 
@@ -513,6 +514,7 @@
       }
     }
   </script>
+  <script type="module" src="./auth.js"></script>
   <script type="module" src="./app.js"></script>
 </body>
 </html>
