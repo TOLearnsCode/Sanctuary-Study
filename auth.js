@@ -1,6 +1,7 @@
 import { auth, googleProvider } from "./firebase.js";
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -23,6 +24,8 @@ const authSignInBtn = document.getElementById("authSignInBtn");
 const authSignUpBtn = document.getElementById("authSignUpBtn");
 const authGoogleBtn = document.getElementById("authGoogleBtn");
 const authGuestBtn = document.getElementById("authGuestBtn");
+const authLoading = document.getElementById("authLoading");
+const authLoadingText = document.getElementById("authLoadingText");
 const authMessage = document.getElementById("authMessage");
 
 // Exported helpers so other modules can call auth actions directly if needed.
@@ -80,6 +83,21 @@ function setAuthButtonsBusy(isBusy) {
       button.disabled = isBusy;
     }
   });
+}
+
+function setAuthLoading(isLoading, text = "Processing request...") {
+  if (!authLoading) {
+    return;
+  }
+
+  authLoading.classList.toggle("hidden", !isLoading);
+  authLoading.setAttribute("aria-hidden", String(!isLoading));
+  if (authLoadingText) {
+    authLoadingText.textContent = text;
+  }
+  if (authForm) {
+    authForm.setAttribute("aria-busy", String(isLoading));
+  }
 }
 
 function loadProfilesMap() {
@@ -322,6 +340,9 @@ function getFriendlyAuthError(error) {
   if (code === "auth/request-timeout") {
     return "Request timed out. Please check your internet and try again.";
   }
+  if (code === "auth/requires-recent-login") {
+    return "For security, please sign in again before deleting your account.";
+  }
 
   return "Authentication failed. Please try again.";
 }
@@ -352,7 +373,8 @@ async function onSignInClick() {
   }
 
   setAuthButtonsBusy(true);
-  setAuthMessage("Signing in...");
+  setAuthLoading(true, "Signing in...");
+  setAuthMessage("");
 
   try {
     const credential = await withTimeout(
@@ -364,6 +386,7 @@ async function onSignInClick() {
   } catch (error) {
     setAuthMessage(getFriendlyAuthError(error), true);
   } finally {
+    setAuthLoading(false);
     setAuthButtonsBusy(false);
   }
 }
@@ -389,7 +412,8 @@ async function onSignUpClick() {
   }
 
   setAuthButtonsBusy(true);
-  setAuthMessage("Creating your account...");
+  setAuthLoading(true, "Creating your account...");
+  setAuthMessage("");
 
   try {
     const credential = await withTimeout(
@@ -421,13 +445,15 @@ async function onSignUpClick() {
   } catch (error) {
     setAuthMessage(getFriendlyAuthError(error), true);
   } finally {
+    setAuthLoading(false);
     setAuthButtonsBusy(false);
   }
 }
 
 async function onGoogleSignInClick() {
   setAuthButtonsBusy(true);
-  setAuthMessage("Opening Google sign-in...");
+  setAuthLoading(true, "Opening Google sign-in...");
+  setAuthMessage("");
 
   try {
     const credential = await withTimeout(signInWithGoogle(), AUTH_REQUEST_TIMEOUT_MS);
@@ -436,6 +462,7 @@ async function onGoogleSignInClick() {
   } catch (error) {
     setAuthMessage(getFriendlyAuthError(error), true);
   } finally {
+    setAuthLoading(false);
     setAuthButtonsBusy(false);
   }
 }
@@ -444,6 +471,10 @@ function initializeAuthPageBindings() {
   if (!authSignInBtn || !authSignUpBtn || !authGoogleBtn || !authForm) {
     return;
   }
+
+  // Ensure actions are clickable immediately on load.
+  setAuthButtonsBusy(false);
+  setAuthLoading(false);
 
   authSignInBtn.addEventListener("click", () => {
     onSignInClick();
@@ -487,8 +518,35 @@ function initializeAuthBridge() {
       // Keep the bridge stable even when sign out fails.
     }
   });
+
+  window.addEventListener("sanctuary:request-delete-account", async () => {
+    const user = auth.currentUser;
+    if (!user) {
+      window.dispatchEvent(new CustomEvent("sanctuary:delete-account-result", {
+        detail: {
+          ok: false,
+          message: "No signed-in account found."
+        }
+      }));
+      return;
+    }
+
+    try {
+      await deleteUser(user);
+      emitAuthChanged({ mode: "signed_out" });
+      window.dispatchEvent(new CustomEvent("sanctuary:delete-account-result", {
+        detail: { ok: true }
+      }));
+    } catch (error) {
+      window.dispatchEvent(new CustomEvent("sanctuary:delete-account-result", {
+        detail: {
+          ok: false,
+          message: getFriendlyAuthError(error)
+        }
+      }));
+    }
+  });
 }
 
 initializeAuthPageBindings();
 initializeAuthBridge();
-window.__SANCTUARY_AUTH_READY = true;

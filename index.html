@@ -134,6 +134,10 @@
         <button id="authGoogleBtn" class="btn btn-glass" type="button">Sign In with Google</button>
         <button id="authGuestBtn" class="btn btn-glass" type="button">Continue as Guest</button>
       </div>
+      <div id="authLoading" class="auth-loading hidden" role="status" aria-live="polite" aria-hidden="true">
+        <span class="auth-spinner" aria-hidden="true"></span>
+        <span id="authLoadingText">Processing request...</span>
+      </div>
 
       <p class="auth-note">Guest mode can run study sessions, but analytics and achievements are locked until sign-in.</p>
       <p id="authMessage" class="settings-message" role="status" aria-live="polite"></p>
@@ -432,6 +436,15 @@
         </div>
       </form>
 
+      <article id="accountSettingsCard" class="account-settings-card hidden">
+        <h3>Account</h3>
+        <p id="accountSettingsStatus" class="account-settings-status">Signed in account controls.</p>
+        <div class="account-settings-actions">
+          <button id="settingsSignOutBtn" type="button" class="btn btn-glass">Sign Out</button>
+          <button id="settingsDeleteAccountBtn" type="button" class="btn btn-danger">Delete Account</button>
+        </div>
+      </article>
+
       <p id="settingsMessage" class="settings-message" role="status" aria-live="polite"></p>
     </section>
 
@@ -443,6 +456,20 @@
 
       <div id="favouritesList" class="favourites-list"></div>
     </section>
+
+    <footer class="app-footer" role="contentinfo">
+      <div class="app-footer-left">
+        <div class="app-footer-brand">
+          <span class="app-footer-dot" aria-hidden="true"></span>
+          <span>Sanctuary Labs</span>
+        </div>
+        <p class="app-footer-meta">Created by Sanctuary Labs · 2026</p>
+      </div>
+      <nav class="app-footer-links" aria-label="Legal links">
+        <a href="./privacy.html">Privacy Policy</a>
+        <a href="./terms.html">Terms of Use</a>
+      </nav>
+    </footer>
   </main>
 
   <aside id="miniTimerWidget" class="mini-timer hidden" aria-live="polite">

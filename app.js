@@ -310,6 +310,10 @@ const loadMusicBtn = document.getElementById("loadMusicBtn");
 const playMusicBtn = document.getElementById("playMusic");
 const stopMusicBtn = document.getElementById("stopMusicBtn");
 const settingsMessage = document.getElementById("settingsMessage");
+const accountSettingsCard = document.getElementById("accountSettingsCard");
+const accountSettingsStatus = document.getElementById("accountSettingsStatus");
+const settingsSignOutBtn = document.getElementById("settingsSignOutBtn");
+const settingsDeleteAccountBtn = document.getElementById("settingsDeleteAccountBtn");
 
 const favouritesList = document.getElementById("favouritesList");
 const motivationToast = document.getElementById("motivationToast");
@@ -349,6 +353,7 @@ let toastTimeoutId = null;
 let toastCleanupId = null;
 let achievementToastTimeoutId = null;
 let achievementToastCleanupId = null;
+let settingsMessageTimeoutId = null;
 let musicPopupWindow = null;
 let partialFocusReminderIntervalId = null;
 let completeFocusPausedByTabSwitch = false;
@@ -484,9 +489,12 @@ function updateAuthUi() {
     analyticsButton.setAttribute("aria-disabled", String(analyticsLocked));
   }
 
+  const isSignedIn = authMode === "user";
+  authActionBtn.classList.toggle("hidden", isSignedIn);
+
   if (authMode === "user") {
-    authActionText.textContent = "Sign Out";
-    authActionBtn.setAttribute("aria-label", "Sign out");
+    authActionText.textContent = "Sign In";
+    authActionBtn.setAttribute("aria-label", "Sign in");
     const hasName = currentUser && (currentUser.firstName || currentUser.lastName);
     const fullName = hasName
       ? `${currentUser.firstName || ""} ${currentUser.lastName || ""}`.trim()
@@ -506,6 +514,32 @@ function updateAuthUi() {
     authActionBtn.setAttribute("aria-label", "Sign in");
     authModeNotice.classList.add("hidden");
   }
+
+  updateSettingsAccountControls();
+}
+
+function updateSettingsAccountControls() {
+  if (!accountSettingsCard || !accountSettingsStatus || !settingsSignOutBtn || !settingsDeleteAccountBtn) {
+    return;
+  }
+
+  const isSignedIn = authMode === "user";
+  accountSettingsCard.classList.toggle("hidden", !isSignedIn);
+  settingsSignOutBtn.disabled = !isSignedIn;
+  settingsDeleteAccountBtn.disabled = !isSignedIn;
+
+  if (!isSignedIn) {
+    accountSettingsStatus.textContent = "Sign in to access account actions.";
+    return;
+  }
+
+  const hasName = currentUser && (currentUser.firstName || currentUser.lastName);
+  const fullName = hasName
+    ? `${currentUser.firstName || ""} ${currentUser.lastName || ""}`.trim()
+    : "";
+  accountSettingsStatus.textContent = fullName
+    ? `Signed in as ${fullName}${currentUser.email ? ` (${currentUser.email})` : ""}.`
+    : `Signed in as ${currentUser && currentUser.email ? currentUser.email : "your account"}.`;
 }
 
 function initializeAuthenticationFlow() {
@@ -597,9 +631,17 @@ function requestAuthSignOut() {
   updateAuthUi();
 }
 
+function requestDeleteAccount() {
+  try {
+    window.dispatchEvent(new CustomEvent("sanctuary:request-delete-account"));
+  } catch (error) {
+    showSettingsError("Delete account is unavailable right now.");
+  }
+}
+
 function handleAuthActionClick() {
   if (authMode === "user") {
-    requestAuthSignOut();
+    switchSection("settings");
     return;
   }
 
@@ -629,18 +671,41 @@ function wireEvents() {
   authGuestBtn.addEventListener("click", () => {
     enterGuestMode();
   });
-  const handleAuthFallbackClick = () => {
-    if (window.__SANCTUARY_AUTH_READY) {
+  if (settingsSignOutBtn) {
+    settingsSignOutBtn.addEventListener("click", () => {
+      if (authMode !== "user") {
+        showSettingsError("Sign in first to manage your account.");
+        return;
+      }
+      requestAuthSignOut();
+    });
+  }
+  if (settingsDeleteAccountBtn) {
+    settingsDeleteAccountBtn.addEventListener("click", () => {
+      if (authMode !== "user") {
+        showSettingsError("Sign in first to manage your account.");
+        return;
+      }
+
+      const shouldDelete = window.confirm("Delete your account permanently? This cannot be undone.");
+      if (!shouldDelete) {
+        return;
+      }
+
+      showSettingsSuccess("Deleting account...");
+      requestDeleteAccount();
+    });
+  }
+  window.addEventListener("sanctuary:delete-account-result", (event) => {
+    const detail = event && event.detail ? event.detail : {};
+    if (detail.ok) {
+      showToastMessage("Account deleted.");
       return;
     }
-    showToastMessage("Auth is still loading. If this continues, refresh and check your internet.");
-  };
-  authSignInBtn.addEventListener("click", handleAuthFallbackClick);
-  authSignUpBtn.addEventListener("click", handleAuthFallbackClick);
-  const authGoogleBtn = document.getElementById("authGoogleBtn");
-  if (authGoogleBtn) {
-    authGoogleBtn.addEventListener("click", handleAuthFallbackClick);
-  }
+
+    const message = String(detail.message || "Could not delete account right now.");
+    showSettingsError(message);
+  });
 
   homeBeginBtn.addEventListener("click", beginStudyExperience);
   homeSettingsBtn.addEventListener("click", () => switchSection("settings"));
@@ -2315,13 +2380,28 @@ function onSettingsSubmit(event) {
 }
 
 function showSettingsSuccess(message) {
-  settingsMessage.textContent = message;
-  settingsMessage.classList.add("success");
+  showSettingsStatus(message, true);
+}
 
-  setTimeout(() => {
+function showSettingsError(message) {
+  showSettingsStatus(message, false);
+}
+
+function showSettingsStatus(message, isSuccess) {
+  settingsMessage.textContent = String(message || "");
+  settingsMessage.classList.toggle("success", Boolean(isSuccess));
+  settingsMessage.classList.toggle("error", !isSuccess);
+
+  if (settingsMessageTimeoutId) {
+    window.clearTimeout(settingsMessageTimeoutId);
+  }
+
+  settingsMessageTimeoutId = window.setTimeout(() => {
     settingsMessage.textContent = "";
     settingsMessage.classList.remove("success");
-  }, 2200);
+    settingsMessage.classList.remove("error");
+    settingsMessageTimeoutId = null;
+  }, 2600);
 }
 
 function sanitizeAlarmMode(value) {
@@ -2382,6 +2462,13 @@ function saveSettings(nextSettings) {
 function applyTheme(theme) {
   const resolvedTheme = theme === "dark" ? "dark" : "light";
   document.body.dataset.theme = resolvedTheme;
+  if (resolvedTheme === "dark") {
+    document.body.classList.add("theme-dark");
+    document.body.classList.remove("theme-light");
+  } else {
+    document.body.classList.add("theme-light");
+    document.body.classList.remove("theme-dark");
+  }
   themeSetting.value = resolvedTheme;
   updateThemeToggleUi(resolvedTheme);
 }
