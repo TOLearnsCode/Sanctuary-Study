@@ -11,6 +11,14 @@ Single-file JS app logic for:
 - YouTube iframe API background music dock
 */
 
+import { app, auth } from "./firebase.js";
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut
+} from "firebase/auth";
+
 const STUDY_LOG_KEY = "sanctuaryStudyLogV1";
 const TAG_LOG_KEY = "sanctuaryTagLogV1";
 const SETTINGS_KEY = "sanctuaryStudySettingsV1";
@@ -19,6 +27,7 @@ const DAILY_SCRIPTURE_CACHE_KEY = "sanctuaryDailyScriptureV1";
 const DAILY_SCRIPTURE_HISTORY_KEY = "sanctuaryDailyScriptureHistoryV1";
 const SESSION_NOTES_KEY = "sanctuarySessionNotesV1";
 const ACHIEVEMENTS_KEY = "sanctuaryAchievementsV1";
+const GUEST_MODE_KEY = "sanctuaryGuestModeV1";
 
 const GRAPH_DAYS = 60;
 const POPUP_SECONDS = 5;
@@ -218,6 +227,18 @@ const homeNavBtn = document.getElementById("homeNavBtn");
 const themeToggleBtn = document.getElementById("themeToggleBtn");
 const themeToggleIcon = document.getElementById("themeToggleIcon");
 const themeToggleText = document.getElementById("themeToggleText");
+const authActionBtn = document.getElementById("authActionBtn");
+const authActionText = document.getElementById("authActionText");
+
+const authSection = document.getElementById("authSection");
+const authForm = document.getElementById("authForm");
+const authEmailInput = document.getElementById("authEmailInput");
+const authPasswordInput = document.getElementById("authPasswordInput");
+const authSignInBtn = document.getElementById("authSignInBtn");
+const authSignUpBtn = document.getElementById("authSignUpBtn");
+const authGuestBtn = document.getElementById("authGuestBtn");
+const authMessage = document.getElementById("authMessage");
+const authModeNotice = document.getElementById("authModeNotice");
 
 const homeBeginBtn = document.getElementById("homeBeginBtn");
 const homeSettingsBtn = document.getElementById("homeSettingsBtn");
@@ -357,6 +378,8 @@ let currentView = "home";
 let sessionNotesState = loadSessionNotesState();
 let homeTypeEffectLocked = false;
 let homeTypeEffectTimeoutId = null;
+let authMode = "pending"; // "pending" | "guest" | "user"
+let currentUser = null;
 
 let currentFocus = {
   theme: selectedStudyTheme,
@@ -376,6 +399,9 @@ const timerState = {
 init();
 
 function init() {
+  // Ensure Firebase app import is initialized before auth observers attach.
+  void app;
+
   if (!settings.musicPresetId && !settings.youtubeMusicUrl) {
     settings.musicPresetId = defaultSettings.musicPresetId;
     saveSettings(settings);
@@ -388,8 +414,7 @@ function init() {
   setStudyTheme(selectedStudyTheme);
   setCurrentFocus(currentFocus);
   applyPresetByMinutes(settings.studyMinutes, settings.breakMinutes);
-  showHomeView();
-  syncAchievementsWithCurrentStreak();
+  showAuthScreen("Sign in to continue, or use guest mode.");
   updateSessionTagBadge();
   updatePhaseBadge();
   updateTimerDisplay();
@@ -405,6 +430,217 @@ function init() {
   syncMusicPlayPauseButton();
   renderSessionNotes();
   loadScriptureOfTheDay();
+  initializeAuthenticationFlow();
+}
+
+function hasAppAccess() {
+  return authMode === "guest" || authMode === "user";
+}
+
+function canUseAnalyticsFeatures() {
+  return authMode === "user";
+}
+
+function loadGuestModePreference() {
+  return localStorage.getItem(GUEST_MODE_KEY) === "true";
+}
+
+function saveGuestModePreference(enabled) {
+  if (enabled) {
+    localStorage.setItem(GUEST_MODE_KEY, "true");
+    return;
+  }
+
+  localStorage.removeItem(GUEST_MODE_KEY);
+}
+
+function setAuthMessage(message, isError = false) {
+  authMessage.textContent = message || "";
+  authMessage.classList.toggle("success", Boolean(message) && !isError);
+}
+
+function showAuthScreen(message = "") {
+  authMode = "pending";
+  currentView = "auth";
+
+  stopTimerInterval();
+  timerState.running = false;
+  syncFocusModeAfterTimerStateChange();
+  clearInterval(popupIntervalId);
+  popupIntervalId = null;
+  versePopup.classList.add("hidden");
+  document.body.classList.remove("popup-open");
+  updateTimerButtons();
+  updateSessionStatus();
+
+  authSection.classList.remove("hidden");
+  homeSection.classList.add("hidden");
+  Object.values(sections).forEach((section) => {
+    section.classList.add("hidden");
+  });
+  navButtons.forEach((button) => {
+    button.classList.remove("active");
+  });
+  setAuthMessage(message, false);
+  updateMiniTimerWidget();
+  updateAuthUi();
+}
+
+function updateAuthUi() {
+  const analyticsButton = navButtons.find((button) => button.dataset.section === "analytics");
+  const analyticsLocked = !canUseAnalyticsFeatures();
+  if (analyticsButton) {
+    analyticsButton.classList.toggle("disabled", analyticsLocked);
+    analyticsButton.disabled = analyticsLocked;
+    analyticsButton.setAttribute("aria-disabled", String(analyticsLocked));
+  }
+
+  if (authMode === "user") {
+    authActionText.textContent = "Sign Out";
+    authActionBtn.setAttribute("aria-label", "Sign out");
+    const userLabel = currentUser && currentUser.email ? `Signed in as ${currentUser.email}` : "Signed in";
+    authModeNotice.textContent = userLabel;
+    authModeNotice.classList.remove("hidden");
+  } else if (authMode === "guest") {
+    authActionText.textContent = "Sign In";
+    authActionBtn.setAttribute("aria-label", "Sign in");
+    authModeNotice.textContent = "Guest mode: study timer only. Sign in to unlock analytics and achievements.";
+    authModeNotice.classList.remove("hidden");
+  } else {
+    authActionText.textContent = "Sign In";
+    authActionBtn.setAttribute("aria-label", "Sign in");
+    authModeNotice.classList.add("hidden");
+  }
+}
+
+function initializeAuthenticationFlow() {
+  onAuthStateChanged(auth, (user) => {
+    currentUser = user || null;
+
+    if (user) {
+      authMode = "user";
+      saveGuestModePreference(false);
+      authSection.classList.add("hidden");
+      setAuthMessage("");
+      showHomeView({ forceStopTypeEffect: true });
+      syncAchievementsWithCurrentStreak();
+      renderAnalytics();
+      updateAuthUi();
+      return;
+    }
+
+    if (loadGuestModePreference()) {
+      authMode = "guest";
+      authSection.classList.add("hidden");
+      setAuthMessage("");
+      showHomeView({ forceStopTypeEffect: true });
+      renderAnalytics();
+      updateAuthUi();
+      return;
+    }
+
+    showAuthScreen("Sign in with email and password, or continue as guest.");
+    renderAnalytics();
+  });
+}
+
+async function handleAuthSignIn() {
+  const email = String(authEmailInput.value || "").trim();
+  const password = String(authPasswordInput.value || "");
+  if (!email || password.length < 6) {
+    setAuthMessage("Enter a valid email and password (minimum 6 characters).", true);
+    return;
+  }
+
+  authSignInBtn.disabled = true;
+  authSignUpBtn.disabled = true;
+  authGuestBtn.disabled = true;
+  setAuthMessage("Signing in...");
+
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    setAuthMessage("Signed in successfully.");
+  } catch (error) {
+    setAuthMessage(getAuthFriendlyError(error), true);
+  } finally {
+    authSignInBtn.disabled = false;
+    authSignUpBtn.disabled = false;
+    authGuestBtn.disabled = false;
+  }
+}
+
+async function handleAuthSignUp() {
+  const email = String(authEmailInput.value || "").trim();
+  const password = String(authPasswordInput.value || "");
+  if (!email || password.length < 6) {
+    setAuthMessage("Enter a valid email and a password with at least 6 characters.", true);
+    return;
+  }
+
+  authSignInBtn.disabled = true;
+  authSignUpBtn.disabled = true;
+  authGuestBtn.disabled = true;
+  setAuthMessage("Creating your account...");
+
+  try {
+    await createUserWithEmailAndPassword(auth, email, password);
+    setAuthMessage("Account created. Welcome to Sanctuary Study.");
+  } catch (error) {
+    setAuthMessage(getAuthFriendlyError(error), true);
+  } finally {
+    authSignInBtn.disabled = false;
+    authSignUpBtn.disabled = false;
+    authGuestBtn.disabled = false;
+  }
+}
+
+function enterGuestMode() {
+  authMode = "guest";
+  currentUser = null;
+  saveGuestModePreference(true);
+  authSection.classList.add("hidden");
+  setAuthMessage("");
+  showHomeView({ forceStopTypeEffect: true });
+  renderAnalytics();
+  updateAuthUi();
+  showToastMessage("Guest mode active. Sign in any time to unlock analytics and achievements.");
+}
+
+async function handleAuthActionClick() {
+  if (authMode === "user") {
+    try {
+      await signOut(auth);
+      showAuthScreen("You are signed out. Sign in again or continue as guest.");
+      updateAuthUi();
+      return;
+    } catch (error) {
+      showToastMessage("Could not sign out right now. Try again.");
+      return;
+    }
+  }
+
+  showAuthScreen("Sign in to save analytics and achievements.");
+}
+
+function getAuthFriendlyError(error) {
+  const code = error && typeof error.code === "string" ? error.code : "";
+  if (code === "auth/invalid-credential") {
+    return "Incorrect email or password.";
+  }
+  if (code === "auth/email-already-in-use") {
+    return "This email already has an account. Try signing in.";
+  }
+  if (code === "auth/weak-password") {
+    return "Password is too weak. Use at least 6 characters.";
+  }
+  if (code === "auth/invalid-email") {
+    return "That email format is invalid.";
+  }
+  if (code === "auth/network-request-failed") {
+    return "Network error. Check your connection and try again.";
+  }
+
+  return "Authentication failed. Please try again.";
 }
 
 function wireEvents() {
@@ -417,11 +653,28 @@ function wireEvents() {
   homeNavBtn.addEventListener("click", () => {
     showHomeView({ forceStopTypeEffect: true });
   });
+  authActionBtn.addEventListener("click", () => {
+    handleAuthActionClick();
+  });
   themeToggleBtn.addEventListener("click", toggleThemeFromTopBar);
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
       loadScriptureOfTheDay();
     }
+  });
+
+  authSignInBtn.addEventListener("click", () => {
+    handleAuthSignIn();
+  });
+  authSignUpBtn.addEventListener("click", () => {
+    handleAuthSignUp();
+  });
+  authGuestBtn.addEventListener("click", () => {
+    enterGuestMode();
+  });
+  authForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    handleAuthSignIn();
   });
 
   homeBeginBtn.addEventListener("click", beginStudyExperience);
@@ -594,11 +847,22 @@ function getLofiPresetById(presetId) {
 }
 
 function switchSection(sectionName) {
+  if (!hasAppAccess()) {
+    showAuthScreen("Sign in to continue, or use guest mode.");
+    return;
+  }
+
+  if (sectionName === "analytics" && !canUseAnalyticsFeatures()) {
+    showToastMessage("Analytics and achievements are available after sign in.");
+    return;
+  }
+
   if (sectionName !== "study" && isCompleteFocusLockActive()) {
     showToastMessage("Complete focus is active. Pause the study timer before leaving this section.");
     return;
   }
 
+  authSection.classList.add("hidden");
   homeSection.classList.add("hidden");
   currentView = sectionName;
 
@@ -620,12 +884,18 @@ function switchSection(sectionName) {
 }
 
 function showHomeView(options = {}) {
+  if (!hasAppAccess()) {
+    showAuthScreen("Sign in to continue, or use guest mode.");
+    return;
+  }
+
   if (isCompleteFocusLockActive()) {
     showToastMessage("Complete focus is active. Pause the study timer before going home.");
     return;
   }
 
   currentView = "home";
+  authSection.classList.add("hidden");
   homeSection.classList.remove("hidden");
 
   Object.values(sections).forEach((section) => {
@@ -640,6 +910,7 @@ function showHomeView(options = {}) {
   // Re-check daily scripture whenever home opens; cached result prevents extra work.
   loadScriptureOfTheDay();
   updateMiniTimerWidget();
+  updateAuthUi();
 }
 
 function updateHomeTypeEffect(forceStop) {
@@ -759,6 +1030,11 @@ function updateSessionTagBadge() {
 }
 
 async function beginStudyExperience() {
+  if (!hasAppAccess()) {
+    showAuthScreen("Sign in to begin your study session, or continue as guest.");
+    return;
+  }
+
   if (isPreparingSession) {
     return;
   }
@@ -942,13 +1218,18 @@ function onBlockComplete() {
   if (timerState.phase === "study") {
     const blockMinutes = timerState.activeBlockSeconds / 60;
     const activeTag = getActiveSessionTag();
-    const context = recordCompletedStudyBlock(blockMinutes, activeTag);
-    const unlockedAchievement = unlockStreakAchievements(context.currentStreak, true);
-    renderAnalytics();
     playAlarmSound();
-    showMotivationToast(getMotivationalMessage(context));
-    if (unlockedAchievement) {
-      showAchievementToast(unlockedAchievement);
+
+    if (canUseAnalyticsFeatures()) {
+      const context = recordCompletedStudyBlock(blockMinutes, activeTag);
+      const unlockedAchievement = unlockStreakAchievements(context.currentStreak, true);
+      renderAnalytics();
+      showMotivationToast(getMotivationalMessage(context));
+      if (unlockedAchievement) {
+        showAchievementToast(unlockedAchievement);
+      }
+    } else {
+      showMotivationToast("Study block completed. Sign in to save analytics and unlock achievements.");
     }
 
     timerState.phase = "break";
@@ -1262,6 +1543,31 @@ function showVersePopupForSeconds(focus, seconds) {
 }
 
 function renderAnalytics() {
+  if (!canUseAnalyticsFeatures()) {
+    todayMinutesEl.textContent = "Sign in";
+    totalHoursEl.textContent = "Sign in";
+    streakDaysEl.textContent = "Sign in";
+    studyDaysEl.textContent = "Sign in";
+    goalProgressEl.textContent = `Goal: ${settings.dailyGoalMinutes} min`;
+
+    chartSummaryEl.textContent = "Sign in to view your study analytics.";
+    studyGraphEl.innerHTML = "";
+    const graphLocked = document.createElement("p");
+    graphLocked.className = "favourite-empty";
+    graphLocked.textContent = "Analytics are unavailable in guest mode.";
+    studyGraphEl.appendChild(graphLocked);
+
+    tagSummaryEl.textContent = "Sign in to view weekly tag breakdown.";
+    tagBreakdownListEl.innerHTML = "";
+    const tagLocked = document.createElement("p");
+    tagLocked.className = "favourite-empty";
+    tagLocked.textContent = "Tag analytics require an account sign-in.";
+    tagBreakdownListEl.appendChild(tagLocked);
+
+    renderAchievements();
+    return;
+  }
+
   const log = loadStudyLog();
   const todayKey = getDateKey(new Date());
   const todayMinutes = Number(log[todayKey] || 0);
@@ -1377,13 +1683,18 @@ function renderWeeklyTagBreakdown(tagLog) {
 }
 
 function renderAchievements() {
-  const unlocked = loadUnlockedAchievements();
-  const unlockedCount = STREAK_ACHIEVEMENTS.filter((achievement) => Boolean(unlocked[achievement.id])).length;
-  achievementSummaryEl.textContent = `${unlockedCount} / ${STREAK_ACHIEVEMENTS.length} unlocked`;
+  const analyticsAvailable = canUseAnalyticsFeatures();
+  const unlocked = analyticsAvailable ? loadUnlockedAchievements() : {};
+  const unlockedCount = analyticsAvailable
+    ? STREAK_ACHIEVEMENTS.filter((achievement) => Boolean(unlocked[achievement.id])).length
+    : 0;
+  achievementSummaryEl.textContent = analyticsAvailable
+    ? `${unlockedCount} / ${STREAK_ACHIEVEMENTS.length} unlocked`
+    : "Sign in to unlock achievements";
   achievementsGridEl.innerHTML = "";
 
   STREAK_ACHIEVEMENTS.forEach((achievement) => {
-    const unlockedEntry = unlocked[achievement.id] || null;
+    const unlockedEntry = analyticsAvailable ? (unlocked[achievement.id] || null) : null;
     const card = document.createElement("article");
     card.className = "achievement-card";
     card.classList.add(unlockedEntry ? "unlocked" : "locked");
@@ -1402,7 +1713,11 @@ function renderAchievements() {
 
     const message = document.createElement("p");
     message.className = "achievement-message";
-    message.textContent = unlockedEntry ? achievement.message : "Keep your streak growing to unlock this medal.";
+    message.textContent = unlockedEntry
+      ? achievement.message
+      : (analyticsAvailable
+        ? "Keep your streak growing to unlock this medal."
+        : "Locked in guest mode. Sign in to earn this medal.");
 
     card.appendChild(medal);
     card.appendChild(label);
@@ -1413,11 +1728,19 @@ function renderAchievements() {
 }
 
 function syncAchievementsWithCurrentStreak() {
+  if (!canUseAnalyticsFeatures()) {
+    return;
+  }
+
   const streak = calculateStreak(loadStudyLog());
   unlockStreakAchievements(streak, false);
 }
 
 function unlockStreakAchievements(currentStreak, announceExactMatch) {
+  if (!canUseAnalyticsFeatures()) {
+    return null;
+  }
+
   const safeStreak = Number(currentStreak || 0);
   if (safeStreak <= 0) {
     return null;

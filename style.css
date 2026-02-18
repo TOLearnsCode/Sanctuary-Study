@@ -254,6 +254,12 @@ body.popup-open::after {
   background: var(--glass-hover);
 }
 
+.nav-btn.disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .nav-btn.active {
   background: rgba(79, 140, 99, 0.18);
   border-color: rgba(79, 140, 99, 0.52);
@@ -285,6 +291,83 @@ body[data-theme="dark"] .nav-btn.active {
   justify-items: center;
   text-align: center;
   gap: 16px;
+}
+
+.auth-gate {
+  min-height: clamp(470px, 70vh, 680px);
+  padding: clamp(28px, 5vw, 64px);
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  text-align: center;
+  gap: 12px;
+}
+
+.auth-title {
+  margin: 0;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: clamp(2.4rem, 7vw, 4.8rem);
+  line-height: 1.05;
+}
+
+.auth-copy {
+  margin: 0;
+  width: min(700px, 100%);
+  color: var(--muted);
+  font-size: clamp(1rem, 2vw, 1.24rem);
+  line-height: 1.45;
+}
+
+.auth-form {
+  width: min(460px, 100%);
+  display: grid;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  font-size: 0.92rem;
+}
+
+.auth-form input {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 11px 12px;
+  font: inherit;
+  color: var(--text);
+  background: var(--glass);
+}
+
+.auth-form input:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(79, 140, 99, 0.2);
+}
+
+.auth-gate-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.auth-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.auth-mode-notice {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 12px;
+  background: var(--glass);
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 
 .kicker {
@@ -1655,6 +1738,19 @@ body[data-theme="dark"] .btn-danger {
 
   .theme-toggle {
     justify-content: center;
+  }
+
+  .auth-gate {
+    min-height: 62vh;
+    padding: 24px 16px;
+  }
+
+  .auth-gate-actions {
+    width: 100%;
+  }
+
+  .auth-gate-actions .btn {
+    flex: 1 1 100%;
   }
 
   .home-hero {

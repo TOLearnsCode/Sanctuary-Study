@@ -45,6 +45,16 @@
           </span>
           <span id="themeToggleText">Dark Mode</span>
         </button>
+
+        <button id="authActionBtn" class="home-nav-btn" type="button" aria-label="Sign in or sign out">
+          <span class="icon-wrap" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </span>
+          <span id="authActionText">Sign In</span>
+        </button>
       </div>
 
       <nav class="top-nav" aria-label="Main sections">
@@ -84,6 +94,35 @@
       </nav>
     </header>
 
+    <section id="authSection" class="auth-gate card hidden">
+      <p class="kicker fade-up">WELCOME</p>
+      <h1 class="auth-title">Sanctuary Study</h1>
+      <p class="auth-copy">
+        Sign in to save analytics and achievements. You can also continue as a guest
+        to use the study timer without account progress tracking.
+      </p>
+
+      <form id="authForm" class="auth-form" autocomplete="on">
+        <label>
+          Email
+          <input id="authEmailInput" type="email" autocomplete="email" placeholder="you@example.com" />
+        </label>
+        <label>
+          Password
+          <input id="authPasswordInput" type="password" autocomplete="current-password" placeholder="At least 6 characters" />
+        </label>
+      </form>
+
+      <div class="auth-gate-actions">
+        <button id="authSignInBtn" class="btn btn-primary" type="button">Sign In</button>
+        <button id="authSignUpBtn" class="btn btn-glass" type="button">Sign Up</button>
+        <button id="authGuestBtn" class="btn btn-glass" type="button">Continue as Guest</button>
+      </div>
+
+      <p class="auth-note">Guest mode can run study sessions, but analytics and achievements are locked until sign-in.</p>
+      <p id="authMessage" class="settings-message" role="status" aria-live="polite"></p>
+    </section>
+
     <section id="homeSection" class="home-hero card">
       <p class="kicker fade-up">WELCOME</p>
       <h1 class="type-title">Sanctuary Study</h1>
@@ -91,6 +130,7 @@
         Build a daily study rhythm with focus, Scripture, and peace.
         Begin now or shape your setup first.
       </p>
+      <p id="authModeNotice" class="auth-mode-notice hidden"></p>
       <div class="home-actions fade-up delay-2">
         <button id="homeBeginBtn" class="btn btn-primary" type="button">Begin Study</button>
         <button id="homeSettingsBtn" class="btn btn-glass" type="button">Change Settings</button>
@@ -464,6 +504,15 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "firebase/app": "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js",
+        "firebase/analytics": "https://www.gstatic.com/firebasejs/10.12.5/firebase-analytics.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js"
+      }
+    }
+  </script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>
