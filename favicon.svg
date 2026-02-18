@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Sanctuary Study favicon">
+  <!-- Premium flat shield silhouette -->
+  <path d="M32 4L52 12V28C52 41 44.2 51 32 59C19.8 51 12 41 12 28V12Z" fill="#203328" />
+  <path d="M32 7.8L48.6 14.4V28C48.6 39.2 42.2 47.8 32 54.8C21.8 47.8 15.4 39.2 15.4 28V14.4Z" fill="#4f8c63" />
+
+  <!-- Sanctuary window / study mark -->
+  <path d="M32 15.2C25.8 15.2 20.8 20.2 20.8 26.4V44.6H43.2V26.4C43.2 20.2 38.2 15.2 32 15.2Z" fill="#edf8f1" />
+
+  <!-- Subtle cross -->
+  <rect x="30.6" y="21.4" width="2.8" height="16.8" rx="1.4" fill="#4f8c63" />
+  <rect x="26.6" y="26.2" width="10.8" height="2.8" rx="1.4" fill="#4f8c63" />
+
+  <!-- Minimal open-book base -->
+  <path d="M20.8 44.6L32 48.6L43.2 44.6V47.8L32 52L20.8 47.8Z" fill="#d4ebdc" />
+</svg>
