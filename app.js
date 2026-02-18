@@ -190,6 +190,24 @@ const STREAK_ACHIEVEMENTS = [
     days: 90,
     title: "Well Done, Good and Faithful",
     message: "Ninety days of consistency. Keep serving with a steady and willing heart."
+  },
+  {
+    id: "streak_120",
+    days: 120,
+    title: "Long-Haul Faithfulness",
+    message: "One hundred and twenty days of steady focus. Keep planting faithfully, one day at a time."
+  },
+  {
+    id: "streak_180",
+    days: 180,
+    title: "Half-Year of Discipline",
+    message: "Six months of consistency. Your rhythm is strong and your perseverance is growing."
+  },
+  {
+    id: "streak_365",
+    days: 365,
+    title: "Crown of Consistency",
+    message: "A full year of faithful study. Keep running with endurance and gratitude."
   }
 ];
 
@@ -425,6 +443,10 @@ function init() {
   renderSessionNotes();
   loadScriptureOfTheDay();
   initializeAuthenticationFlow();
+  // Re-apply once more after first paint to avoid stale visual state from cached styles.
+  window.requestAnimationFrame(() => {
+    applyTheme(settings.theme);
+  });
 }
 
 function hasAppAccess() {
@@ -2461,14 +2483,9 @@ function saveSettings(nextSettings) {
 
 function applyTheme(theme) {
   const resolvedTheme = theme === "dark" ? "dark" : "light";
+  document.documentElement.dataset.theme = resolvedTheme;
   document.body.dataset.theme = resolvedTheme;
-  if (resolvedTheme === "dark") {
-    document.body.classList.add("theme-dark");
-    document.body.classList.remove("theme-light");
-  } else {
-    document.body.classList.add("theme-light");
-    document.body.classList.remove("theme-dark");
-  }
+  document.body.classList.remove("theme-dark", "theme-light");
   themeSetting.value = resolvedTheme;
   updateThemeToggleUi(resolvedTheme);
 }

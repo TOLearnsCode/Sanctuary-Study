@@ -19,8 +19,7 @@
   --success-text: #2f6d48;
 }
 
-body[data-theme="light"],
-body.theme-light {
+body[data-theme="light"] {
   --bg: #f8fcf9;
   --bg-deep: #e7f3ec;
   --card: rgba(255, 255, 255, 0.9);
@@ -40,8 +39,7 @@ body.theme-light {
   color-scheme: light;
 }
 
-body[data-theme="dark"],
-body.theme-dark {
+body[data-theme="dark"] {
   --bg: #0d1210;
   --bg-deep: #1a2520;
   --card: rgba(20, 27, 23, 0.74);
@@ -108,14 +106,12 @@ body::after {
   animation: driftB 18s ease-in-out infinite alternate;
 }
 
-body[data-theme="dark"]::before,
-body.theme-dark::before {
+body[data-theme="dark"]::before {
   background: #1d5a41;
   opacity: 0.28;
 }
 
-body[data-theme="dark"]::after,
-body.theme-dark::after {
+body[data-theme="dark"]::after {
   background: #2f4a3b;
   opacity: 0.24;
 }
