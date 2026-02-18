@@ -98,3 +98,9 @@ If auth appears slow/unavailable, first verify you are running from `http://loca
 - No framework is required.
 - The app is designed to be easy to read and modify for learning/personal use.
 
+## License
+
+The code in this repository is licensed under the MIT License.  
+See the `LICENSE` file for details.
+The “Sanctuary Study” name, logo, and branding may not be used to imply endorsement or affiliation without permission.
+
