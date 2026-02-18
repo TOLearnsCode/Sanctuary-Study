@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sanctuary Study</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-theme="light">
+  <main class="app-shell">
+    <header class="top-bar">
+      <div class="top-left-controls">
+        <div id="logoHomeBtn" class="app-logo-btn" aria-label="Sanctuary Study logo">
+          <span class="app-logo-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 3v18M6 9l6-6 6 6" />
+              <path d="M7 16c1.2-2.3 3-3.6 5-3.6s3.8 1.3 5 3.6" />
+            </svg>
+          </span>
+          <span class="app-logo-text">
+            <strong>Sanctuary</strong>
+            <small>Study</small>
+          </span>
+        </div>
+
+        <button id="homeNavBtn" class="home-nav-btn" type="button" aria-label="Go to home">
+          <span class="icon-wrap" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="m3 10 9-7 9 7" />
+              <path d="M5 10v10h14V10" />
+            </svg>
+          </span>
+          <span>Home</span>
+        </button>
+
+        <button id="themeToggleBtn" class="theme-toggle" type="button" aria-label="Toggle dark mode">
+          <span id="themeToggleIcon" class="icon-wrap" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.36 6.36-1.42-1.42M7.05 7.05 5.64 5.64m12.72 0-1.42 1.41M7.05 16.95l-1.41 1.41" />
+              <circle cx="12" cy="12" r="4" />
+            </svg>
+          </span>
+          <span id="themeToggleText">Dark Mode</span>
+        </button>
+      </div>
+
+      <nav class="top-nav" aria-label="Main sections">
+        <button class="nav-btn" data-section="study" type="button">
+          <span class="icon-wrap" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v13.5a.5.5 0 0 1-.74.44L12 16.5l-7.26 3.44A.5.5 0 0 1 4 19.5z" />
+            </svg>
+          </span>
+          <span>Study</span>
+        </button>
+        <button class="nav-btn" data-section="analytics" type="button">
+          <span class="icon-wrap" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 19h16M7 15v-4m5 4V7m5 8v-6" />
+            </svg>
+          </span>
+          <span>Analytics</span>
+        </button>
+        <button class="nav-btn" data-section="settings" type="button">
+          <span class="icon-wrap" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3.5" />
+              <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.03.03a2 2 0 0 1-2.83 2.83l-.03-.03A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.08V21a2 2 0 0 1-4 0v-.05a1.7 1.7 0 0 0-.4-1.08 1.7 1.7 0 0 0-1-.6 1.7 1.7 0 0 0-1.87.34l-.03.03a2 2 0 0 1-2.83-2.83l.03-.03A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.08-.4H3a2 2 0 0 1 0-4h.05a1.7 1.7 0 0 0 1.08-.4 1.7 1.7 0 0 0 .6-1 1.7 1.7 0 0 0-.34-1.87l-.03-.03a2 2 0 1 1 2.83-2.83l.03.03A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.08V3a2 2 0 0 1 4 0v.05a1.7 1.7 0 0 0 .4 1.08 1.7 1.7 0 0 0 1 .6 1.7 1.7 0 0 0 1.87-.34l.03-.03a2 2 0 0 1 2.83 2.83l-.03.03A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 .6 1 1.7 1.7 0 0 0 1.08.4H21a2 2 0 0 1 0 4h-.05a1.7 1.7 0 0 0-1.08.4 1.7 1.7 0 0 0-.47.6z" />
+            </svg>
+          </span>
+          <span>Settings</span>
+        </button>
+        <button class="nav-btn" data-section="favourites" type="button">
+          <span class="icon-wrap" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 21s-7-4.35-9.1-8.14A5.3 5.3 0 0 1 12 4.5a5.3 5.3 0 0 1 9.1 8.36C19 16.65 12 21 12 21z" />
+            </svg>
+          </span>
+          <span>Sanctuary</span>
+        </button>
+      </nav>
+    </header>
+
+    <section id="homeSection" class="home-hero card">
+      <p class="kicker fade-up">WELCOME</p>
+      <h1 class="type-title">Sanctuary Study</h1>
+      <p class="home-copy fade-up delay-1">
+        Build a daily study rhythm with focus, Scripture, and peace.
+        Begin now or shape your setup first.
+      </p>
+      <div class="home-actions fade-up delay-2">
+        <button id="homeBeginBtn" class="btn btn-primary" type="button">Begin Study</button>
+        <button id="homeSettingsBtn" class="btn btn-glass" type="button">Change Settings</button>
+      </div>
+
+      <div class="theme-picker fade-up delay-2">
+        <p>Study Theme</p>
+        <div id="themePills" class="theme-pill-group" role="radiogroup" aria-label="Study Theme">
+          <button class="theme-pill active" type="button" data-study-theme="Perseverance">Perseverance</button>
+          <button class="theme-pill" type="button" data-study-theme="Peace">Peace</button>
+          <button class="theme-pill" type="button" data-study-theme="Wisdom">Wisdom</button>
+          <button class="theme-pill" type="button" data-study-theme="Gratitude">Gratitude</button>
+        </div>
+      </div>
+
+      <article class="home-focus-card fade-up delay-2">
+        <div class="home-focus-head">
+          <p id="homeThemeBadge" class="home-theme-badge">Perseverance</p>
+          <button id="homeSaveVerseBtn" class="save-btn" type="button" aria-label="Save current verse to favourites">
+            <span class="icon-wrap" aria-hidden="true">
+              <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 21s-7-4.35-9.1-8.14A5.3 5.3 0 0 1 12 4.5a5.3 5.3 0 0 1 9.1 8.36C19 16.65 12 21 12 21z" />
+              </svg>
+            </span>
+            <span>Save</span>
+          </button>
+        </div>
+        <blockquote id="homeVerseText" class="scripture-text"></blockquote>
+        <p id="homeVerseRef" class="scripture-ref"></p>
+        <p id="homeEncouragementText" class="home-encouragement"></p>
+      </article>
+
+      <article class="daily-scripture-card fade-up delay-2">
+        <p class="quote-label">Scripture for Today</p>
+        <blockquote id="dailyVerseText" class="scripture-text"></blockquote>
+        <p id="dailyVerseRef" class="scripture-ref"></p>
+      </article>
+    </section>
+
+    <section id="studySection" class="panel card hidden">
+      <div id="studyPrep" class="study-prep">
+        <h2>Ready to focus?</h2>
+        <p>Choose begin to show a random scripture. After 5 seconds, your study session starts automatically.</p>
+
+        <div class="preset-wrap">
+          <p class="quote-label">Focus Presets</p>
+          <div id="presetButtons" class="preset-buttons">
+            <button class="preset-btn active" type="button" data-preset="25-5">25/5</button>
+            <button class="preset-btn" type="button" data-preset="50-10">50/10</button>
+            <button class="preset-btn" type="button" data-preset="90-15">90/15</button>
+            <button class="preset-btn" type="button" data-preset="custom">Custom</button>
+          </div>
+          <div id="customPresetFields" class="custom-preset-fields hidden">
+            <label>
+              Study min
+              <input id="customStudyMinutes" type="number" min="1" max="240" value="30" />
+            </label>
+            <label>
+              Break min
+              <input id="customBreakMinutes" type="number" min="1" max="120" value="10" />
+            </label>
+            <button id="applyCustomPresetBtn" class="btn btn-glass" type="button">Apply Custom</button>
+          </div>
+        </div>
+
+        <div class="session-tag-controls">
+          <label>
+            Session tag
+            <select id="sessionTagSelect">
+              <option value="Algorithms">Algorithms</option>
+              <option value="Revision">Revision</option>
+              <option value="Bible reading">Bible reading</option>
+              <option value="Class notes">Class notes</option>
+              <option value="Prayer">Prayer</option>
+              <option value="Custom">Custom</option>
+            </select>
+          </label>
+          <label id="customTagRow" class="hidden">
+            Custom tag
+            <input id="customTagInput" type="text" maxlength="30" placeholder="e.g. Exam prep" />
+          </label>
+        </div>
+
+        <div class="inline-actions">
+          <button id="prepBeginBtn" class="btn btn-primary" type="button">Begin</button>
+          <button id="prepSettingsBtn" class="btn btn-glass" type="button">Change Settings</button>
+        </div>
+      </div>
+
+      <div id="versePopup" class="verse-popup hidden" role="status" aria-live="polite">
+        <p class="popup-label">Scripture for this session</p>
+        <blockquote id="popupVerseText" class="scripture-text"></blockquote>
+        <p id="popupVerseRef" class="scripture-ref"></p>
+        <p id="popupCountdown" class="popup-countdown"></p>
+      </div>
+
+      <div id="studySession" class="study-session hidden">
+        <div class="session-top">
+          <p id="phaseBadge" class="phase-badge study">Study</p>
+          <p id="sessionStatus" class="session-status">Focus block in progress</p>
+          <p id="sessionTagBadge" class="session-tag-badge">Tag: Algorithms</p>
+        </div>
+
+        <p id="timerDisplay" class="timer-display">25:00</p>
+
+        <div class="timer-controls">
+          <button id="startBtn" class="btn btn-primary" type="button">Start</button>
+          <button id="pauseBtn" class="btn btn-glass" type="button">Pause</button>
+          <button id="resetBtn" class="btn btn-glass" type="button">Reset</button>
+          <button id="cancelSessionBtn" class="btn btn-danger" type="button">Cancel Session</button>
+        </div>
+
+        <article class="quote-card">
+          <div class="quote-head">
+            <p class="quote-label">Focus Scripture</p>
+            <button id="studySaveVerseBtn" class="save-btn" type="button" aria-label="Save current verse to favourites">
+              <span class="icon-wrap" aria-hidden="true">
+                <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 21s-7-4.35-9.1-8.14A5.3 5.3 0 0 1 12 4.5a5.3 5.3 0 0 1 9.1 8.36C19 16.65 12 21 12 21z" />
+                </svg>
+              </span>
+              <span>Save</span>
+            </button>
+          </div>
+          <blockquote id="sessionVerseText" class="scripture-text"></blockquote>
+          <p id="sessionVerseRef" class="scripture-ref"></p>
+          <p id="sessionEncouragementText" class="session-encouragement"></p>
+        </article>
+
+        <article class="notes-card">
+          <div class="notes-head">
+            <p class="quote-label">Study Notes</p>
+            <button id="clearSessionNotesBtn" class="btn btn-glass notes-clear-btn" type="button">Clear</button>
+          </div>
+
+          <label class="notes-input-label" for="sessionNotesInput">Quick notes</label>
+          <textarea id="sessionNotesInput" class="notes-textarea" placeholder="Write key points, ideas, or reminders..."></textarea>
+
+          <p class="quote-label">Task list</p>
+          <div class="todo-input-row">
+            <input id="sessionTodoInput" type="text" maxlength="120" placeholder="Add a task for this study session" />
+            <button id="addSessionTodoBtn" class="btn btn-primary" type="button">Add</button>
+          </div>
+          <ul id="sessionTodoList" class="todo-list"></ul>
+        </article>
+      </div>
+    </section>
+
+    <section id="analyticsSection" class="panel card hidden">
+      <div class="panel-heading">
+        <h2>Analytics</h2>
+        <p>Daily output, total time, and streak consistency.</p>
+      </div>
+
+      <div class="stats-grid">
+        <article class="stat-card">
+          <p class="stat-label">Today</p>
+          <p id="todayMinutes" class="stat-value">0 min</p>
+        </article>
+        <article class="stat-card">
+          <p class="stat-label">Total Time</p>
+          <p id="totalHours" class="stat-value">0.0 hrs</p>
+        </article>
+        <article class="stat-card">
+          <p class="stat-label">Streak</p>
+          <p id="streakDays" class="stat-value">0 days</p>
+        </article>
+        <article class="stat-card">
+          <p class="stat-label">Study Days</p>
+          <p id="studyDays" class="stat-value">0 days</p>
+        </article>
+        <article class="stat-card">
+          <p class="stat-label">Goal Progress</p>
+          <p id="goalProgress" class="stat-value">0 / 60 min</p>
+        </article>
+      </div>
+
+      <article class="chart-card">
+        <div class="chart-head">
+          <h3>Last 60 Days (minutes)</h3>
+          <p id="chartSummary"></p>
+        </div>
+        <div id="studyGraph" class="study-graph" aria-label="Study minutes graph"></div>
+      </article>
+
+      <article class="chart-card">
+        <div class="chart-head">
+          <h3>Weekly Time by Tag</h3>
+          <p id="tagSummary"></p>
+        </div>
+        <div id="tagBreakdownList" class="tag-breakdown-list"></div>
+      </article>
+
+      <article class="chart-card">
+        <div class="chart-head">
+          <h3>Achievements</h3>
+          <p id="achievementSummary">0 / 10 unlocked</p>
+        </div>
+        <div id="achievementsGrid" class="achievements-grid" aria-label="Streak achievements"></div>
+      </article>
+    </section>
+
+    <section id="settingsSection" class="panel card hidden">
+      <div class="panel-heading">
+        <h2>Settings</h2>
+        <p>Tune study length, break length, color mode, and alarm behavior.</p>
+      </div>
+
+      <form id="settingsForm" class="settings-form">
+        <label>
+          Study minutes
+          <input id="studyMinutesSetting" type="number" min="1" max="240" />
+        </label>
+
+        <label>
+          Break minutes
+          <input id="breakMinutesSetting" type="number" min="1" max="120" />
+        </label>
+
+        <label>
+          Daily goal minutes
+          <input id="dailyGoalMinutesSetting" type="number" min="10" max="600" />
+        </label>
+
+        <label>
+          Color mode
+          <select id="themeSetting">
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </label>
+
+        <label>
+          Focus mode
+          <select id="focusModeSetting">
+            <option value="partial">Partial focus (gentle reminders)</option>
+            <option value="complete">Complete focus (strict mode)</option>
+          </select>
+        </label>
+
+        <label>
+          Alarm sound
+          <select id="alarmModeSetting">
+            <option value="mixkit_chime">Mixkit Quick Chime</option>
+            <option value="mixkit_facility">Mixkit Facility Alarm</option>
+            <option value="mixkit_spaceship">Mixkit Spaceship Alarm</option>
+            <option value="mixkit_waiting">Mixkit Waiting Ringtone</option>
+            <option value="commons">Free API random (Wikimedia)</option>
+            <option value="soft">Soft tone</option>
+            <option value="bell">Bell tone</option>
+            <option value="custom">Custom URL</option>
+          </select>
+        </label>
+
+        <label id="customAlarmRow" class="hidden">
+          Custom alarm URL
+          <input id="customAlarmUrlSetting" type="url" placeholder="https://example.com/alarm.mp3" />
+        </label>
+
+        <label class="youtube-music-row">
+          Music URL (YouTube or direct MP3/WAV)
+          <input id="youtubeMusicUrlSetting" type="url" placeholder="https://www.youtube.com/watch?v=... or https://.../track.mp3" />
+        </label>
+
+        <label>
+          Built-in lofi preset
+          <select id="lofiPresetSelect">
+            <option value="">None</option>
+          </select>
+        </label>
+
+        <label>
+          Or choose local audio file
+          <input id="localMusicFileInput" type="file" accept="audio/*" />
+        </label>
+
+        <div class="settings-actions">
+          <button type="submit" class="btn btn-primary">Save Settings</button>
+          <button id="testAlarmBtn" type="button" class="btn btn-glass">Test Alarm</button>
+          <button id="loadMusicBtn" type="button" class="btn btn-glass">Load Music</button>
+          <button id="playMusic" type="button" class="btn btn-glass">Play Background Music</button>
+          <button id="stopMusicBtn" type="button" class="btn btn-glass">Stop Music</button>
+        </div>
+      </form>
+
+      <p id="settingsMessage" class="settings-message" role="status" aria-live="polite"></p>
+    </section>
+
+    <section id="favouritesSection" class="panel card hidden">
+      <div class="panel-heading">
+        <h2>Sanctuary Favourites</h2>
+        <p>Saved scriptures and encouragements for future sessions.</p>
+      </div>
+
+      <div id="favouritesList" class="favourites-list"></div>
+    </section>
+  </main>
+
+  <aside id="miniTimerWidget" class="mini-timer hidden" aria-live="polite">
+    <p id="miniTimerPhase" class="mini-timer-phase">Study</p>
+    <p id="miniTimerTime" class="mini-timer-time">25:00</p>
+    <button id="miniTimerGoBtn" class="mini-timer-btn" type="button">Open Study</button>
+  </aside>
+
+  <aside id="musicDock" class="music-dock hidden">
+    <div class="music-dock-head">
+      <p id="musicDockTitle">Background Music</p>
+      <div class="music-dock-actions">
+        <button id="musicDockMinBtn" class="music-dock-icon-btn music-dock-min" type="button" aria-label="Minimize music player" title="Minimize music player">
+          <span class="icon-wrap" data-icon="minimize" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14" />
+            </svg>
+          </span>
+          <span class="icon-wrap hidden" data-icon="expand" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 9V3h6M21 9V3h-6M3 15v6h6M21 15v6h-6" />
+            </svg>
+          </span>
+        </button>
+        <button id="musicDockPlayPauseBtn" class="music-dock-icon-btn music-dock-playpause" type="button" aria-label="Play music" title="Play music">
+          <span class="icon-wrap" data-icon="play" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="icon-svg" fill="currentColor" stroke="none">
+              <path d="M8 6v12l10-6z" />
+            </svg>
+          </span>
+          <span class="icon-wrap hidden" data-icon="pause" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="icon-svg" fill="currentColor" stroke="none">
+              <path d="M8 6h3v12H8zM13 6h3v12h-3z" />
+            </svg>
+          </span>
+        </button>
+        <button id="musicDockCloseBtn" class="music-dock-icon-btn music-dock-close" type="button" aria-label="Stop and close music" title="Stop and close music">
+          <span class="icon-wrap" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="icon-svg" fill="currentColor" stroke="none">
+              <path d="M7 7h10v10H7z" />
+            </svg>
+          </span>
+        </button>
+      </div>
+    </div>
+    <p id="musicDockLabel" class="music-dock-label"></p>
+    <button id="musicOpenExternalBtn" class="music-open-external hidden" type="button">Open on YouTube</button>
+    <div id="musicFrameWrap" class="music-frame-wrap hidden">
+      <div id="musicFrame" class="music-frame" role="region" aria-label="YouTube background music player"></div>
+    </div>
+    <div id="audioPlayerWrap" class="audio-player-wrap hidden">
+      <audio id="bg-audio" controls preload="none" loop></audio>
+    </div>
+  </aside>
+
+  <aside id="motivationToast" class="motivation-toast hidden" role="status" aria-live="polite"></aside>
+
+  <aside id="achievementToast" class="achievement-toast hidden" role="status" aria-live="polite">
+    <div id="achievementToastMedal" class="achievement-toast-medal">1</div>
+    <div class="achievement-toast-copy">
+      <p class="achievement-toast-kicker">Achievement Unlocked</p>
+      <p id="achievementToastTitle" class="achievement-toast-title"></p>
+      <p id="achievementToastMessage" class="achievement-toast-message"></p>
+    </div>
+  </aside>
+
+  <div id="cancelSessionModal" class="cancel-session-modal hidden" role="dialog" aria-modal="true" aria-labelledby="cancelSessionTitle" aria-describedby="cancelSessionMessage">
+    <div class="cancel-session-card">
+      <h3 id="cancelSessionTitle">Cancel study session?</h3>
+      <p id="cancelSessionMessage">This block will not be tracked if you do not finish the full study block. Do you still want to cancel?</p>
+      <div class="cancel-session-actions">
+        <button id="keepSessionBtn" class="btn btn-glass" type="button">Keep Session</button>
+        <button id="confirmCancelSessionBtn" class="btn btn-danger" type="button">Yes, Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
