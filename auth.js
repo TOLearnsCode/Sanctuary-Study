@@ -20,6 +20,7 @@ const authLastNameInput = document.getElementById("authLastNameInput");
 const authEmailInput = document.getElementById("authEmailInput");
 const authDobInput = document.getElementById("authDobInput");
 const authPasswordInput = document.getElementById("authPasswordInput");
+const authSubmitBtn = document.getElementById("authSubmitBtn");
 const authSignInBtn = document.getElementById("authSignInBtn");
 const authSignUpBtn = document.getElementById("authSignUpBtn");
 const authGoogleBtn = document.getElementById("authGoogleBtn");
@@ -27,6 +28,12 @@ const authGuestBtn = document.getElementById("authGuestBtn");
 const authLoading = document.getElementById("authLoading");
 const authLoadingText = document.getElementById("authLoadingText");
 const authMessage = document.getElementById("authMessage");
+const authInlineNote = document.querySelector(".auth-inline-note");
+
+const authNameRow = authFirstNameInput ? authFirstNameInput.closest(".auth-form-row") : null;
+const authDobLabel = authDobInput ? authDobInput.closest("label") : null;
+
+let authFormMode = "signin"; // "signin" | "signup"
 
 // Exported helpers so other modules can call auth actions directly if needed.
 export function signUpWithEmailPassword(email, password) {
@@ -77,12 +84,62 @@ function setAuthMessage(message, isError = false) {
 }
 
 function setAuthButtonsBusy(isBusy) {
-  const targets = [authSignInBtn, authSignUpBtn, authGoogleBtn, authGuestBtn];
+  const targets = [authSubmitBtn, authSignInBtn, authSignUpBtn, authGoogleBtn, authGuestBtn];
   targets.forEach((button) => {
     if (button) {
       button.disabled = isBusy;
     }
   });
+}
+
+function setButtonVariant(button, usePrimary) {
+  if (!button) {
+    return;
+  }
+
+  button.classList.toggle("btn-primary", usePrimary);
+  button.classList.toggle("btn-glass", !usePrimary);
+}
+
+function setAuthFormMode(nextMode) {
+  authFormMode = nextMode === "signup" ? "signup" : "signin";
+  const isSignUp = authFormMode === "signup";
+
+  if (authNameRow) {
+    authNameRow.classList.toggle("hidden", !isSignUp);
+  }
+  if (authDobLabel) {
+    authDobLabel.classList.toggle("hidden", !isSignUp);
+  }
+
+  if (authFirstNameInput) {
+    authFirstNameInput.disabled = !isSignUp;
+    authFirstNameInput.required = isSignUp;
+  }
+  if (authLastNameInput) {
+    authLastNameInput.disabled = !isSignUp;
+    authLastNameInput.required = isSignUp;
+  }
+  if (authDobInput) {
+    authDobInput.disabled = !isSignUp;
+    authDobInput.required = isSignUp;
+  }
+  if (authPasswordInput) {
+    authPasswordInput.setAttribute("autocomplete", isSignUp ? "new-password" : "current-password");
+  }
+
+  setButtonVariant(authSignInBtn, !isSignUp);
+  setButtonVariant(authSignUpBtn, isSignUp);
+
+  if (authSubmitBtn) {
+    authSubmitBtn.textContent = isSignUp ? "Submit Sign Up" : "Submit Sign In";
+  }
+
+  if (authInlineNote) {
+    authInlineNote.textContent = isSignUp
+      ? "Sign up requires first name, surname, date of birth, email, and password."
+      : "Sign in uses email and password only.";
+  }
 }
 
 function setAuthLoading(isLoading, text = "Processing request...") {
@@ -352,7 +409,7 @@ function validateSignUpProfile(input) {
     return "Enter your first name (at least 2 characters).";
   }
   if (!input.lastName || input.lastName.length < 2) {
-    return "Enter your last name (at least 2 characters).";
+    return "Enter your surname (at least 2 characters).";
   }
   if (!isValidDob(input.dob)) {
     return "Enter a valid date of birth.";
@@ -468,28 +525,53 @@ async function onGoogleSignInClick() {
 }
 
 function initializeAuthPageBindings() {
-  if (!authSignInBtn || !authSignUpBtn || !authGoogleBtn || !authForm) {
+  if (!authSignInBtn || !authSignUpBtn || !authGoogleBtn || !authForm || !authSubmitBtn) {
     return;
   }
 
   // Ensure actions are clickable immediately on load.
   setAuthButtonsBusy(false);
   setAuthLoading(false);
+  setAuthFormMode("signin");
 
   authSignInBtn.addEventListener("click", () => {
-    onSignInClick();
+    setAuthFormMode("signin");
+    setAuthMessage("");
+    authEmailInput?.focus();
   });
 
   authSignUpBtn.addEventListener("click", () => {
-    onSignUpClick();
+    setAuthFormMode("signup");
+    setAuthMessage("");
+    authFirstNameInput?.focus();
   });
 
   authGoogleBtn.addEventListener("click", () => {
     onGoogleSignInClick();
   });
 
+  if (authFirstNameInput) {
+    authFirstNameInput.addEventListener("focus", () => {
+      setAuthFormMode("signup");
+    });
+  }
+  if (authLastNameInput) {
+    authLastNameInput.addEventListener("focus", () => {
+      setAuthFormMode("signup");
+    });
+  }
+  if (authDobInput) {
+    authDobInput.addEventListener("focus", () => {
+      setAuthFormMode("signup");
+    });
+  }
+
   authForm.addEventListener("submit", (event) => {
     event.preventDefault();
+    if (authFormMode === "signup") {
+      onSignUpClick();
+      return;
+    }
     onSignInClick();
   });
 }
@@ -507,6 +589,10 @@ function initializeAuthBridge() {
       return;
     }
 
+    setAuthFormMode("signin");
+    if (authPasswordInput) {
+      authPasswordInput.value = "";
+    }
     emitAuthChanged({ mode: "signed_out" });
   });
 

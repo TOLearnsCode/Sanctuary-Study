@@ -384,6 +384,10 @@ body[data-theme="dark"] .nav-btn.active {
   box-shadow: 0 0 0 3px rgba(79, 140, 99, 0.2);
 }
 
+.auth-submit-btn {
+  margin-top: 4px;
+}
+
 .auth-gate-actions {
   display: flex;
   gap: 10px;
