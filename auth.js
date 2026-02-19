@@ -17,7 +17,7 @@ import {
 
 const USER_PROFILES_KEY = "sanctuaryUserProfilesV1";
 const AUTH_REQUEST_TIMEOUT_MS = 10000;
-const EMAIL_SEND_TIMEOUT_MS = 7000;
+const EMAIL_SEND_TIMEOUT_MS = 12000;
 const EMAIL_SEND_RETRY_DELAY_MS = 900;
 const POLICY_CHECK_TIMEOUT_MS = 4500;
 const VERIFICATION_RESEND_COOLDOWN_MS = 20000;
@@ -926,7 +926,8 @@ function initializeAuthBridge() {
           return;
         }
 
-        const verificationResult = await sendVerificationEmailIfPossible(activeUser);
+        // Do not auto-send here: repeated background sends can trigger Firebase throttling.
+        const verificationResult = { ok: false, reason: "manual-send-required" };
         setVerificationRequiredEmail(String(activeUser.email || "").trim());
 
         try {

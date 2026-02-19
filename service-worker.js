@@ -1,4 +1,4 @@
-const CACHE_NAME = "sanctuary-study-core-v1";
+const CACHE_NAME = "sanctuary-study-core-v2";
 const CORE_ASSETS = [
   "/",
   "/index.html",
@@ -11,6 +11,14 @@ const CORE_ASSETS = [
   "/favicon-32x32.png",
   "/apple-touch-icon.png"
 ];
+const APP_SHELL_PATHS = new Set([
+  "/",
+  "/index.html",
+  "/style.css",
+  "/app.js",
+  "/auth.js",
+  "/firebase.js"
+]);
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -38,6 +46,39 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  const requestUrl = new URL(event.request.url);
+  const isSameOrigin = requestUrl.origin === self.location.origin;
+  const isAppShellRequest = isSameOrigin && APP_SHELL_PATHS.has(requestUrl.pathname);
+
+  // Keep auth/app logic fresh after deploys: try network first for core shell files.
+  if (isAppShellRequest) {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache).catch(() => {
+                // Ignore cache write issues for non-critical resources.
+              });
+            });
+          }
+          return networkResponse;
+        })
+        .catch(async () => {
+          const cachedResponse = await caches.match(event.request);
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          if (event.request.mode === "navigate") {
+            return caches.match("/index.html");
+          }
+          return caches.match("/");
+        })
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
@@ -46,7 +87,6 @@ self.addEventListener("fetch", (event) => {
 
       return fetch(event.request)
         .then((networkResponse) => {
-          const requestUrl = new URL(event.request.url);
           if (requestUrl.origin === self.location.origin && networkResponse && networkResponse.status === 200) {
             const responseToCache = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => {
