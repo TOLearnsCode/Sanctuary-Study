@@ -525,7 +525,7 @@ async function onGoogleSignInClick() {
 }
 
 function initializeAuthPageBindings() {
-  if (!authSignInBtn || !authSignUpBtn || !authGoogleBtn || !authForm || !authSubmitBtn) {
+  if (!authSignInBtn || !authSignUpBtn || !authForm || !authSubmitBtn) {
     return;
   }
 
@@ -546,9 +546,11 @@ function initializeAuthPageBindings() {
     authFirstNameInput?.focus();
   });
 
-  authGoogleBtn.addEventListener("click", () => {
-    onGoogleSignInClick();
-  });
+  if (authGoogleBtn) {
+    authGoogleBtn.addEventListener("click", () => {
+      onGoogleSignInClick();
+    });
+  }
 
   if (authFirstNameInput) {
     authFirstNameInput.addEventListener("focus", () => {
