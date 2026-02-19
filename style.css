@@ -1527,6 +1527,41 @@ body[data-theme="dark"] .settings-message.error {
   line-height: 1.3;
 }
 
+.update-bar {
+  position: fixed;
+  left: 50%;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  padding: 10px 16px;
+  background: #111827;
+  color: #f9fafb;
+  border-radius: 999px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  z-index: 9999;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.32);
+  width: fit-content;
+  max-width: calc(100% - 20px);
+}
+
+.update-bar button {
+  background: #10b981;
+  border: none;
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  transition: transform 0.15s ease, filter 0.2s ease;
+}
+
+.update-bar button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
 .mini-timer {
   position: fixed;
   right: 18px;
@@ -2358,6 +2393,19 @@ body[data-theme="dark"] .btn-danger {
   #analyticsSection .achievements-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
+  }
+
+  .update-bar {
+    width: calc(100% - 16px);
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .update-bar button {
+    font-size: 13px;
+    padding: 6px 10px;
   }
 
   .app-shell {

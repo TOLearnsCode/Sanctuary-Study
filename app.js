@@ -417,6 +417,9 @@ let userDocUnsubscribe = null;
 let userDocSyncTimerId = null;
 let userDocApplyingRemote = false;
 let analyticsResizeTimeoutId = null;
+let pendingServiceWorkerRegistration = null;
+let updateBarElement = null;
+let reloadOnControllerChangeArmed = false;
 
 let currentFocus = {
   theme: selectedStudyTheme,
@@ -467,6 +470,106 @@ function init() {
   renderSessionNotes();
   loadScriptureOfTheDay();
   initializeAuthenticationFlow();
+  registerServiceWorkerWithUpdatePrompt();
+}
+
+function registerServiceWorkerWithUpdatePrompt() {
+  if (!("serviceWorker" in navigator)) {
+    return;
+  }
+
+  const secureContextLike = window.location.protocol === "https:"
+    || window.location.hostname === "localhost"
+    || window.location.hostname === "127.0.0.1";
+
+  if (!secureContextLike) {
+    return;
+  }
+
+  window.addEventListener("load", async () => {
+    try {
+      const registration = await navigator.serviceWorker.register("/service-worker.js");
+
+      if (registration.waiting) {
+        showUpdateBanner(registration);
+      }
+
+      registration.addEventListener("updatefound", () => {
+        const newWorker = registration.installing;
+        if (!newWorker) {
+          return;
+        }
+
+        newWorker.addEventListener("statechange", () => {
+          if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+            showUpdateBanner(registration);
+          }
+        });
+      });
+    } catch (error) {
+      console.warn("Service worker registration failed.", error);
+    }
+  });
+}
+
+function showUpdateBanner(registration) {
+  pendingServiceWorkerRegistration = registration;
+
+  if (updateBarElement) {
+    return;
+  }
+
+  const bar = document.createElement("div");
+  bar.className = "update-bar";
+  bar.setAttribute("role", "status");
+  bar.setAttribute("aria-live", "polite");
+
+  const text = document.createElement("span");
+  text.textContent = "New version of Sanctuary Study available.";
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = "Refresh";
+  button.addEventListener("click", requestServiceWorkerRefresh);
+
+  bar.appendChild(text);
+  bar.appendChild(button);
+  document.body.appendChild(bar);
+
+  updateBarElement = bar;
+}
+
+function removeUpdateBanner() {
+  if (!updateBarElement) {
+    return;
+  }
+
+  updateBarElement.remove();
+  updateBarElement = null;
+}
+
+function requestServiceWorkerRefresh() {
+  const registration = pendingServiceWorkerRegistration;
+  removeUpdateBanner();
+
+  if (!registration || !registration.waiting) {
+    window.location.reload();
+    return;
+  }
+
+  if (!reloadOnControllerChangeArmed) {
+    reloadOnControllerChangeArmed = true;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!reloadOnControllerChangeArmed) {
+        return;
+      }
+
+      reloadOnControllerChangeArmed = false;
+      window.location.reload();
+    }, { once: true });
+  }
+
+  registration.waiting.postMessage({ type: "SKIP_WAITING" });
 }
 
 function hasAppAccess() {
