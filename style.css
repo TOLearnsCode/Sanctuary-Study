@@ -1139,6 +1139,108 @@ body[data-theme="dark"] .phase-badge.break {
   color: var(--muted);
 }
 
+.plan-progress-track {
+  width: 100%;
+  height: 11px;
+  border-radius: 999px;
+  background: rgba(127, 114, 98, 0.18);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.plan-progress-fill {
+  width: 0%;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--bar);
+  transition: width 0.25s ease;
+}
+
+.weekly-plan-breakdown {
+  display: grid;
+  gap: 6px;
+}
+
+.plan-day-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--glass);
+  padding: 7px 10px;
+}
+
+.plan-day-label,
+.plan-day-value {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.plan-day-label {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.plan-day-value {
+  color: var(--muted);
+}
+
+.insights-list,
+.tag-trend-list {
+  display: grid;
+  gap: 8px;
+}
+
+.tag-trend-list {
+  margin-top: 8px;
+}
+
+.insight-item,
+.tag-trend-row {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--glass);
+  padding: 9px 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.insight-label,
+.insight-value,
+.tag-trend-name,
+.tag-trend-change {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.insight-label,
+.tag-trend-name {
+  color: var(--muted);
+}
+
+.insight-value {
+  color: var(--text);
+  font-weight: 700;
+  text-align: right;
+}
+
+.tag-trend-change {
+  text-align: right;
+  font-weight: 700;
+}
+
+.tag-trend-change.positive {
+  color: #2f8f5b;
+}
+
+.tag-trend-change.negative {
+  color: #b04a4a;
+}
+
 .achievements-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -1232,6 +1334,75 @@ body[data-theme="dark"] .phase-badge.break {
   grid-column: 1 / -1;
 }
 
+.settings-subpanel {
+  grid-column: 1 / -1;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card-strong);
+  padding: 12px;
+  display: grid;
+  gap: 9px;
+}
+
+.settings-subpanel-title {
+  margin: 0;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.settings-subpanel-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.settings-subpanel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.weekly-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.weekly-plan-grid label {
+  font-size: 0.8rem;
+  gap: 5px;
+}
+
+.weekly-plan-grid input {
+  padding: 8px 9px;
+}
+
+.reminder-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.reminder-grid label {
+  font-size: 0.82rem;
+}
+
+.toggle-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.84rem;
+  color: var(--muted);
+}
+
+.toggle-inline input {
+  margin: 0;
+  width: 16px;
+  height: 16px;
+}
+
 .settings-form input,
 .settings-form select {
   border: 1px solid var(--line);
@@ -1280,6 +1451,71 @@ body[data-theme="dark"] .phase-badge.break {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.sync-status-card {
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card-strong);
+  padding: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.sync-status-card h3 {
+  margin: 0;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 1.35rem;
+}
+
+.sync-status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sync-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--muted);
+  box-shadow: 0 0 0 4px rgba(127, 114, 98, 0.12);
+}
+
+.sync-status-dot.online {
+  background: #2f8f5b;
+  box-shadow: 0 0 0 4px rgba(47, 143, 91, 0.18);
+}
+
+.sync-status-dot.offline {
+  background: #a77838;
+  box-shadow: 0 0 0 4px rgba(167, 120, 56, 0.18);
+}
+
+.sync-status-dot.syncing {
+  background: #3f7bd9;
+  box-shadow: 0 0 0 4px rgba(63, 123, 217, 0.18);
+}
+
+.sync-status-dot.error {
+  background: #b04a4a;
+  box-shadow: 0 0 0 4px rgba(176, 74, 74, 0.18);
+}
+
+.sync-status-primary,
+.sync-status-secondary {
+  margin: 0;
+}
+
+.sync-status-primary {
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.sync-status-secondary {
+  font-size: 0.82rem;
+  color: var(--muted);
 }
 
 .settings-message {
@@ -1525,6 +1761,36 @@ body[data-theme="dark"] .settings-message.error {
   color: var(--muted);
   font-size: 0.88rem;
   line-height: 1.3;
+}
+
+.session-review-prompt {
+  position: fixed;
+  left: 50%;
+  bottom: 166px;
+  transform: translateX(-50%);
+  width: min(560px, calc(100% - 24px));
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card-strong);
+  box-shadow: 0 18px 34px rgba(33, 25, 15, 0.2);
+  padding: 12px 14px;
+  display: grid;
+  gap: 10px;
+  z-index: 42;
+}
+
+.session-review-title {
+  margin: 0;
+  font-size: 0.94rem;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.session-review-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .update-bar {
@@ -2054,6 +2320,14 @@ body[data-theme="dark"] .btn-danger {
     grid-template-columns: 1fr;
   }
 
+  .weekly-plan-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .reminder-grid {
+    grid-template-columns: 1fr;
+  }
+
   .settings-actions {
     justify-content: center;
   }
@@ -2108,6 +2382,18 @@ body[data-theme="dark"] .btn-danger {
 
   .achievement-toast-copy {
     justify-items: center;
+  }
+
+  .session-review-prompt {
+    bottom: 128px;
+  }
+
+  .session-review-actions {
+    justify-content: stretch;
+  }
+
+  .session-review-actions .btn {
+    flex: 1 1 100%;
   }
 
   .motivation-toast {
@@ -2353,6 +2639,19 @@ body[data-theme="dark"] .btn-danger {
     word-break: break-word;
   }
 
+  #analyticsSection .insight-item,
+  #analyticsSection .tag-trend-row {
+    padding: 8px 9px;
+    gap: 8px;
+  }
+
+  #analyticsSection .insight-label,
+  #analyticsSection .insight-value,
+  #analyticsSection .tag-trend-name,
+  #analyticsSection .tag-trend-change {
+    font-size: 0.74rem;
+  }
+
   #analyticsSection .study-graph {
     min-height: 168px;
     gap: 4px;
@@ -2393,6 +2692,36 @@ body[data-theme="dark"] .btn-danger {
   #analyticsSection .achievements-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
+  }
+
+  .weekly-plan-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .settings-subpanel {
+    padding: 10px;
+  }
+
+  .settings-subpanel-title {
+    font-size: 1.02rem;
+  }
+
+  .sync-status-primary {
+    font-size: 0.84rem;
+  }
+
+  .sync-status-secondary {
+    font-size: 0.76rem;
+  }
+
+  .session-review-prompt {
+    bottom: 126px;
+    width: calc(100% - 14px);
+    padding: 10px 11px;
+  }
+
+  .session-review-title {
+    font-size: 0.86rem;
   }
 
   .update-bar {
@@ -2454,6 +2783,14 @@ body[data-theme="dark"] .btn-danger {
 
   #analyticsSection .graph-bar {
     width: 8px;
+  }
+
+  .weekly-plan-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .session-review-prompt {
+    bottom: 118px;
   }
 
   .auth-title,

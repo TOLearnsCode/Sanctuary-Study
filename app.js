@@ -18,10 +18,13 @@ const FAVOURITES_KEY = "sanctuaryFavouritesV1";
 const DAILY_SCRIPTURE_CACHE_KEY = "sanctuaryDailyScriptureV1";
 const DAILY_SCRIPTURE_HISTORY_KEY = "sanctuaryDailyScriptureHistoryV1";
 const SESSION_NOTES_KEY = "sanctuarySessionNotesV1";
+const SESSION_HISTORY_KEY = "sanctuarySessionHistoryV1";
 const ACHIEVEMENTS_KEY = "sanctuaryAchievementsV1";
 const GUEST_MODE_KEY = "sanctuaryGuestModeV1";
 const THEME_PREF_KEY = "theme";
 const LAST_SYNCED_UID_KEY = "sanctuaryLastAnalyticsUidV1";
+const LAST_SUCCESSFUL_SYNC_AT_KEY = "sanctuaryLastSuccessfulSyncAtV1";
+const REMINDER_LAST_SENT_KEY = "sanctuaryReminderLastSentV1";
 const CLOUD_SYNC_DOC_NAME = "appData";
 const CLOUD_SYNC_DEBOUNCE_MS = 900;
 const USER_DOC_SYNC_DEBOUNCE_MS = 750;
@@ -35,6 +38,7 @@ const POPUP_SECONDS = 5;
 const TOAST_SHOW_MS = 4200;
 const SCRIPTURE_HISTORY_LIMIT = 14;
 const CLOUD_HYDRATE_COOLDOWN_MS = 6000;
+const REMINDER_CHECK_INTERVAL_MS = 30000;
 
 const BIBLE_API_BASE_URL = "https://bible-api.com/";
 const COMMONS_API_BASE_URL = "https://commons.wikimedia.org/w/api.php";
@@ -221,10 +225,27 @@ const STREAK_ACHIEVEMENTS = [
   }
 ];
 
+const WEEKDAY_PLAN_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+const WEEKDAY_PLAN_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const DEFAULT_WEEKLY_PLAN_TARGETS = {
+  mon: 60,
+  tue: 60,
+  wed: 60,
+  thu: 60,
+  fri: 60,
+  sat: 40,
+  sun: 40
+};
+
 const defaultSettings = {
   studyMinutes: 25,
   breakMinutes: 5,
   dailyGoalMinutes: 60,
+  weeklyPlanTargets: { ...DEFAULT_WEEKLY_PLAN_TARGETS },
+  remindersEnabled: false,
+  reminderTime: "19:00",
+  quietHoursStart: "22:00",
+  quietHoursEnd: "07:00",
   theme: "dark",
   focusMode: "partial",
   alarmMode: "mixkit_chime",
@@ -314,10 +335,16 @@ const totalHoursEl = document.getElementById("totalHours");
 const streakDaysEl = document.getElementById("streakDays");
 const studyDaysEl = document.getElementById("studyDays");
 const goalProgressEl = document.getElementById("goalProgress");
+const weeklyPlanSummaryEl = document.getElementById("weeklyPlanSummary");
+const weeklyPlanProgressFillEl = document.getElementById("weeklyPlanProgressFill");
+const weeklyPlanBreakdownEl = document.getElementById("weeklyPlanBreakdown");
 const chartSummaryEl = document.getElementById("chartSummary");
 const studyGraphEl = document.getElementById("studyGraph");
 const tagSummaryEl = document.getElementById("tagSummary");
 const tagBreakdownListEl = document.getElementById("tagBreakdownList");
+const deepInsightsSummaryEl = document.getElementById("deepInsightsSummary");
+const deepInsightsListEl = document.getElementById("deepInsightsList");
+const tagTrendListEl = document.getElementById("tagTrendList");
 const achievementSummaryEl = document.getElementById("achievementSummary");
 const achievementsGridEl = document.getElementById("achievementsGrid");
 
@@ -325,6 +352,18 @@ const settingsForm = document.getElementById("settingsForm");
 const studyMinutesSetting = document.getElementById("studyMinutesSetting");
 const breakMinutesSetting = document.getElementById("breakMinutesSetting");
 const dailyGoalMinutesSetting = document.getElementById("dailyGoalMinutesSetting");
+const weeklyPlanMonSetting = document.getElementById("weeklyPlanMonSetting");
+const weeklyPlanTueSetting = document.getElementById("weeklyPlanTueSetting");
+const weeklyPlanWedSetting = document.getElementById("weeklyPlanWedSetting");
+const weeklyPlanThuSetting = document.getElementById("weeklyPlanThuSetting");
+const weeklyPlanFriSetting = document.getElementById("weeklyPlanFriSetting");
+const weeklyPlanSatSetting = document.getElementById("weeklyPlanSatSetting");
+const weeklyPlanSunSetting = document.getElementById("weeklyPlanSunSetting");
+const remindersEnabledSetting = document.getElementById("remindersEnabledSetting");
+const reminderTimeSetting = document.getElementById("reminderTimeSetting");
+const quietHoursStartSetting = document.getElementById("quietHoursStartSetting");
+const quietHoursEndSetting = document.getElementById("quietHoursEndSetting");
+const enableReminderPermissionBtn = document.getElementById("enableReminderPermissionBtn");
 const themeSetting = document.getElementById("themeSetting");
 const focusModeSetting = document.getElementById("focusModeSetting");
 const alarmModeSetting = document.getElementById("alarmModeSetting");
@@ -342,6 +381,9 @@ const accountSettingsCard = document.getElementById("accountSettingsCard");
 const accountSettingsStatus = document.getElementById("accountSettingsStatus");
 const settingsSignOutBtn = document.getElementById("settingsSignOutBtn");
 const settingsDeleteAccountBtn = document.getElementById("settingsDeleteAccountBtn");
+const syncStatusDot = document.getElementById("syncStatusDot");
+const syncStatusPrimary = document.getElementById("syncStatusPrimary");
+const syncStatusSecondary = document.getElementById("syncStatusSecondary");
 
 const favouritesList = document.getElementById("favouritesList");
 const motivationToast = document.getElementById("motivationToast");
@@ -349,6 +391,10 @@ const achievementToast = document.getElementById("achievementToast");
 const achievementToastMedal = document.getElementById("achievementToastMedal");
 const achievementToastTitle = document.getElementById("achievementToastTitle");
 const achievementToastMessage = document.getElementById("achievementToastMessage");
+const sessionReviewPrompt = document.getElementById("sessionReviewPrompt");
+const reviewFocusedBtn = document.getElementById("reviewFocusedBtn");
+const reviewDistractedBtn = document.getElementById("reviewDistractedBtn");
+const reviewSkipBtn = document.getElementById("reviewSkipBtn");
 const cancelSessionModal = document.getElementById("cancelSessionModal");
 const cancelSessionMessage = document.getElementById("cancelSessionMessage");
 const keepSessionBtn = document.getElementById("keepSessionBtn");
@@ -417,6 +463,11 @@ let userDocUnsubscribe = null;
 let userDocSyncTimerId = null;
 let userDocApplyingRemote = false;
 let analyticsResizeTimeoutId = null;
+let reminderIntervalId = null;
+let lastReminderSentDayKey = loadLastReminderSentDayKey();
+let lastSuccessfulSyncAt = loadLastSuccessfulSyncAt();
+let syncIndicatorState = "idle"; // "idle" | "syncing" | "error"
+let pendingSessionReviewId = null;
 let pendingServiceWorkerRegistration = null;
 let updateBarElement = null;
 let reloadOnControllerChangeArmed = false;
@@ -468,6 +519,8 @@ function init() {
   initializeMusicDock();
   syncMusicPlayPauseButton();
   renderSessionNotes();
+  renderSyncStatus();
+  initializeReminderScheduler();
   loadScriptureOfTheDay();
   initializeAuthenticationFlow();
   registerServiceWorkerWithUpdatePrompt();
@@ -572,6 +625,214 @@ function requestServiceWorkerRefresh() {
   registration.waiting.postMessage({ type: "SKIP_WAITING" });
 }
 
+function loadLastSuccessfulSyncAt() {
+  const raw = String(localStorage.getItem(LAST_SUCCESSFUL_SYNC_AT_KEY) || "").trim();
+  if (!raw) {
+    return "";
+  }
+
+  const timestamp = Date.parse(raw);
+  if (!Number.isFinite(timestamp)) {
+    return "";
+  }
+
+  return new Date(timestamp).toISOString();
+}
+
+function saveLastSuccessfulSyncAt(isoString) {
+  const safeIso = String(isoString || "").trim();
+  if (!safeIso) {
+    localStorage.removeItem(LAST_SUCCESSFUL_SYNC_AT_KEY);
+    return;
+  }
+
+  localStorage.setItem(LAST_SUCCESSFUL_SYNC_AT_KEY, safeIso);
+}
+
+function loadLastReminderSentDayKey() {
+  const raw = String(localStorage.getItem(REMINDER_LAST_SENT_KEY) || "").trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : "";
+}
+
+function saveLastReminderSentDayKey(dayKey) {
+  const safeDayKey = String(dayKey || "").trim();
+  if (!safeDayKey) {
+    localStorage.removeItem(REMINDER_LAST_SENT_KEY);
+    return;
+  }
+  localStorage.setItem(REMINDER_LAST_SENT_KEY, safeDayKey);
+}
+
+function setSyncIndicatorState(state) {
+  const safeState = state === "syncing" || state === "error" ? state : "idle";
+  syncIndicatorState = safeState;
+  renderSyncStatus();
+}
+
+function markSuccessfulSync(isoString = new Date().toISOString()) {
+  lastSuccessfulSyncAt = String(isoString || "").trim();
+  saveLastSuccessfulSyncAt(lastSuccessfulSyncAt);
+  syncIndicatorState = "idle";
+  renderSyncStatus();
+}
+
+function formatSyncTime(isoString) {
+  const timestamp = Date.parse(String(isoString || ""));
+  if (!Number.isFinite(timestamp)) {
+    return "Never";
+  }
+
+  return new Date(timestamp).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  });
+}
+
+function renderSyncStatus() {
+  if (!syncStatusPrimary || !syncStatusSecondary || !syncStatusDot) {
+    return;
+  }
+
+  const online = navigator.onLine;
+  syncStatusDot.classList.remove("online", "offline", "syncing", "error");
+
+  if (!canUseAnalyticsFeatures()) {
+    syncStatusDot.classList.add("offline");
+    syncStatusPrimary.textContent = "Sign in to enable cloud sync.";
+    syncStatusSecondary.textContent = "Last synced: --";
+    return;
+  }
+
+  if (!online) {
+    syncStatusDot.classList.add("offline");
+    syncStatusPrimary.textContent = "Offline. Changes will sync when you reconnect.";
+    syncStatusSecondary.textContent = `Last synced: ${formatSyncTime(lastSuccessfulSyncAt)}`;
+    return;
+  }
+
+  if (syncIndicatorState === "syncing") {
+    syncStatusDot.classList.add("syncing");
+    syncStatusPrimary.textContent = "Syncing study data...";
+    syncStatusSecondary.textContent = `Last synced: ${formatSyncTime(lastSuccessfulSyncAt)}`;
+    return;
+  }
+
+  if (syncIndicatorState === "error") {
+    syncStatusDot.classList.add("error");
+    syncStatusPrimary.textContent = "Sync delayed. Sanctuary will retry automatically.";
+    syncStatusSecondary.textContent = `Last synced: ${formatSyncTime(lastSuccessfulSyncAt)}`;
+    return;
+  }
+
+  syncStatusDot.classList.add("online");
+  syncStatusPrimary.textContent = lastSuccessfulSyncAt
+    ? "Cloud sync is up to date."
+    : "Cloud sync is ready for your first saved update.";
+  syncStatusSecondary.textContent = `Last synced: ${formatSyncTime(lastSuccessfulSyncAt)}`;
+}
+
+function sanitizeTimeInput(value, fallback) {
+  const safeValue = String(value || "").trim();
+  if (/^\d{2}:\d{2}$/.test(safeValue)) {
+    const [hours, minutes] = safeValue.split(":").map(Number);
+    if (Number.isFinite(hours) && Number.isFinite(minutes) && hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
+      return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+    }
+  }
+
+  return fallback;
+}
+
+function timeStringToMinutes(timeString) {
+  const safe = sanitizeTimeInput(timeString, "00:00");
+  const [hours, minutes] = safe.split(":").map(Number);
+  return (hours * 60) + minutes;
+}
+
+function isInsideQuietHours(nowDate, startTime, endTime) {
+  const start = timeStringToMinutes(startTime);
+  const end = timeStringToMinutes(endTime);
+  const nowMinutes = (nowDate.getHours() * 60) + nowDate.getMinutes();
+
+  if (start === end) {
+    return false;
+  }
+  if (start < end) {
+    return nowMinutes >= start && nowMinutes < end;
+  }
+
+  return nowMinutes >= start || nowMinutes < end;
+}
+
+function initializeReminderScheduler() {
+  if (reminderIntervalId) {
+    window.clearInterval(reminderIntervalId);
+  }
+
+  reminderIntervalId = window.setInterval(() => {
+    maybeSendStudyReminder();
+  }, REMINDER_CHECK_INTERVAL_MS);
+
+  maybeSendStudyReminder();
+}
+
+function maybeSendStudyReminder() {
+  if (!settings.remindersEnabled) {
+    return;
+  }
+
+  if (!("Notification" in window) || Notification.permission !== "granted") {
+    return;
+  }
+
+  const now = new Date();
+  if (isInsideQuietHours(now, settings.quietHoursStart, settings.quietHoursEnd)) {
+    return;
+  }
+
+  const nowTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  if (nowTime !== settings.reminderTime) {
+    return;
+  }
+
+  const todayKey = getDateKey(now);
+  if (lastReminderSentDayKey === todayKey) {
+    return;
+  }
+
+  lastReminderSentDayKey = todayKey;
+  saveLastReminderSentDayKey(todayKey);
+
+  new Notification("Sanctuary Study", {
+    body: "It is time for your next study session. Stay steady and focused."
+  });
+
+  showToastMessage("Study reminder sent.");
+}
+
+function requestStudyReminderPermission() {
+  if (!("Notification" in window)) {
+    showSettingsError("This browser does not support notifications.");
+    return;
+  }
+
+  Notification.requestPermission()
+    .then((permission) => {
+      if (permission === "granted") {
+        showSettingsSuccess("Notifications enabled for study reminders.");
+        maybeSendStudyReminder();
+        return;
+      }
+
+      showSettingsError("Notification permission was not granted.");
+    })
+    .catch(() => {
+      showSettingsError("Could not request notification permission.");
+    });
+}
+
 function hasAppAccess() {
   return authMode === "guest" || authMode === "user";
 }
@@ -608,6 +869,7 @@ function showAuthScreen(message = "") {
   clearInterval(popupIntervalId);
   popupIntervalId = null;
   versePopup.classList.add("hidden");
+  closeSessionReviewPrompt();
   document.body.classList.remove("popup-open");
   updateTimerButtons();
   updateSessionStatus();
@@ -623,6 +885,7 @@ function showAuthScreen(message = "") {
   setAuthMessage(message, false);
   updateMiniTimerWidget();
   updateAuthUi();
+  renderSyncStatus();
 }
 
 function updateAuthUi() {
@@ -709,6 +972,7 @@ function initializeAuthenticationFlow() {
       syncAchievementsWithCurrentStreak();
       renderAnalytics();
       updateAuthUi();
+      renderSyncStatus();
       void startUserDocRealtimeSync(currentUser.uid);
       void hydrateAnalyticsFromCloud(currentUser.uid).then((hydrated) => {
         if (!hydrated) {
@@ -719,6 +983,7 @@ function initializeAuthenticationFlow() {
         renderAnalytics();
         renderFavourites();
         scheduleCloudAnalyticsSync("post-hydrate");
+        renderSyncStatus();
       });
       return;
     }
@@ -733,12 +998,14 @@ function initializeAuthenticationFlow() {
         showHomeView({ forceStopTypeEffect: true });
         renderAnalytics();
         updateAuthUi();
+        renderSyncStatus();
         return;
       }
 
       showAuthScreen("Sign in with email and password, or continue as guest.");
       renderAnalytics();
       updateAuthUi();
+      renderSyncStatus();
     }
   };
 
@@ -756,12 +1023,14 @@ function initializeAuthenticationFlow() {
     showHomeView({ forceStopTypeEffect: true });
     renderAnalytics();
     updateAuthUi();
+    renderSyncStatus();
     return;
   }
 
   showAuthScreen("Sign in with email and password, or continue as guest.");
   renderAnalytics();
   updateAuthUi();
+  renderSyncStatus();
 }
 
 function resetCloudSyncState() {
@@ -786,6 +1055,7 @@ function resetCloudSyncState() {
   cloudSyncQueued = false;
   cloudSyncHydrating = false;
   lastCloudHydrateAt = 0;
+  syncIndicatorState = "idle";
 }
 
 function sanitizeStudyLog(logInput) {
@@ -857,6 +1127,54 @@ function sanitizeAchievementMap(input) {
   return clean;
 }
 
+function sanitizeSessionHistory(input) {
+  if (!Array.isArray(input)) {
+    return [];
+  }
+
+  const byId = new Map();
+  input.forEach((entry) => {
+    if (!entry || typeof entry !== "object") {
+      return;
+    }
+
+    const id = String(entry.id || "").trim();
+    const timestamp = String(entry.timestamp || "").trim();
+    const minutes = Number(entry.minutes || 0);
+    const tag = String(entry.tag || "").trim();
+    const reviewRaw = String(entry.review || "").trim().toLowerCase();
+    const review = reviewRaw === "focused" || reviewRaw === "distracted" ? reviewRaw : "";
+
+    if (!id || !Number.isFinite(Date.parse(timestamp)) || !Number.isFinite(minutes) || minutes <= 0 || !tag) {
+      return;
+    }
+
+    const previous = byId.get(id);
+    if (!previous) {
+      byId.set(id, {
+        id,
+        timestamp: new Date(timestamp).toISOString(),
+        minutes: Number(minutes.toFixed(2)),
+        tag,
+        review
+      });
+      return;
+    }
+
+    // Keep richer entry if duplicate id appears.
+    if (!previous.review && review) {
+      byId.set(id, {
+        ...previous,
+        review
+      });
+    }
+  });
+
+  return Array.from(byId.values())
+    .sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp))
+    .slice(0, 1200);
+}
+
 function mergeStudyLogs(localLog, remoteLog) {
   const local = sanitizeStudyLog(localLog);
   const remote = sanitizeStudyLog(remoteLog);
@@ -909,6 +1227,12 @@ function mergeAchievementMaps(localInput, remoteInput) {
   return sanitizeAchievementMap(merged);
 }
 
+function mergeSessionHistory(localInput, remoteInput) {
+  const local = sanitizeSessionHistory(localInput);
+  const remote = sanitizeSessionHistory(remoteInput);
+  return sanitizeSessionHistory([...remote, ...local]);
+}
+
 async function ensureCloudSyncClient() {
   if (cloudSyncReady && cloudSyncDb && cloudSyncApi) {
     return true;
@@ -926,6 +1250,9 @@ async function ensureCloudSyncClient() {
     return true;
   } catch (error) {
     console.warn("Cloud analytics sync is unavailable right now.", error);
+    if (canUseAnalyticsFeatures()) {
+      setSyncIndicatorState("error");
+    }
     return false;
   }
 }
@@ -943,14 +1270,16 @@ function buildLocalAnalyticsPayload(allowLocalData = true) {
     return {
       studyLog: {},
       tagLog: {},
-      achievements: {}
+      achievements: {},
+      sessionHistory: []
     };
   }
 
   return {
     studyLog: sanitizeStudyLog(loadStudyLog()),
     tagLog: sanitizeTagLog(loadTagLog()),
-    achievements: sanitizeAchievementMap(loadUnlockedAchievements())
+    achievements: sanitizeAchievementMap(loadUnlockedAchievements()),
+    sessionHistory: sanitizeSessionHistory(loadSessionHistory())
   };
 }
 
@@ -963,6 +1292,11 @@ function getUserDocRef(uid) {
 }
 
 function getLastSessionAtFromLog(logInput) {
+  const history = sanitizeSessionHistory(loadSessionHistory());
+  if (history.length > 0) {
+    return history[0].timestamp;
+  }
+
   const log = sanitizeStudyLog(logInput);
   const keys = Object.keys(log)
     .filter((dateKey) => Number(log[dateKey] || 0) > 0)
@@ -987,6 +1321,11 @@ function buildUserDocPayload(reason = "update") {
     studyMinutes: clampMinutes(settings.studyMinutes, 1, 240),
     breakMinutes: clampMinutes(settings.breakMinutes, 1, 120),
     dailyGoalMinutes: clampMinutes(settings.dailyGoalMinutes, 10, 600),
+    weeklyPlanTargets: sanitizeWeeklyPlanTargets(settings.weeklyPlanTargets),
+    remindersEnabled: Boolean(settings.remindersEnabled),
+    reminderTime: sanitizeTimeInput(settings.reminderTime, defaultSettings.reminderTime),
+    quietHoursStart: sanitizeTimeInput(settings.quietHoursStart, defaultSettings.quietHoursStart),
+    quietHoursEnd: sanitizeTimeInput(settings.quietHoursEnd, defaultSettings.quietHoursEnd),
     theme: document.body.dataset.theme === "light" ? "light" : "dark",
     focusMode: sanitizeFocusMode(settings.focusMode),
     alarmMode: sanitizeAlarmMode(settings.alarmMode),
@@ -1031,6 +1370,11 @@ function applyUserDocSnapshot(data) {
       studyMinutes: clampMinutes(preferences.studyMinutes, 1, 240),
       breakMinutes: clampMinutes(preferences.breakMinutes, 1, 120),
       dailyGoalMinutes: clampMinutes(preferences.dailyGoalMinutes, 10, 600),
+      weeklyPlanTargets: sanitizeWeeklyPlanTargets(preferences.weeklyPlanTargets),
+      remindersEnabled: Boolean(preferences.remindersEnabled),
+      reminderTime: sanitizeTimeInput(preferences.reminderTime, defaultSettings.reminderTime),
+      quietHoursStart: sanitizeTimeInput(preferences.quietHoursStart, defaultSettings.quietHoursStart),
+      quietHoursEnd: sanitizeTimeInput(preferences.quietHoursEnd, defaultSettings.quietHoursEnd),
       theme: preferences.theme === "light" ? "light" : "dark",
       focusMode: sanitizeFocusMode(preferences.focusMode),
       alarmMode: sanitizeAlarmMode(preferences.alarmMode),
@@ -1045,6 +1389,8 @@ function applyUserDocSnapshot(data) {
     applyPresetByMinutes(settings.studyMinutes, settings.breakMinutes);
     updateCustomAlarmVisibility();
     initializeMusicDock();
+    initializeReminderScheduler();
+    maybeSendStudyReminder();
 
     if (!timerState.running) {
       setUpBlock(timerState.phase);
@@ -1091,11 +1437,14 @@ async function startUserDocRealtimeSync(uid) {
 
       const data = snapshot.data() || {};
       applyUserDocSnapshot(data);
+      markSuccessfulSync(String(data.updatedAt || new Date().toISOString()));
     }, (error) => {
       console.warn("User profile sync listener failed.", error);
+      setSyncIndicatorState("error");
     });
   } catch (error) {
     console.warn("Could not start user profile listener.", error);
+    setSyncIndicatorState("error");
     return false;
   }
 
@@ -1118,11 +1467,14 @@ async function pushUserDocToCloud(reason = "manual") {
     return false;
   }
 
+  setSyncIndicatorState("syncing");
   try {
     await cloudSyncApi.setDoc(userDocRef, buildUserDocPayload(reason), { merge: true });
+    markSuccessfulSync(new Date().toISOString());
     return true;
   } catch (error) {
     console.warn("Could not save user profile to Firestore.", error);
+    setSyncIndicatorState("error");
     return false;
   }
 }
@@ -1157,6 +1509,7 @@ async function hydrateAnalyticsFromCloud(uid) {
     return false;
   }
 
+  setSyncIndicatorState("syncing");
   cloudSyncHydrating = true;
   try {
     const lastUid = String(localStorage.getItem(LAST_SYNCED_UID_KEY) || "").trim();
@@ -1171,6 +1524,7 @@ async function hydrateAnalyticsFromCloud(uid) {
         schemaVersion: 1
       }, { merge: true });
       localStorage.setItem(LAST_SYNCED_UID_KEY, uid);
+      markSuccessfulSync(new Date().toISOString());
       return true;
     }
 
@@ -1178,33 +1532,40 @@ async function hydrateAnalyticsFromCloud(uid) {
     const remoteStudyLog = sanitizeStudyLog(remote.studyLog);
     const remoteTagLog = sanitizeTagLog(remote.tagLog);
     const remoteAchievements = sanitizeAchievementMap(remote.achievements);
+    const remoteSessionHistory = sanitizeSessionHistory(remote.sessionHistory);
 
     const mergedStudyLog = mergeStudyLogs(localPayload.studyLog, remoteStudyLog);
     const mergedTagLog = mergeTagLogs(localPayload.tagLog, remoteTagLog);
     const mergedAchievements = mergeAchievementMaps(localPayload.achievements, remoteAchievements);
+    const mergedSessionHistory = mergeSessionHistory(localPayload.sessionHistory, remoteSessionHistory);
 
     saveStudyLog(mergedStudyLog, { skipCloudSync: true });
     saveTagLog(mergedTagLog, { skipCloudSync: true });
     saveUnlockedAchievements(mergedAchievements, { skipCloudSync: true });
+    saveSessionHistory(mergedSessionHistory, { skipCloudSync: true });
     localStorage.setItem(LAST_SYNCED_UID_KEY, uid);
 
     const needsWriteBack = JSON.stringify(mergedStudyLog) !== JSON.stringify(remoteStudyLog)
       || JSON.stringify(mergedTagLog) !== JSON.stringify(remoteTagLog)
-      || JSON.stringify(mergedAchievements) !== JSON.stringify(remoteAchievements);
+      || JSON.stringify(mergedAchievements) !== JSON.stringify(remoteAchievements)
+      || JSON.stringify(mergedSessionHistory) !== JSON.stringify(remoteSessionHistory);
 
     if (needsWriteBack) {
       await cloudSyncApi.setDoc(docRef, {
         studyLog: mergedStudyLog,
         tagLog: mergedTagLog,
         achievements: mergedAchievements,
+        sessionHistory: mergedSessionHistory,
         updatedAt: new Date().toISOString(),
         schemaVersion: 1
       }, { merge: true });
     }
 
+    markSuccessfulSync(new Date().toISOString());
     return true;
   } catch (error) {
     console.warn("Could not load analytics from cloud.", error);
+    setSyncIndicatorState("error");
     return false;
   } finally {
     cloudSyncHydrating = false;
@@ -1231,21 +1592,25 @@ async function pushAnalyticsToCloud(reason = "manual") {
     return false;
   }
 
+  setSyncIndicatorState("syncing");
   cloudSyncInFlight = true;
   try {
     await cloudSyncApi.setDoc(docRef, {
       studyLog: sanitizeStudyLog(loadStudyLog()),
       tagLog: sanitizeTagLog(loadTagLog()),
       achievements: sanitizeAchievementMap(loadUnlockedAchievements()),
+      sessionHistory: sanitizeSessionHistory(loadSessionHistory()),
       updatedAt: new Date().toISOString(),
       schemaVersion: 1,
       source: reason
     }, { merge: true });
 
     localStorage.setItem(LAST_SYNCED_UID_KEY, currentUser.uid);
+    markSuccessfulSync(new Date().toISOString());
     return true;
   } catch (error) {
     console.warn("Could not save analytics to cloud.", error);
+    setSyncIndicatorState("error");
     return false;
   } finally {
     cloudSyncInFlight = false;
@@ -1304,6 +1669,7 @@ function enterGuestMode() {
   showHomeView({ forceStopTypeEffect: true });
   renderAnalytics();
   updateAuthUi();
+  renderSyncStatus();
   showToastMessage("Guest mode active. Sign in any time to unlock analytics and achievements.");
 }
 
@@ -1318,6 +1684,7 @@ function requestAuthSignOut() {
   resetCloudSyncState();
   showAuthScreen("You are signed out. Sign in again or continue as guest.");
   updateAuthUi();
+  renderSyncStatus();
 }
 
 function requestDeleteAccount() {
@@ -1360,7 +1727,16 @@ function wireEvents() {
     if (document.visibilityState === "visible") {
       loadScriptureOfTheDay();
       void refreshAnalyticsFromCloud("visibility");
+      maybeSendStudyReminder();
     }
+  });
+  window.addEventListener("online", () => {
+    renderSyncStatus();
+    scheduleCloudAnalyticsSync("online");
+    scheduleUserDocSync("online");
+  });
+  window.addEventListener("offline", () => {
+    renderSyncStatus();
   });
   window.addEventListener("resize", () => {
     if (analyticsResizeTimeoutId) {
@@ -1463,6 +1839,11 @@ function wireEvents() {
     }
   });
   alarmModeSetting.addEventListener("change", onAlarmModeFieldChange);
+  if (enableReminderPermissionBtn) {
+    enableReminderPermissionBtn.addEventListener("click", () => {
+      requestStudyReminderPermission();
+    });
+  }
   testAlarmBtn.addEventListener("click", () => {
     playAlarmSound();
   });
@@ -1550,6 +1931,21 @@ function wireEvents() {
   clearSessionNotesBtn.addEventListener("click", clearSessionNotes);
   sessionTodoList.addEventListener("click", onSessionTodoListClick);
   sessionTodoList.addEventListener("change", onSessionTodoListChange);
+  if (reviewFocusedBtn) {
+    reviewFocusedBtn.addEventListener("click", () => {
+      submitSessionReview("focused");
+    });
+  }
+  if (reviewDistractedBtn) {
+    reviewDistractedBtn.addEventListener("click", () => {
+      submitSessionReview("distracted");
+    });
+  }
+  if (reviewSkipBtn) {
+    reviewSkipBtn.addEventListener("click", () => {
+      closeSessionReviewPrompt();
+    });
+  }
   keepSessionBtn.addEventListener("click", closeCancelSessionModal);
   confirmCancelSessionBtn.addEventListener("click", confirmCancelSession);
   cancelSessionModal.addEventListener("click", (event) => {
@@ -1620,6 +2016,7 @@ function switchSection(sectionName) {
   }
 
   updateMiniTimerWidget();
+  renderSyncStatus();
 }
 
 function showHomeView(options = {}) {
@@ -1650,6 +2047,7 @@ function showHomeView(options = {}) {
   loadScriptureOfTheDay();
   updateMiniTimerWidget();
   updateAuthUi();
+  renderSyncStatus();
 }
 
 function updateHomeTypeEffect(forceStop) {
@@ -1945,6 +2343,7 @@ function cancelCurrentSession() {
 
   studySession.classList.add("hidden");
   studyPrep.classList.remove("hidden");
+  closeSessionReviewPrompt();
   updateMiniTimerWidget();
 
   showToastMessage("Session cancelled. Incomplete study time was not tracked.");
@@ -1968,7 +2367,9 @@ function onBlockComplete() {
       if (unlockedAchievement) {
         showAchievementToast(unlockedAchievement);
       }
+      openSessionReviewPrompt(context.sessionId);
     } else {
+      closeSessionReviewPrompt();
       showMotivationToast("Study block completed. Sign in to save analytics and unlock achievements.");
     }
 
@@ -2008,9 +2409,11 @@ function recordCompletedStudyBlock(blockMinutes, tag) {
   const previousBestStreak = calculateBestStreak(previousLog);
   const bestStreakAfterUpdate = calculateBestStreak(updatedLog);
   const goal = settings.dailyGoalMinutes;
+  const sessionId = recordSessionHistoryEntry(blockMinutes, tag);
   scheduleUserDocSync("study-progress");
 
   return {
+    sessionId,
     blockMinutes: Math.round(blockMinutes),
     totalTodayMinutes: Math.round(totalTodayMinutes),
     currentStreak,
@@ -2305,11 +2708,29 @@ function renderAnalytics() {
     tagLocked.textContent = "Tag analytics require an account sign-in.";
     tagBreakdownListEl.appendChild(tagLocked);
 
+    weeklyPlanSummaryEl.textContent = "Sign in to track plan progress.";
+    weeklyPlanProgressFillEl.style.width = "0%";
+    weeklyPlanBreakdownEl.innerHTML = "";
+    const planLocked = document.createElement("p");
+    planLocked.className = "favourite-empty";
+    planLocked.textContent = "Weekly plan progress appears after sign in.";
+    weeklyPlanBreakdownEl.appendChild(planLocked);
+
+    deepInsightsSummaryEl.textContent = "Sign in to unlock deeper insights.";
+    deepInsightsListEl.innerHTML = "";
+    const insightLocked = document.createElement("p");
+    insightLocked.className = "favourite-empty";
+    insightLocked.textContent = "Best times, weekly comparison, and forecasts are account features.";
+    deepInsightsListEl.appendChild(insightLocked);
+    tagTrendListEl.innerHTML = "";
+
     renderAchievements();
     return;
   }
 
   const log = loadStudyLog();
+  const tagLog = loadTagLog();
+  const sessionHistory = loadSessionHistory();
   const todayKey = getDateKey(new Date());
   const todayMinutes = Number(log[todayKey] || 0);
   const totalMinutes = sumMinutes(log);
@@ -2323,8 +2744,10 @@ function renderAnalytics() {
   studyDaysEl.textContent = `${studyDays} day${studyDays === 1 ? "" : "s"}`;
   goalProgressEl.textContent = `${Math.round(todayMinutes)} / ${settings.dailyGoalMinutes} min`;
 
+  renderWeeklyPlanProgress(log);
   renderStudyGraph(log);
-  renderWeeklyTagBreakdown(loadTagLog());
+  renderWeeklyTagBreakdown(tagLog);
+  renderDeepInsights(log, tagLog, sessionHistory);
   renderAchievements();
 }
 
@@ -2345,12 +2768,291 @@ function getGraphDaysForViewport() {
 }
 
 function updateStudyGraphTitle(dayCount) {
-  const chartTitle = document.querySelector("#analyticsSection .chart-card .chart-head h3");
+  const chartTitle = studyGraphEl
+    ? studyGraphEl.closest(".chart-card")?.querySelector(".chart-head h3")
+    : null;
   if (!chartTitle) {
     return;
   }
 
   chartTitle.textContent = `Last ${dayCount} Day${dayCount === 1 ? "" : "s"} (minutes)`;
+}
+
+function clampPlanMinutes(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return 0;
+  }
+
+  return Math.min(360, Math.max(0, Math.round(numeric)));
+}
+
+function sanitizeWeeklyPlanTargets(input) {
+  const source = input && typeof input === "object" ? input : {};
+  const targets = {};
+
+  WEEKDAY_PLAN_KEYS.forEach((key) => {
+    const fallback = DEFAULT_WEEKLY_PLAN_TARGETS[key] || 0;
+    targets[key] = clampPlanMinutes(source[key] ?? fallback);
+  });
+
+  return targets;
+}
+
+function getWeeklyTargetMinutes(targetsInput) {
+  const targets = sanitizeWeeklyPlanTargets(targetsInput);
+  return WEEKDAY_PLAN_KEYS.reduce((sum, key) => sum + Number(targets[key] || 0), 0);
+}
+
+function getWeekStart(dateInput) {
+  const date = new Date(dateInput);
+  date.setHours(0, 0, 0, 0);
+  const weekday = date.getDay(); // 0 = Sunday
+  const distanceToMonday = (weekday + 6) % 7;
+  date.setDate(date.getDate() - distanceToMonday);
+  return date;
+}
+
+function getDatesForWeek(startDate) {
+  const dates = [];
+  for (let index = 0; index < 7; index += 1) {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + index);
+    dates.push(date);
+  }
+  return dates;
+}
+
+function getTargetMinutesForDate(targetsInput, date) {
+  const targets = sanitizeWeeklyPlanTargets(targetsInput);
+  const weekdayIndex = (date.getDay() + 6) % 7; // Monday = 0
+  const key = WEEKDAY_PLAN_KEYS[weekdayIndex];
+  return Number(targets[key] || 0);
+}
+
+function getWeekTotalMinutes(log, startDate) {
+  return getDatesForWeek(startDate).reduce((sum, date) => {
+    const key = getDateKey(date);
+    return sum + Number(log[key] || 0);
+  }, 0);
+}
+
+function renderWeeklyPlanProgress(log) {
+  const weekStart = getWeekStart(new Date());
+  const dates = getDatesForWeek(weekStart);
+  const weeklyTarget = getWeeklyTargetMinutes(settings.weeklyPlanTargets);
+
+  let totalActual = 0;
+  let totalTarget = 0;
+  weeklyPlanBreakdownEl.innerHTML = "";
+
+  dates.forEach((date, index) => {
+    const key = getDateKey(date);
+    const actual = Number(log[key] || 0);
+    const target = getTargetMinutesForDate(settings.weeklyPlanTargets, date);
+    totalActual += actual;
+    totalTarget += target;
+
+    const row = document.createElement("div");
+    row.className = "plan-day-row";
+
+    const label = document.createElement("p");
+    label.className = "plan-day-label";
+    label.textContent = WEEKDAY_PLAN_LABELS[index];
+
+    const value = document.createElement("p");
+    value.className = "plan-day-value";
+    value.textContent = `${Math.round(actual)} / ${target} min`;
+
+    row.appendChild(label);
+    row.appendChild(value);
+    weeklyPlanBreakdownEl.appendChild(row);
+  });
+
+  const safeTarget = totalTarget > 0 ? totalTarget : weeklyTarget;
+  const progressPercent = safeTarget > 0 ? Math.min(100, Math.round((totalActual / safeTarget) * 100)) : 0;
+  weeklyPlanProgressFillEl.style.width = `${progressPercent}%`;
+
+  if (safeTarget <= 0) {
+    weeklyPlanSummaryEl.textContent = "Set daily targets in Settings to enable weekly progress.";
+    return;
+  }
+
+  weeklyPlanSummaryEl.textContent = `${Math.round(totalActual)} / ${Math.round(safeTarget)} min (${progressPercent}%)`;
+}
+
+function formatHourRange(hour) {
+  const start = new Date();
+  start.setHours(hour, 0, 0, 0);
+  const end = new Date(start);
+  end.setHours(hour + 1, 0, 0, 0);
+
+  const startLabel = start.toLocaleTimeString([], { hour: "numeric" });
+  const endLabel = end.toLocaleTimeString([], { hour: "numeric" });
+  return `${startLabel} - ${endLabel}`;
+}
+
+function calculateBestStudyHour(sessionHistory) {
+  const buckets = Array(24).fill(0);
+  const now = Date.now();
+  const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+
+  sanitizeSessionHistory(sessionHistory).forEach((entry) => {
+    const timestamp = Date.parse(entry.timestamp);
+    if (!Number.isFinite(timestamp) || (now - timestamp) > thirtyDaysMs) {
+      return;
+    }
+
+    const hour = new Date(timestamp).getHours();
+    buckets[hour] += Number(entry.minutes || 0);
+  });
+
+  let bestHour = -1;
+  let bestMinutes = 0;
+  buckets.forEach((minutes, hour) => {
+    if (minutes > bestMinutes) {
+      bestMinutes = minutes;
+      bestHour = hour;
+    }
+  });
+
+  if (bestHour < 0 || bestMinutes <= 0) {
+    return "Not enough study blocks yet";
+  }
+
+  return `${formatHourRange(bestHour)} (${Math.round(bestMinutes)} min in last 30 days)`;
+}
+
+function calculateFocusScore(sessionHistory) {
+  const entries = sanitizeSessionHistory(sessionHistory).filter((entry) => entry.review === "focused" || entry.review === "distracted");
+  if (!entries.length) {
+    return "No session reviews yet";
+  }
+
+  const focused = entries.filter((entry) => entry.review === "focused").length;
+  const score = Math.round((focused / entries.length) * 100);
+  return `${score}% focused (${entries.length} reviewed blocks)`;
+}
+
+function getTagTotalsForWeek(tagLog, weekStart) {
+  const totals = {};
+  getDatesForWeek(weekStart).forEach((date) => {
+    const key = getDateKey(date);
+    const dayTags = tagLog[key] || {};
+    Object.entries(dayTags).forEach(([tag, minutes]) => {
+      totals[tag] = Number((Number(totals[tag] || 0) + Number(minutes || 0)).toFixed(2));
+    });
+  });
+  return totals;
+}
+
+function renderTagTrends(tagLog) {
+  tagTrendListEl.innerHTML = "";
+
+  const thisWeekStart = getWeekStart(new Date());
+  const lastWeekStart = new Date(thisWeekStart);
+  lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+
+  const thisWeekTotals = getTagTotalsForWeek(tagLog, thisWeekStart);
+  const lastWeekTotals = getTagTotalsForWeek(tagLog, lastWeekStart);
+  const tags = new Set([...Object.keys(thisWeekTotals), ...Object.keys(lastWeekTotals)]);
+
+  const rows = Array.from(tags)
+    .map((tag) => {
+      const current = Number(thisWeekTotals[tag] || 0);
+      const previous = Number(lastWeekTotals[tag] || 0);
+      const delta = Number((current - previous).toFixed(2));
+      return { tag, current, previous, delta };
+    })
+    .filter((row) => row.current > 0 || row.previous > 0)
+    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
+    .slice(0, 5);
+
+  if (!rows.length) {
+    const empty = document.createElement("p");
+    empty.className = "favourite-empty";
+    empty.textContent = "No tag trend data yet for this week.";
+    tagTrendListEl.appendChild(empty);
+    return;
+  }
+
+  rows.forEach((row) => {
+    const item = document.createElement("div");
+    item.className = "tag-trend-row";
+
+    const name = document.createElement("p");
+    name.className = "tag-trend-name";
+    name.textContent = row.tag;
+
+    const change = document.createElement("p");
+    change.className = `tag-trend-change ${row.delta >= 0 ? "positive" : "negative"}`;
+    const prefix = row.delta > 0 ? "+" : "";
+    change.textContent = `${prefix}${Math.round(row.delta)} min vs last week`;
+
+    item.appendChild(name);
+    item.appendChild(change);
+    tagTrendListEl.appendChild(item);
+  });
+}
+
+function renderDeepInsights(log, tagLog, sessionHistory) {
+  const thisWeekStart = getWeekStart(new Date());
+  const lastWeekStart = new Date(thisWeekStart);
+  lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+
+  const thisWeekMinutes = getWeekTotalMinutes(log, thisWeekStart);
+  const lastWeekMinutes = getWeekTotalMinutes(log, lastWeekStart);
+  const deltaMinutes = thisWeekMinutes - lastWeekMinutes;
+  const deltaPrefix = deltaMinutes > 0 ? "+" : "";
+
+  const weekTarget = getWeeklyTargetMinutes(settings.weeklyPlanTargets);
+  const today = new Date();
+  const daysElapsed = Math.min(7, Math.max(1, Math.floor((today - thisWeekStart) / (1000 * 60 * 60 * 24)) + 1));
+  const projectedMinutes = Math.round((thisWeekMinutes / daysElapsed) * 7);
+  const forecastText = weekTarget > 0
+    ? `${projectedMinutes} / ${weekTarget} min projected`
+    : "Set weekly targets to unlock forecast";
+
+  deepInsightsSummaryEl.textContent = `${Math.round(thisWeekMinutes)} min this week (${deltaPrefix}${Math.round(deltaMinutes)} vs last week)`;
+  deepInsightsListEl.innerHTML = "";
+
+  const insights = [
+    {
+      label: "Best Study Time",
+      value: calculateBestStudyHour(sessionHistory)
+    },
+    {
+      label: "Weekly Comparison",
+      value: `${Math.round(thisWeekMinutes)} min this week, ${Math.round(lastWeekMinutes)} min last week`
+    },
+    {
+      label: "Goal Forecast",
+      value: forecastText
+    },
+    {
+      label: "Focus Score",
+      value: calculateFocusScore(sessionHistory)
+    }
+  ];
+
+  insights.forEach((insight) => {
+    const item = document.createElement("div");
+    item.className = "insight-item";
+
+    const label = document.createElement("p");
+    label.className = "insight-label";
+    label.textContent = insight.label;
+
+    const value = document.createElement("p");
+    value.className = "insight-value";
+    value.textContent = insight.value;
+
+    item.appendChild(label);
+    item.appendChild(value);
+    deepInsightsListEl.appendChild(item);
+  });
+
+  renderTagTrends(tagLog);
 }
 
 function renderStudyGraph(log) {
@@ -2691,6 +3393,80 @@ function saveTagLog(tagLog, options = {}) {
   if (!options.skipCloudSync) {
     scheduleCloudAnalyticsSync("tag-log");
   }
+}
+
+function loadSessionHistory() {
+  const raw = localStorage.getItem(SESSION_HISTORY_KEY);
+  if (!raw) {
+    return [];
+  }
+
+  try {
+    return sanitizeSessionHistory(JSON.parse(raw));
+  } catch (error) {
+    return [];
+  }
+}
+
+function saveSessionHistory(entries, options = {}) {
+  localStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify(sanitizeSessionHistory(entries)));
+  if (!options.skipCloudSync) {
+    scheduleCloudAnalyticsSync("session-history");
+  }
+}
+
+function recordSessionHistoryEntry(minutes, tag) {
+  const history = loadSessionHistory();
+  const entry = {
+    id: createLocalId("session"),
+    timestamp: new Date().toISOString(),
+    minutes: Number(Number(minutes || 0).toFixed(2)),
+    tag: String(tag || "").trim() || "Study",
+    review: ""
+  };
+
+  history.unshift(entry);
+  saveSessionHistory(history);
+  return entry.id;
+}
+
+function openSessionReviewPrompt(sessionId) {
+  if (!sessionReviewPrompt || !sessionId) {
+    return;
+  }
+
+  pendingSessionReviewId = String(sessionId);
+  sessionReviewPrompt.classList.remove("hidden");
+}
+
+function closeSessionReviewPrompt() {
+  pendingSessionReviewId = null;
+  if (!sessionReviewPrompt) {
+    return;
+  }
+
+  sessionReviewPrompt.classList.add("hidden");
+}
+
+function submitSessionReview(review) {
+  const safeReview = review === "focused" || review === "distracted" ? review : "";
+  if (!safeReview || !pendingSessionReviewId) {
+    closeSessionReviewPrompt();
+    return;
+  }
+
+  const history = loadSessionHistory();
+  const entry = history.find((item) => item.id === pendingSessionReviewId);
+  if (!entry) {
+    closeSessionReviewPrompt();
+    return;
+  }
+
+  entry.review = safeReview;
+  saveSessionHistory(history);
+  closeSessionReviewPrompt();
+  renderAnalytics();
+  showToastMessage(safeReview === "focused" ? "Session review saved: Focused." : "Session review saved: Distracted.");
 }
 
 /*
@@ -3066,9 +3842,21 @@ function renderDailyScripture(verse) {
 }
 
 function fillSettingsForm() {
+  const weeklyTargets = sanitizeWeeklyPlanTargets(settings.weeklyPlanTargets);
   studyMinutesSetting.value = settings.studyMinutes;
   breakMinutesSetting.value = settings.breakMinutes;
   dailyGoalMinutesSetting.value = settings.dailyGoalMinutes;
+  weeklyPlanMonSetting.value = weeklyTargets.mon;
+  weeklyPlanTueSetting.value = weeklyTargets.tue;
+  weeklyPlanWedSetting.value = weeklyTargets.wed;
+  weeklyPlanThuSetting.value = weeklyTargets.thu;
+  weeklyPlanFriSetting.value = weeklyTargets.fri;
+  weeklyPlanSatSetting.value = weeklyTargets.sat;
+  weeklyPlanSunSetting.value = weeklyTargets.sun;
+  remindersEnabledSetting.checked = Boolean(settings.remindersEnabled);
+  reminderTimeSetting.value = sanitizeTimeInput(settings.reminderTime, defaultSettings.reminderTime);
+  quietHoursStartSetting.value = sanitizeTimeInput(settings.quietHoursStart, defaultSettings.quietHoursStart);
+  quietHoursEndSetting.value = sanitizeTimeInput(settings.quietHoursEnd, defaultSettings.quietHoursEnd);
   themeSetting.value = settings.theme;
   focusModeSetting.value = settings.focusMode;
   alarmModeSetting.value = settings.alarmMode;
@@ -3092,10 +3880,25 @@ function updateCustomAlarmVisibility() {
 function onSettingsSubmit(event) {
   event.preventDefault();
 
+  const weeklyTargets = sanitizeWeeklyPlanTargets({
+    mon: weeklyPlanMonSetting.value,
+    tue: weeklyPlanTueSetting.value,
+    wed: weeklyPlanWedSetting.value,
+    thu: weeklyPlanThuSetting.value,
+    fri: weeklyPlanFriSetting.value,
+    sat: weeklyPlanSatSetting.value,
+    sun: weeklyPlanSunSetting.value
+  });
+
   settings = {
     studyMinutes: clampMinutes(studyMinutesSetting.value, 1, 240),
     breakMinutes: clampMinutes(breakMinutesSetting.value, 1, 120),
     dailyGoalMinutes: clampMinutes(dailyGoalMinutesSetting.value, 10, 600),
+    weeklyPlanTargets: weeklyTargets,
+    remindersEnabled: Boolean(remindersEnabledSetting.checked),
+    reminderTime: sanitizeTimeInput(reminderTimeSetting.value, defaultSettings.reminderTime),
+    quietHoursStart: sanitizeTimeInput(quietHoursStartSetting.value, defaultSettings.quietHoursStart),
+    quietHoursEnd: sanitizeTimeInput(quietHoursEndSetting.value, defaultSettings.quietHoursEnd),
     theme: themeSetting.value === "dark" ? "dark" : "light",
     focusMode: sanitizeFocusMode(focusModeSetting.value),
     alarmMode: sanitizeAlarmMode(alarmModeSetting.value),
@@ -3122,6 +3925,8 @@ function onSettingsSubmit(event) {
 
   syncFocusModeAfterTimerStateChange();
   initializeMusicDock();
+  initializeReminderScheduler();
+  maybeSendStudyReminder();
   renderAnalytics();
   showSettingsSuccess("Settings saved.");
 }
@@ -3178,7 +3983,10 @@ function sanitizeMusicPresetId(value) {
 function loadSettings() {
   const raw = localStorage.getItem(SETTINGS_KEY);
   if (!raw) {
-    return { ...defaultSettings };
+    return {
+      ...defaultSettings,
+      weeklyPlanTargets: { ...defaultSettings.weeklyPlanTargets }
+    };
   }
 
   try {
@@ -3190,6 +3998,11 @@ function loadSettings() {
       studyMinutes: clampMinutes(parsed.studyMinutes, 1, 240),
       breakMinutes: clampMinutes(parsed.breakMinutes, 1, 120),
       dailyGoalMinutes: clampMinutes(parsed.dailyGoalMinutes || 60, 10, 600),
+      weeklyPlanTargets: sanitizeWeeklyPlanTargets(parsed.weeklyPlanTargets),
+      remindersEnabled: Boolean(parsed.remindersEnabled),
+      reminderTime: sanitizeTimeInput(parsed.reminderTime, defaultSettings.reminderTime),
+      quietHoursStart: sanitizeTimeInput(parsed.quietHoursStart, defaultSettings.quietHoursStart),
+      quietHoursEnd: sanitizeTimeInput(parsed.quietHoursEnd, defaultSettings.quietHoursEnd),
       theme: parsed.theme === "dark" ? "dark" : "light",
       focusMode: sanitizeFocusMode(parsed.focusMode),
       alarmMode: sanitizeAlarmMode(parsed.alarmMode),
@@ -3198,7 +4011,10 @@ function loadSettings() {
       musicPresetId: parsedPreset || (parsedUrl ? "" : defaultSettings.musicPresetId)
     };
   } catch (error) {
-    return { ...defaultSettings };
+    return {
+      ...defaultSettings,
+      weeklyPlanTargets: { ...defaultSettings.weeklyPlanTargets }
+    };
   }
 }
 

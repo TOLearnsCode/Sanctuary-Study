@@ -334,6 +334,17 @@
 
       <article class="chart-card">
         <div class="chart-head">
+          <h3>Weekly Plan Progress</h3>
+          <p id="weeklyPlanSummary"></p>
+        </div>
+        <div class="plan-progress-track" aria-hidden="true">
+          <div id="weeklyPlanProgressFill" class="plan-progress-fill"></div>
+        </div>
+        <div id="weeklyPlanBreakdown" class="weekly-plan-breakdown"></div>
+      </article>
+
+      <article class="chart-card">
+        <div class="chart-head">
           <h3>Last 60 Days (minutes)</h3>
           <p id="chartSummary"></p>
         </div>
@@ -346,6 +357,15 @@
           <p id="tagSummary"></p>
         </div>
         <div id="tagBreakdownList" class="tag-breakdown-list"></div>
+      </article>
+
+      <article class="chart-card">
+        <div class="chart-head">
+          <h3>Deep Insights</h3>
+          <p id="deepInsightsSummary"></p>
+        </div>
+        <div id="deepInsightsList" class="insights-list"></div>
+        <div id="tagTrendList" class="tag-trend-list"></div>
       </article>
 
       <article class="chart-card">
@@ -378,6 +398,67 @@
           Daily goal minutes
           <input id="dailyGoalMinutesSetting" type="number" min="10" max="600" />
         </label>
+
+        <div class="settings-subpanel weekly-plan-panel">
+          <p class="settings-subpanel-title">Weekly Study Plan (minutes)</p>
+          <div class="weekly-plan-grid">
+            <label>
+              Mon
+              <input id="weeklyPlanMonSetting" type="number" min="0" max="360" />
+            </label>
+            <label>
+              Tue
+              <input id="weeklyPlanTueSetting" type="number" min="0" max="360" />
+            </label>
+            <label>
+              Wed
+              <input id="weeklyPlanWedSetting" type="number" min="0" max="360" />
+            </label>
+            <label>
+              Thu
+              <input id="weeklyPlanThuSetting" type="number" min="0" max="360" />
+            </label>
+            <label>
+              Fri
+              <input id="weeklyPlanFriSetting" type="number" min="0" max="360" />
+            </label>
+            <label>
+              Sat
+              <input id="weeklyPlanSatSetting" type="number" min="0" max="360" />
+            </label>
+            <label>
+              Sun
+              <input id="weeklyPlanSunSetting" type="number" min="0" max="360" />
+            </label>
+          </div>
+          <p class="settings-subpanel-note">Weekly target auto-calculates from the daily plan above.</p>
+        </div>
+
+        <div class="settings-subpanel reminder-panel">
+          <div class="settings-subpanel-head">
+            <p class="settings-subpanel-title">Study Reminder</p>
+            <label class="toggle-inline">
+              <input id="remindersEnabledSetting" type="checkbox" />
+              <span>Enabled</span>
+            </label>
+          </div>
+          <div class="reminder-grid">
+            <label>
+              Reminder time
+              <input id="reminderTimeSetting" type="time" />
+            </label>
+            <label>
+              Quiet hours start
+              <input id="quietHoursStartSetting" type="time" />
+            </label>
+            <label>
+              Quiet hours end
+              <input id="quietHoursEndSetting" type="time" />
+            </label>
+          </div>
+          <button id="enableReminderPermissionBtn" type="button" class="btn btn-glass">Enable Notifications</button>
+          <p class="settings-subpanel-note">Reminders trigger while Sanctuary Study is open in your browser.</p>
+        </div>
 
         <label>
           Color mode
@@ -447,6 +528,15 @@
           <button id="settingsSignOutBtn" type="button" class="btn btn-glass">Sign Out</button>
           <button id="settingsDeleteAccountBtn" type="button" class="btn btn-danger">Delete Account</button>
         </div>
+      </article>
+
+      <article id="syncStatusCard" class="sync-status-card">
+        <h3>Sync Status</h3>
+        <div class="sync-status-line">
+          <span id="syncStatusDot" class="sync-status-dot" aria-hidden="true"></span>
+          <p id="syncStatusPrimary" class="sync-status-primary">Sign in to enable cloud sync.</p>
+        </div>
+        <p id="syncStatusSecondary" class="sync-status-secondary">Last synced: --</p>
       </article>
 
       <p id="settingsMessage" class="settings-message" role="status" aria-live="polite"></p>
@@ -537,6 +627,15 @@
       <p class="achievement-toast-kicker">Achievement Unlocked</p>
       <p id="achievementToastTitle" class="achievement-toast-title"></p>
       <p id="achievementToastMessage" class="achievement-toast-message"></p>
+    </div>
+  </aside>
+
+  <aside id="sessionReviewPrompt" class="session-review-prompt hidden" role="dialog" aria-live="polite" aria-label="Session review">
+    <p class="session-review-title">How did that study block feel?</p>
+    <div class="session-review-actions">
+      <button id="reviewFocusedBtn" type="button" class="btn btn-primary">Focused</button>
+      <button id="reviewDistractedBtn" type="button" class="btn btn-glass">Distracted</button>
+      <button id="reviewSkipBtn" type="button" class="btn btn-glass">Later</button>
     </div>
   </aside>
 
