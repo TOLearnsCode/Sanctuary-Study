@@ -2097,12 +2097,79 @@ body[data-theme="dark"] .btn-danger {
 }
 
 @media (max-width: 430px) {
+  body {
+    font-size: 14px;
+    padding: 8px 8px 14px;
+  }
+
+  .top-bar {
+    gap: 6px;
+    top: 6px;
+  }
+
+  .top-left-controls,
+  .top-nav {
+    width: 100%;
+    gap: 6px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .top-left-controls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .top-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app-logo-btn,
+  .home-nav-btn,
+  .theme-toggle,
+  .nav-btn {
+    width: 100%;
+    height: 40px;
+    min-height: 40px;
+    border-radius: 10px;
+    padding: 0 10px;
+    font-size: 13px;
+    line-height: 1.1;
+    gap: 6px;
+  }
+
+  .app-logo-btn {
+    justify-content: center;
+  }
+
+  .app-logo-mark {
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+  }
+
+  .app-logo-text strong {
+    font-size: 0.82rem;
+  }
+
+  .app-logo-text small {
+    font-size: 0.52rem;
+    letter-spacing: 0.08em;
+  }
+
+  .icon-wrap,
+  .icon-svg {
+    width: 14px;
+    height: 14px;
+  }
+
   button,
   .btn,
   .nav-btn,
   [role="button"] {
-    padding: 8px 14px;
-    font-size: 14px;
+    padding: 7px 10px;
+    font-size: 13px;
     min-height: 40px;
     border-radius: 10px;
   }
@@ -2110,7 +2177,7 @@ body[data-theme="dark"] .btn-danger {
   .nav-buttons,
   .top-nav {
     gap: 6px;
-    padding: 8px;
+    padding: 0;
     flex-wrap: wrap;
   }
 
@@ -2118,25 +2185,73 @@ body[data-theme="dark"] .btn-danger {
   .main {
     max-width: 100%;
     padding: 12px;
-    margin-top: 60px;
+    margin-top: 8px;
   }
 
   h1 {
-    font-size: 26px;
+    font-size: 24px;
     line-height: 1.2;
   }
 
   h2 {
-    font-size: 20px;
+    font-size: 18px;
   }
 
   p {
-    font-size: 15px;
+    font-size: 14px;
   }
 
   .hero,
   .home-hero {
     gap: 12px;
+    min-height: auto;
+    padding: 16px 12px;
+  }
+
+  .auth-gate {
+    min-height: auto;
+    padding: 16px 12px;
+  }
+
+  .auth-title {
+    font-size: clamp(2rem, 10vw, 2.6rem);
+  }
+
+  .type-title {
+    font-size: clamp(2rem, 11vw, 2.8rem);
+    line-height: 1.12;
+  }
+
+  .home-copy,
+  .auth-copy {
+    font-size: 0.98rem;
+    line-height: 1.38;
+  }
+
+  .auth-form {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .auth-form label {
+    gap: 4px;
+    font-size: 0.84rem;
+  }
+
+  .auth-form input {
+    padding: 9px 10px;
+  }
+
+  .auth-gate-actions {
+    gap: 8px;
+  }
+
+  .auth-gate-actions .btn {
+    flex: 1 1 calc(50% - 4px);
+  }
+
+  #authGuestBtn {
+    flex-basis: 100%;
   }
 
   .container {
@@ -2145,7 +2260,36 @@ body[data-theme="dark"] .btn-danger {
 }
 
 @media (max-width: 375px) {
+  body {
+    font-size: 13px;
+  }
+
   .container {
-    padding: 12px;
+    padding: 10px;
+  }
+
+  .app-logo-btn,
+  .home-nav-btn,
+  .theme-toggle,
+  .nav-btn {
+    height: 38px;
+    min-height: 38px;
+    font-size: 12px;
+    padding: 0 8px;
+  }
+
+  .auth-gate-actions .btn {
+    flex: 1 1 100%;
+  }
+
+  .auth-title,
+  .type-title {
+    font-size: clamp(1.85rem, 10.5vw, 2.4rem);
+  }
+
+  .home-copy,
+  .auth-copy,
+  p {
+    font-size: 13px;
   }
 }
