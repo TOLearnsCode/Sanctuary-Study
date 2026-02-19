@@ -3,7 +3,6 @@ import {
   createUserWithEmailAndPassword,
   deleteUser,
   onAuthStateChanged,
-  reload,
   sendEmailVerification,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -17,7 +16,9 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const USER_PROFILES_KEY = "sanctuaryUserProfilesV1";
-const AUTH_REQUEST_TIMEOUT_MS = 15000;
+const AUTH_REQUEST_TIMEOUT_MS = 10000;
+const EMAIL_SEND_TIMEOUT_MS = 7000;
+const EMAIL_SEND_RETRY_DELAY_MS = 900;
 const POLICY_CHECK_TIMEOUT_MS = 4500;
 const VERIFICATION_RESEND_COOLDOWN_MS = 20000;
 
@@ -88,34 +89,134 @@ function buildVerificationActionSettings() {
   };
 }
 
-async function sendVerificationEmailIfPossible(user) {
+function sleep(ms) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
+function getErrorCode(error, fallback = "auth/unknown") {
+  return error && typeof error.code === "string" ? error.code : fallback;
+}
+
+function isRetryableVerificationErrorCode(code) {
+  return code === "auth/network-request-failed" || code === "auth/request-timeout";
+}
+
+async function sendVerificationAttempt(user, actionCodeSettings) {
+  const sendPromise = actionCodeSettings
+    ? sendEmailVerification(user, actionCodeSettings)
+    : sendEmailVerification(user);
+
+  try {
+    await withTimeout(sendPromise, EMAIL_SEND_TIMEOUT_MS);
+    return { ok: true, reason: "sent" };
+  } catch (firstError) {
+    const firstCode = getErrorCode(firstError);
+    if (!isRetryableVerificationErrorCode(firstCode)) {
+      return { ok: false, code: firstCode, error: firstError };
+    }
+
+    await sleep(EMAIL_SEND_RETRY_DELAY_MS);
+
+    const retryPromise = actionCodeSettings
+      ? sendEmailVerification(user, actionCodeSettings)
+      : sendEmailVerification(user);
+
+    try {
+      await withTimeout(retryPromise, EMAIL_SEND_TIMEOUT_MS);
+      return { ok: true, reason: "sent-retry" };
+    } catch (retryError) {
+      return {
+        ok: false,
+        code: getErrorCode(retryError),
+        error: retryError
+      };
+    }
+  }
+}
+
+function formatVerificationRetrySeconds(ms) {
+  const seconds = Math.max(1, Math.ceil(ms / 1000));
+  return `${seconds}s`;
+}
+
+function getVerificationSendMessage(result) {
+  if (!result || typeof result !== "object") {
+    return "Could not send verification right now.";
+  }
+
+  if (result.ok) {
+    return "Verification email sent. Check inbox/spam/promotions.";
+  }
+
+  if (result.reason === "cooldown") {
+    return `Please wait ${formatVerificationRetrySeconds(result.retryAfterMs || 0)} before resending.`;
+  }
+
+  if (result.code === "auth/too-many-requests") {
+    return "Too many verification attempts. Please wait a moment and try again.";
+  }
+
+  if (result.code === "auth/network-request-failed" || result.code === "auth/request-timeout") {
+    return "Could not send verification due to network issues. Try again shortly.";
+  }
+
+  if (result.code === "auth/unauthorized-continue-uri" || result.code === "auth/invalid-continue-uri") {
+    return "Verification email could not be sent due to auth domain settings.";
+  }
+
+  return "Could not send verification right now. Use resend after a short wait.";
+}
+
+async function sendVerificationEmailIfPossible(user, options = {}) {
+  const skipCooldown = Boolean(options.skipCooldown);
   if (!user || !user.email) {
-    return false;
+    return { ok: false, reason: "missing-user", code: "auth/missing-user" };
   }
 
   const now = Date.now();
-  if ((now - lastVerificationSentAt) < VERIFICATION_RESEND_COOLDOWN_MS) {
-    return false;
+  const sinceLastSent = now - lastVerificationSentAt;
+  if (!skipCooldown && sinceLastSent < VERIFICATION_RESEND_COOLDOWN_MS) {
+    return {
+      ok: false,
+      reason: "cooldown",
+      retryAfterMs: VERIFICATION_RESEND_COOLDOWN_MS - sinceLastSent
+    };
   }
 
-  try {
-    const actionCodeSettings = buildVerificationActionSettings();
-    if (actionCodeSettings) {
-      await withTimeout(
-        sendEmailVerification(user, actionCodeSettings),
-        AUTH_REQUEST_TIMEOUT_MS
-      );
-    } else {
-      await withTimeout(
-        sendEmailVerification(user),
-        AUTH_REQUEST_TIMEOUT_MS
-      );
-    }
+  const actionCodeSettings = buildVerificationActionSettings();
+  const primaryAttempt = await sendVerificationAttempt(user, actionCodeSettings);
+  if (primaryAttempt.ok) {
     lastVerificationSentAt = now;
-    return true;
-  } catch (error) {
-    return false;
+    return {
+      ok: true,
+      reason: primaryAttempt.reason || "sent"
+    };
   }
+
+  const primaryCode = String(primaryAttempt.code || "");
+  const shouldFallbackToPlainSend = Boolean(actionCodeSettings)
+    && (primaryCode === "auth/unauthorized-continue-uri"
+      || primaryCode === "auth/invalid-continue-uri"
+      || primaryCode === "auth/missing-continue-uri");
+
+  if (shouldFallbackToPlainSend) {
+    const fallbackAttempt = await sendVerificationAttempt(user, undefined);
+    if (fallbackAttempt.ok) {
+      lastVerificationSentAt = now;
+      return {
+        ok: true,
+        reason: "sent-fallback"
+      };
+    }
+
+    console.warn("Verification email fallback send failed.", fallbackAttempt.error || fallbackAttempt.code);
+    return { ok: false, reason: "error", code: String(fallbackAttempt.code || "auth/unknown") };
+  }
+
+  console.warn("Verification email send failed.", primaryAttempt.error || primaryAttempt.code);
+  return { ok: false, reason: "error", code: primaryCode || "auth/unknown" };
 }
 
 function emitAuthChanged(detail) {
@@ -540,18 +641,9 @@ async function onSignInClick() {
     );
 
     if (credential?.user) {
-      try {
-        await withTimeout(
-          reload(credential.user),
-          AUTH_REQUEST_TIMEOUT_MS
-        );
-      } catch (error) {
-        // If reload fails, continue with the cached auth state.
-      }
-
       const signedInUser = auth.currentUser || credential.user;
       if (!signedInUser.emailVerified) {
-        const verificationSent = await sendVerificationEmailIfPossible(signedInUser);
+        const verificationResult = await sendVerificationEmailIfPossible(signedInUser);
         setVerificationRequiredEmail(String(signedInUser.email || email).trim());
 
         try {
@@ -561,14 +653,12 @@ async function onSignInClick() {
           emitAuthChanged({
             mode: "verification_required",
             email: verificationRequiredEmail,
-            verificationEmailSent: verificationSent
+            verificationEmailSent: verificationResult.ok
           });
         }
 
         setAuthMessage(
-          verificationSent
-            ? "Verify your email before signing in. A new verification email was sent."
-            : "Verify your email before signing in. Check your inbox/spam.",
+          `Verify your email before signing in. ${getVerificationSendMessage(verificationResult)}`,
           true
         );
         return;
@@ -618,6 +708,10 @@ async function onSignUpClick() {
       AUTH_REQUEST_TIMEOUT_MS
     );
 
+    // Send verification first so the email dispatch starts as early as possible.
+    const verificationResult = await sendVerificationEmailIfPossible(credential.user, { skipCooldown: true });
+    setVerificationRequiredEmail(String(input.email || credential.user?.email || "").trim());
+
     const displayName = `${input.firstName} ${input.lastName}`.trim();
     if (displayName) {
       try {
@@ -638,16 +732,13 @@ async function onSignUpClick() {
       createdAt: new Date().toISOString()
     });
 
-    const verificationSent = await sendVerificationEmailIfPossible(credential.user);
-    setVerificationRequiredEmail(String(input.email || credential.user?.email || "").trim());
-
     try {
       await withTimeout(signOut(auth), AUTH_REQUEST_TIMEOUT_MS);
     } catch (error) {
       emitAuthChanged({
         mode: "verification_required",
         email: verificationRequiredEmail,
-        verificationEmailSent: verificationSent
+        verificationEmailSent: verificationResult.ok
       });
     }
 
@@ -656,10 +747,10 @@ async function onSignUpClick() {
       authPasswordInput.value = "";
     }
     setAuthMessage(
-      verificationSent
-        ? "Account created. Check your inbox to verify your email, then sign in."
-        : "Account created. Verify your email before signing in.",
-      false
+      verificationResult.ok
+        ? "Account created. Verification email sent. Check inbox/spam/promotions, then sign in."
+        : `Account created, but verification was not sent. ${getVerificationSendMessage(verificationResult)}`,
+      !verificationResult.ok
     );
   } catch (error) {
     setAuthMessage(getFriendlyAuthError(error), true);
@@ -680,15 +771,6 @@ async function onGoogleSignInClick() {
     const credential = await withTimeout(signInWithGoogle(), AUTH_REQUEST_TIMEOUT_MS);
 
     if (credential?.user) {
-      try {
-        await withTimeout(
-          reload(credential.user),
-          AUTH_REQUEST_TIMEOUT_MS
-        );
-      } catch (error) {
-        // Continue with current state if reload fails.
-      }
-
       const signedInUser = auth.currentUser || credential.user;
       if (!signedInUser.emailVerified) {
         setVerificationRequiredEmail(String(signedInUser.email || "").trim());
@@ -739,16 +821,6 @@ async function onResendVerificationClick() {
       throw { code: "auth/invalid-credential" };
     }
 
-    try {
-      await withTimeout(
-        reload(activeUser),
-        AUTH_REQUEST_TIMEOUT_MS
-      );
-      activeUser = auth.currentUser || activeUser;
-    } catch (error) {
-      // Continue with current state if reload fails.
-    }
-
     if (activeUser.emailVerified) {
       clearVerificationRequiredEmail();
       setAuthMessage("Email already verified. Please sign in now.");
@@ -760,13 +832,11 @@ async function onResendVerificationClick() {
       return;
     }
 
-    const verificationSent = await sendVerificationEmailIfPossible(activeUser);
+    const verificationResult = await sendVerificationEmailIfPossible(activeUser, { skipCooldown: true });
     setVerificationRequiredEmail(String(activeUser.email || email).trim());
     setAuthMessage(
-      verificationSent
-        ? "Verification email sent. Check inbox/spam and then sign in."
-        : "Could not send right now. Please wait a moment and try again.",
-      !verificationSent
+      getVerificationSendMessage(verificationResult),
+      !verificationResult.ok
     );
   } catch (error) {
     setAuthMessage(getFriendlyAuthError(error), true);
@@ -850,23 +920,14 @@ function initializeAuthPageBindings() {
 function initializeAuthBridge() {
   onAuthStateChanged(auth, async (user) => {
     if (user) {
-      let activeUser = user;
-      try {
-        await withTimeout(
-          reload(activeUser),
-          AUTH_REQUEST_TIMEOUT_MS
-        );
-        activeUser = auth.currentUser || activeUser;
-      } catch (error) {
-        // Continue with cached user state if reload fails.
-      }
+      const activeUser = user;
 
       if (!activeUser.emailVerified) {
         if (authRequestInProgress) {
           return;
         }
 
-        const verificationSent = await sendVerificationEmailIfPossible(activeUser);
+        const verificationResult = await sendVerificationEmailIfPossible(activeUser);
         setVerificationRequiredEmail(String(activeUser.email || "").trim());
 
         try {
@@ -875,7 +936,7 @@ function initializeAuthBridge() {
           emitAuthChanged({
             mode: "verification_required",
             email: verificationRequiredEmail,
-            verificationEmailSent: verificationSent
+            verificationEmailSent: verificationResult.ok
           });
         }
         return;
