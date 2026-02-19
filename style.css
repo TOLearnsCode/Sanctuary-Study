@@ -63,20 +63,30 @@ body[data-theme="dark"] {
   box-sizing: border-box;
 }
 
+html {
+  font-size: 16px;
+}
+
 html,
 body {
   min-height: 100%;
+  width: 100%;
 }
 
 body {
   margin: 0;
   color: var(--text);
   font-family: "Manrope", "Segoe UI", sans-serif;
+  font-size: clamp(16px, 1.6vw, 20px);
   background: radial-gradient(circle at 0% 0%, var(--bg-deep), transparent 42%), var(--bg);
   display: flex;
   justify-content: center;
   padding: 18px 18px 28px;
   overflow-x: hidden;
+}
+
+h1 {
+  font-size: clamp(24px, 7vw, 36px);
 }
 
 body::before,
@@ -136,6 +146,25 @@ body.popup-open::after {
   width: min(1120px, 100%);
   display: grid;
   gap: 16px;
+}
+
+.container {
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.card,
+.panel,
+table,
+.top-bar,
+.auth-form,
+.settings-form,
+.mini-timer,
+.music-dock {
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .hidden {
@@ -2064,5 +2093,26 @@ body[data-theme="dark"] .btn-danger {
 
   .graph-bar {
     width: 10px;
+  }
+}
+
+@media (max-width: 430px) {
+  .container {
+    max-width: 100%;
+    padding: 16px;
+  }
+}
+
+@media (max-width: 375px) {
+  .container {
+    padding: 12px;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+    min-height: 44px;
   }
 }
