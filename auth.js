@@ -78,17 +78,6 @@ function withTimeout(promise, timeoutMs, timeoutCode = "auth/request-timeout") {
   });
 }
 
-function buildVerificationActionSettings() {
-  if (window.location.protocol !== "http:" && window.location.protocol !== "https:") {
-    return undefined;
-  }
-
-  return {
-    url: `${window.location.origin}${window.location.pathname}`,
-    handleCodeInApp: false
-  };
-}
-
 function sleep(ms) {
   return new Promise((resolve) => {
     window.setTimeout(resolve, ms);
@@ -103,10 +92,8 @@ function isRetryableVerificationErrorCode(code) {
   return code === "auth/network-request-failed" || code === "auth/request-timeout";
 }
 
-async function sendVerificationAttempt(user, actionCodeSettings) {
-  const sendPromise = actionCodeSettings
-    ? sendEmailVerification(user, actionCodeSettings)
-    : sendEmailVerification(user);
+async function sendVerificationAttempt(user) {
+  const sendPromise = sendEmailVerification(user);
 
   try {
     await withTimeout(sendPromise, EMAIL_SEND_TIMEOUT_MS);
@@ -119,9 +106,7 @@ async function sendVerificationAttempt(user, actionCodeSettings) {
 
     await sleep(EMAIL_SEND_RETRY_DELAY_MS);
 
-    const retryPromise = actionCodeSettings
-      ? sendEmailVerification(user, actionCodeSettings)
-      : sendEmailVerification(user);
+    const retryPromise = sendEmailVerification(user);
 
     try {
       await withTimeout(retryPromise, EMAIL_SEND_TIMEOUT_MS);
@@ -162,8 +147,8 @@ function getVerificationSendMessage(result) {
     return "Could not send verification due to network issues. Try again shortly.";
   }
 
-  if (result.code === "auth/unauthorized-continue-uri" || result.code === "auth/invalid-continue-uri") {
-    return "Verification email could not be sent due to auth domain settings.";
+  if (result.code) {
+    return `Could not send verification right now (${result.code}). Try resend after a short wait.`;
   }
 
   return "Could not send verification right now. Use resend after a short wait.";
@@ -185,8 +170,7 @@ async function sendVerificationEmailIfPossible(user, options = {}) {
     };
   }
 
-  const actionCodeSettings = buildVerificationActionSettings();
-  const primaryAttempt = await sendVerificationAttempt(user, actionCodeSettings);
+  const primaryAttempt = await sendVerificationAttempt(user);
   if (primaryAttempt.ok) {
     lastVerificationSentAt = now;
     return {
@@ -195,28 +179,8 @@ async function sendVerificationEmailIfPossible(user, options = {}) {
     };
   }
 
-  const primaryCode = String(primaryAttempt.code || "");
-  const shouldFallbackToPlainSend = Boolean(actionCodeSettings)
-    && (primaryCode === "auth/unauthorized-continue-uri"
-      || primaryCode === "auth/invalid-continue-uri"
-      || primaryCode === "auth/missing-continue-uri");
-
-  if (shouldFallbackToPlainSend) {
-    const fallbackAttempt = await sendVerificationAttempt(user, undefined);
-    if (fallbackAttempt.ok) {
-      lastVerificationSentAt = now;
-      return {
-        ok: true,
-        reason: "sent-fallback"
-      };
-    }
-
-    console.warn("Verification email fallback send failed.", fallbackAttempt.error || fallbackAttempt.code);
-    return { ok: false, reason: "error", code: String(fallbackAttempt.code || "auth/unknown") };
-  }
-
   console.warn("Verification email send failed.", primaryAttempt.error || primaryAttempt.code);
-  return { ok: false, reason: "error", code: primaryCode || "auth/unknown" };
+  return { ok: false, reason: "error", code: String(primaryAttempt.code || "auth/unknown") };
 }
 
 function emitAuthChanged(detail) {
@@ -604,6 +568,17 @@ function getFriendlyAuthError(error) {
   return "Authentication failed. Please try again.";
 }
 
+function getReadableErrorMessage(error) {
+  const fallback = getFriendlyAuthError(error);
+  const errorMessage = error && typeof error.message === "string" ? error.message.trim() : "";
+  if (!errorMessage) {
+    return fallback;
+  }
+
+  // Keep Firebase message for debugging, but still user-readable.
+  return `${fallback} (${errorMessage})`;
+}
+
 function validateSignUpProfile(input) {
   if (!input.firstName || input.firstName.length < 2) {
     return "Enter your first name (at least 2 characters).";
@@ -703,13 +678,20 @@ async function onSignUpClick() {
   authRequestInProgress = true;
 
   try {
+    console.log("Signing up user...");
     const credential = await withTimeout(
       signUpWithEmailPassword(input.email, input.password),
       AUTH_REQUEST_TIMEOUT_MS
     );
+    console.log("User created:", credential.user.uid, credential.user.email);
 
     // Send verification first so the email dispatch starts as early as possible.
     const verificationResult = await sendVerificationEmailIfPossible(credential.user, { skipCooldown: true });
+    if (verificationResult.ok) {
+      console.log("Verification email sent:", credential.user.email);
+    } else {
+      console.error("Verification email send failed:", verificationResult);
+    }
     setVerificationRequiredEmail(String(input.email || credential.user?.email || "").trim());
 
     const displayName = `${input.firstName} ${input.lastName}`.trim();
@@ -753,12 +735,28 @@ async function onSignUpClick() {
       !verificationResult.ok
     );
   } catch (error) {
-    setAuthMessage(getFriendlyAuthError(error), true);
+    console.error("Sign up / verification error:", error);
+    setAuthMessage(getReadableErrorMessage(error), true);
   } finally {
     authRequestInProgress = false;
     setAuthLoading(false);
     setAuthButtonsBusy(false);
   }
+}
+
+async function resendVerificationEmail() {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("No signed-in user to verify.");
+  }
+
+  const verificationResult = await sendVerificationEmailIfPossible(user, { skipCooldown: true });
+  if (!verificationResult.ok) {
+    throw new Error(getVerificationSendMessage(verificationResult));
+  }
+
+  console.log("Verification email resent:", user.email || "(unknown email)");
+  return verificationResult;
 }
 
 async function onGoogleSignInClick() {
@@ -832,14 +830,15 @@ async function onResendVerificationClick() {
       return;
     }
 
-    const verificationResult = await sendVerificationEmailIfPossible(activeUser, { skipCooldown: true });
+    const verificationResult = await resendVerificationEmail();
     setVerificationRequiredEmail(String(activeUser.email || email).trim());
     setAuthMessage(
       getVerificationSendMessage(verificationResult),
       !verificationResult.ok
     );
   } catch (error) {
-    setAuthMessage(getFriendlyAuthError(error), true);
+    console.error("Resend verification error:", error);
+    setAuthMessage(getReadableErrorMessage(error), true);
   } finally {
     try {
       if (auth.currentUser && !auth.currentUser.emailVerified) {
