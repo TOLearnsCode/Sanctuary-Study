@@ -955,6 +955,18 @@ function initializeAuthenticationFlow() {
     const detail = event && event.detail ? event.detail : {};
     const mode = String(detail.mode || "");
 
+    if (mode === "verification_required") {
+      const email = String(detail.email || "").trim();
+      const label = email || "your email address";
+      currentUser = null;
+      resetCloudSyncState();
+      showAuthScreen(`Verify ${label} before signing in. Check inbox/spam. You can use "Resend verification email" if needed.`);
+      renderAnalytics();
+      updateAuthUi();
+      renderSyncStatus();
+      return;
+    }
+
     if (mode === "user") {
       const detailUser = detail.user && typeof detail.user === "object" ? detail.user : {};
       const profile = detail.profile && typeof detail.profile === "object" ? detail.profile : {};

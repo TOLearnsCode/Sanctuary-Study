@@ -428,6 +428,10 @@ body[data-theme="dark"] .nav-btn.active {
   flex-wrap: wrap;
 }
 
+.auth-resend-btn {
+  margin-top: -2px;
+}
+
 .auth-inline-note {
   margin: -2px 0 0;
   color: var(--muted);

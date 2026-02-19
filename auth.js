@@ -1,18 +1,25 @@
-import { auth, googleProvider } from "./firebase.js";
+import { auth, db, googleProvider } from "./firebase.js";
 import {
   createUserWithEmailAndPassword,
   deleteUser,
   onAuthStateChanged,
+  reload,
+  sendEmailVerification,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
   updateProfile,
   validatePassword
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import {
+  deleteDoc,
+  doc
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const USER_PROFILES_KEY = "sanctuaryUserProfilesV1";
 const AUTH_REQUEST_TIMEOUT_MS = 15000;
 const POLICY_CHECK_TIMEOUT_MS = 4500;
+const VERIFICATION_RESEND_COOLDOWN_MS = 20000;
 
 const authForm = document.getElementById("authForm");
 const authFirstNameInput = document.getElementById("authFirstNameInput");
@@ -25,6 +32,7 @@ const authSignInBtn = document.getElementById("authSignInBtn");
 const authSignUpBtn = document.getElementById("authSignUpBtn");
 const authGoogleBtn = document.getElementById("authGoogleBtn");
 const authGuestBtn = document.getElementById("authGuestBtn");
+const authResendVerificationBtn = document.getElementById("authResendVerificationBtn");
 const authLoading = document.getElementById("authLoading");
 const authLoadingText = document.getElementById("authLoadingText");
 const authMessage = document.getElementById("authMessage");
@@ -34,6 +42,9 @@ const authNameRow = authFirstNameInput ? authFirstNameInput.closest(".auth-form-
 const authDobLabel = authDobInput ? authDobInput.closest("label") : null;
 
 let authFormMode = "signin"; // "signin" | "signup"
+let verificationRequiredEmail = "";
+let lastVerificationSentAt = 0;
+let authRequestInProgress = false;
 
 // Exported helpers so other modules can call auth actions directly if needed.
 export function signUpWithEmailPassword(email, password) {
@@ -66,6 +77,47 @@ function withTimeout(promise, timeoutMs, timeoutCode = "auth/request-timeout") {
   });
 }
 
+function buildVerificationActionSettings() {
+  if (window.location.protocol !== "http:" && window.location.protocol !== "https:") {
+    return undefined;
+  }
+
+  return {
+    url: `${window.location.origin}${window.location.pathname}`,
+    handleCodeInApp: false
+  };
+}
+
+async function sendVerificationEmailIfPossible(user) {
+  if (!user || !user.email) {
+    return false;
+  }
+
+  const now = Date.now();
+  if ((now - lastVerificationSentAt) < VERIFICATION_RESEND_COOLDOWN_MS) {
+    return false;
+  }
+
+  try {
+    const actionCodeSettings = buildVerificationActionSettings();
+    if (actionCodeSettings) {
+      await withTimeout(
+        sendEmailVerification(user, actionCodeSettings),
+        AUTH_REQUEST_TIMEOUT_MS
+      );
+    } else {
+      await withTimeout(
+        sendEmailVerification(user),
+        AUTH_REQUEST_TIMEOUT_MS
+      );
+    }
+    lastVerificationSentAt = now;
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
 function emitAuthChanged(detail) {
   const safeDetail = detail && typeof detail === "object" ? detail : { mode: "signed_out" };
   window.__SANCTUARY_AUTH_STATE = safeDetail;
@@ -84,7 +136,7 @@ function setAuthMessage(message, isError = false) {
 }
 
 function setAuthButtonsBusy(isBusy) {
-  const targets = [authSubmitBtn, authSignInBtn, authSignUpBtn, authGoogleBtn, authGuestBtn];
+  const targets = [authSubmitBtn, authSignInBtn, authSignUpBtn, authGoogleBtn, authGuestBtn, authResendVerificationBtn];
   targets.forEach((button) => {
     if (button) {
       button.disabled = isBusy;
@@ -99,6 +151,27 @@ function setButtonVariant(button, usePrimary) {
 
   button.classList.toggle("btn-primary", usePrimary);
   button.classList.toggle("btn-glass", !usePrimary);
+}
+
+function setVerificationResendVisibility(visible, email = "") {
+  if (!authResendVerificationBtn) {
+    return;
+  }
+
+  authResendVerificationBtn.classList.toggle("hidden", !visible);
+  if (visible && authEmailInput && email && !String(authEmailInput.value || "").trim()) {
+    authEmailInput.value = email;
+  }
+}
+
+function setVerificationRequiredEmail(email) {
+  verificationRequiredEmail = String(email || "").trim();
+  setVerificationResendVisibility(Boolean(verificationRequiredEmail), verificationRequiredEmail);
+}
+
+function clearVerificationRequiredEmail() {
+  verificationRequiredEmail = "";
+  setVerificationResendVisibility(false);
 }
 
 function setAuthFormMode(nextMode) {
@@ -140,6 +213,12 @@ function setAuthFormMode(nextMode) {
       ? "Sign up requires first name, surname, date of birth, email, and password."
       : "Sign in uses email and password only.";
   }
+
+  if (isSignUp) {
+    setVerificationResendVisibility(false);
+  } else {
+    setVerificationResendVisibility(Boolean(verificationRequiredEmail), verificationRequiredEmail);
+  }
 }
 
 function setAuthLoading(isLoading, text = "Processing request...") {
@@ -176,6 +255,20 @@ function saveProfilesMap(map) {
   } catch (error) {
     // Ignore storage failure; auth can still continue.
   }
+}
+
+function removeStoredProfile(uid) {
+  if (!uid) {
+    return;
+  }
+
+  const map = loadProfilesMap();
+  if (!(uid in map)) {
+    return;
+  }
+
+  delete map[uid];
+  saveProfilesMap(map);
 }
 
 function getStoredProfile(uid) {
@@ -400,6 +493,12 @@ function getFriendlyAuthError(error) {
   if (code === "auth/requires-recent-login") {
     return "For security, please sign in again before deleting your account.";
   }
+  if (code === "auth/email-not-verified") {
+    return "Please verify your email address before signing in.";
+  }
+  if (code === "app/data-delete-failed") {
+    return "Could not delete cloud data. Please try again while signed in.";
+  }
 
   return "Authentication failed. Please try again.";
 }
@@ -432,17 +531,57 @@ async function onSignInClick() {
   setAuthButtonsBusy(true);
   setAuthLoading(true, "Signing in...");
   setAuthMessage("");
+  authRequestInProgress = true;
 
   try {
     const credential = await withTimeout(
       signInWithEmailPassword(email, password),
       AUTH_REQUEST_TIMEOUT_MS
     );
+
+    if (credential?.user) {
+      try {
+        await withTimeout(
+          reload(credential.user),
+          AUTH_REQUEST_TIMEOUT_MS
+        );
+      } catch (error) {
+        // If reload fails, continue with the cached auth state.
+      }
+
+      const signedInUser = auth.currentUser || credential.user;
+      if (!signedInUser.emailVerified) {
+        const verificationSent = await sendVerificationEmailIfPossible(signedInUser);
+        setVerificationRequiredEmail(String(signedInUser.email || email).trim());
+
+        try {
+          await withTimeout(signOut(auth), AUTH_REQUEST_TIMEOUT_MS);
+        } catch (error) {
+          // If sign-out fails, still surface a trust-gate event.
+          emitAuthChanged({
+            mode: "verification_required",
+            email: verificationRequiredEmail,
+            verificationEmailSent: verificationSent
+          });
+        }
+
+        setAuthMessage(
+          verificationSent
+            ? "Verify your email before signing in. A new verification email was sent."
+            : "Verify your email before signing in. Check your inbox/spam.",
+          true
+        );
+        return;
+      }
+    }
+
+    clearVerificationRequiredEmail();
     syncProfileFromAuthUser(credential?.user);
     setAuthMessage("Signed in successfully.");
   } catch (error) {
     setAuthMessage(getFriendlyAuthError(error), true);
   } finally {
+    authRequestInProgress = false;
     setAuthLoading(false);
     setAuthButtonsBusy(false);
   }
@@ -471,6 +610,7 @@ async function onSignUpClick() {
   setAuthButtonsBusy(true);
   setAuthLoading(true, "Creating your account...");
   setAuthMessage("");
+  authRequestInProgress = true;
 
   try {
     const credential = await withTimeout(
@@ -498,10 +638,33 @@ async function onSignUpClick() {
       createdAt: new Date().toISOString()
     });
 
-    setAuthMessage("Account created. Welcome to Sanctuary Study.");
+    const verificationSent = await sendVerificationEmailIfPossible(credential.user);
+    setVerificationRequiredEmail(String(input.email || credential.user?.email || "").trim());
+
+    try {
+      await withTimeout(signOut(auth), AUTH_REQUEST_TIMEOUT_MS);
+    } catch (error) {
+      emitAuthChanged({
+        mode: "verification_required",
+        email: verificationRequiredEmail,
+        verificationEmailSent: verificationSent
+      });
+    }
+
+    setAuthFormMode("signin");
+    if (authPasswordInput) {
+      authPasswordInput.value = "";
+    }
+    setAuthMessage(
+      verificationSent
+        ? "Account created. Check your inbox to verify your email, then sign in."
+        : "Account created. Verify your email before signing in.",
+      false
+    );
   } catch (error) {
     setAuthMessage(getFriendlyAuthError(error), true);
   } finally {
+    authRequestInProgress = false;
     setAuthLoading(false);
     setAuthButtonsBusy(false);
   }
@@ -511,14 +674,112 @@ async function onGoogleSignInClick() {
   setAuthButtonsBusy(true);
   setAuthLoading(true, "Opening Google sign-in...");
   setAuthMessage("");
+  authRequestInProgress = true;
 
   try {
     const credential = await withTimeout(signInWithGoogle(), AUTH_REQUEST_TIMEOUT_MS);
+
+    if (credential?.user) {
+      try {
+        await withTimeout(
+          reload(credential.user),
+          AUTH_REQUEST_TIMEOUT_MS
+        );
+      } catch (error) {
+        // Continue with current state if reload fails.
+      }
+
+      const signedInUser = auth.currentUser || credential.user;
+      if (!signedInUser.emailVerified) {
+        setVerificationRequiredEmail(String(signedInUser.email || "").trim());
+        await withTimeout(signOut(auth), AUTH_REQUEST_TIMEOUT_MS);
+        setAuthMessage("This Google account email must be verified before sign-in.", true);
+        return;
+      }
+    }
+
+    clearVerificationRequiredEmail();
     syncProfileFromAuthUser(credential?.user);
     setAuthMessage("Signed in with Google.");
   } catch (error) {
     setAuthMessage(getFriendlyAuthError(error), true);
   } finally {
+    authRequestInProgress = false;
+    setAuthLoading(false);
+    setAuthButtonsBusy(false);
+  }
+}
+
+async function onResendVerificationClick() {
+  const { email: inputEmail, password } = normalizeAuthInput();
+  const email = String(inputEmail || verificationRequiredEmail || "").trim();
+
+  if (!isLikelyEmail(email)) {
+    setAuthMessage("Enter your account email to resend verification.", true);
+    return;
+  }
+  if (!password) {
+    setAuthMessage("Enter your password to resend verification.", true);
+    return;
+  }
+
+  setAuthButtonsBusy(true);
+  setAuthLoading(true, "Sending verification email...");
+  setAuthMessage("");
+  authRequestInProgress = true;
+
+  try {
+    const credential = await withTimeout(
+      signInWithEmailPassword(email, password),
+      AUTH_REQUEST_TIMEOUT_MS
+    );
+
+    let activeUser = credential?.user || auth.currentUser;
+    if (!activeUser) {
+      throw { code: "auth/invalid-credential" };
+    }
+
+    try {
+      await withTimeout(
+        reload(activeUser),
+        AUTH_REQUEST_TIMEOUT_MS
+      );
+      activeUser = auth.currentUser || activeUser;
+    } catch (error) {
+      // Continue with current state if reload fails.
+    }
+
+    if (activeUser.emailVerified) {
+      clearVerificationRequiredEmail();
+      setAuthMessage("Email already verified. Please sign in now.");
+      try {
+        await withTimeout(signOut(auth), AUTH_REQUEST_TIMEOUT_MS);
+      } catch (error) {
+        // If sign-out fails here, user can still continue to the app.
+      }
+      return;
+    }
+
+    const verificationSent = await sendVerificationEmailIfPossible(activeUser);
+    setVerificationRequiredEmail(String(activeUser.email || email).trim());
+    setAuthMessage(
+      verificationSent
+        ? "Verification email sent. Check inbox/spam and then sign in."
+        : "Could not send right now. Please wait a moment and try again.",
+      !verificationSent
+    );
+  } catch (error) {
+    setAuthMessage(getFriendlyAuthError(error), true);
+  } finally {
+    try {
+      if (auth.currentUser && !auth.currentUser.emailVerified) {
+        await withTimeout(signOut(auth), AUTH_REQUEST_TIMEOUT_MS);
+      }
+    } catch (error) {
+      // Keep trust gate active even if sign-out fails.
+    }
+
+    authRequestInProgress = false;
     setAuthLoading(false);
     setAuthButtonsBusy(false);
   }
@@ -533,6 +794,7 @@ function initializeAuthPageBindings() {
   setAuthButtonsBusy(false);
   setAuthLoading(false);
   setAuthFormMode("signin");
+  setVerificationResendVisibility(false);
 
   authSignInBtn.addEventListener("click", () => {
     setAuthFormMode("signin");
@@ -542,6 +804,7 @@ function initializeAuthPageBindings() {
 
   authSignUpBtn.addEventListener("click", () => {
     setAuthFormMode("signup");
+    clearVerificationRequiredEmail();
     setAuthMessage("");
     authFirstNameInput?.focus();
   });
@@ -576,17 +839,56 @@ function initializeAuthPageBindings() {
     }
     onSignInClick();
   });
+
+  if (authResendVerificationBtn) {
+    authResendVerificationBtn.addEventListener("click", () => {
+      onResendVerificationClick();
+    });
+  }
 }
 
 function initializeAuthBridge() {
-  onAuthStateChanged(auth, (user) => {
+  onAuthStateChanged(auth, async (user) => {
     if (user) {
-      const profile = syncProfileFromAuthUser(user);
+      let activeUser = user;
+      try {
+        await withTimeout(
+          reload(activeUser),
+          AUTH_REQUEST_TIMEOUT_MS
+        );
+        activeUser = auth.currentUser || activeUser;
+      } catch (error) {
+        // Continue with cached user state if reload fails.
+      }
+
+      if (!activeUser.emailVerified) {
+        if (authRequestInProgress) {
+          return;
+        }
+
+        const verificationSent = await sendVerificationEmailIfPossible(activeUser);
+        setVerificationRequiredEmail(String(activeUser.email || "").trim());
+
+        try {
+          await withTimeout(signOut(auth), AUTH_REQUEST_TIMEOUT_MS);
+        } catch (error) {
+          emitAuthChanged({
+            mode: "verification_required",
+            email: verificationRequiredEmail,
+            verificationEmailSent: verificationSent
+          });
+        }
+        return;
+      }
+
+      clearVerificationRequiredEmail();
+      const profile = syncProfileFromAuthUser(activeUser);
       emitAuthChanged({
         mode: "user",
-        email: (profile && profile.email) || user.email || "",
+        email: (profile && profile.email) || activeUser.email || "",
         profile: profile || null,
-        user
+        user: activeUser,
+        emailVerified: true
       });
       return;
     }
@@ -595,6 +897,14 @@ function initializeAuthBridge() {
     if (authPasswordInput) {
       authPasswordInput.value = "";
     }
+    if (verificationRequiredEmail) {
+      emitAuthChanged({
+        mode: "verification_required",
+        email: verificationRequiredEmail
+      });
+      return;
+    }
+
     emitAuthChanged({ mode: "signed_out" });
   });
 
@@ -620,7 +930,20 @@ function initializeAuthBridge() {
     }
 
     try {
+      const userDocRef = doc(db, "users", user.uid);
+      const analyticsDocRef = doc(db, "users", user.uid, "private", "appData");
+      const deleteResults = await Promise.allSettled([
+        deleteDoc(analyticsDocRef),
+        deleteDoc(userDocRef)
+      ]);
+      const hasDeleteFailure = deleteResults.some((result) => result.status === "rejected");
+      if (hasDeleteFailure) {
+        throw { code: "app/data-delete-failed" };
+      }
+
       await deleteUser(user);
+      removeStoredProfile(user.uid);
+      clearVerificationRequiredEmail();
       emitAuthChanged({ mode: "signed_out" });
       window.dispatchEvent(new CustomEvent("sanctuary:delete-account-result", {
         detail: { ok: true }
