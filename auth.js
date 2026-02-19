@@ -8,7 +8,7 @@ import {
   signOut,
   updateProfile,
   validatePassword
-} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 const USER_PROFILES_KEY = "sanctuaryUserProfilesV1";
 const AUTH_REQUEST_TIMEOUT_MS = 15000;

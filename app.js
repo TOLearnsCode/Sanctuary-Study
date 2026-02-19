@@ -21,11 +21,20 @@ const SESSION_NOTES_KEY = "sanctuarySessionNotesV1";
 const ACHIEVEMENTS_KEY = "sanctuaryAchievementsV1";
 const GUEST_MODE_KEY = "sanctuaryGuestModeV1";
 const THEME_PREF_KEY = "theme";
+const LAST_SYNCED_UID_KEY = "sanctuaryLastAnalyticsUidV1";
+const CLOUD_SYNC_DOC_NAME = "appData";
+const CLOUD_SYNC_DEBOUNCE_MS = 900;
+const USER_DOC_SYNC_DEBOUNCE_MS = 750;
+const USER_DOC_SCHEMA_VERSION = 1;
 
 const GRAPH_DAYS = 60;
+const GRAPH_DAYS_TABLET = 42;
+const GRAPH_DAYS_MOBILE = 30;
+const GRAPH_DAYS_SMALL_MOBILE = 21;
 const POPUP_SECONDS = 5;
 const TOAST_SHOW_MS = 4200;
 const SCRIPTURE_HISTORY_LIMIT = 14;
+const CLOUD_HYDRATE_COOLDOWN_MS = 6000;
 
 const BIBLE_API_BASE_URL = "https://bible-api.com/";
 const COMMONS_API_BASE_URL = "https://commons.wikimedia.org/w/api.php";
@@ -396,6 +405,18 @@ let homeTypeEffectLocked = false;
 let homeTypeEffectTimeoutId = null;
 let authMode = "pending"; // "pending" | "guest" | "user"
 let currentUser = null;
+let cloudSyncDb = null;
+let cloudSyncApi = null;
+let cloudSyncReady = false;
+let cloudSyncTimerId = null;
+let cloudSyncInFlight = false;
+let cloudSyncQueued = false;
+let cloudSyncHydrating = false;
+let lastCloudHydrateAt = 0;
+let userDocUnsubscribe = null;
+let userDocSyncTimerId = null;
+let userDocApplyingRemote = false;
+let analyticsResizeTimeoutId = null;
 
 let currentFocus = {
   theme: selectedStudyTheme,
@@ -585,11 +606,23 @@ function initializeAuthenticationFlow() {
       syncAchievementsWithCurrentStreak();
       renderAnalytics();
       updateAuthUi();
+      void startUserDocRealtimeSync(currentUser.uid);
+      void hydrateAnalyticsFromCloud(currentUser.uid).then((hydrated) => {
+        if (!hydrated) {
+          return;
+        }
+        lastCloudHydrateAt = Date.now();
+        syncAchievementsWithCurrentStreak();
+        renderAnalytics();
+        renderFavourites();
+        scheduleCloudAnalyticsSync("post-hydrate");
+      });
       return;
     }
 
     if (mode === "signed_out") {
       currentUser = null;
+      resetCloudSyncState();
       if (loadGuestModePreference()) {
         authMode = "guest";
         authSection.classList.add("hidden");
@@ -628,9 +661,540 @@ function initializeAuthenticationFlow() {
   updateAuthUi();
 }
 
+function resetCloudSyncState() {
+  if (cloudSyncTimerId) {
+    window.clearTimeout(cloudSyncTimerId);
+  }
+  if (userDocSyncTimerId) {
+    window.clearTimeout(userDocSyncTimerId);
+  }
+  if (typeof userDocUnsubscribe === "function") {
+    try {
+      userDocUnsubscribe();
+    } catch (error) {
+      // Listener may already be detached.
+    }
+  }
+  cloudSyncTimerId = null;
+  userDocSyncTimerId = null;
+  userDocUnsubscribe = null;
+  userDocApplyingRemote = false;
+  cloudSyncInFlight = false;
+  cloudSyncQueued = false;
+  cloudSyncHydrating = false;
+  lastCloudHydrateAt = 0;
+}
+
+function sanitizeStudyLog(logInput) {
+  if (!logInput || typeof logInput !== "object") {
+    return {};
+  }
+
+  const clean = {};
+  Object.entries(logInput).forEach(([dateKey, minutes]) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
+      return;
+    }
+    const value = Number(minutes || 0);
+    if (!Number.isFinite(value) || value <= 0) {
+      return;
+    }
+    clean[dateKey] = Number(value.toFixed(2));
+  });
+  return clean;
+}
+
+function sanitizeTagLog(tagLogInput) {
+  if (!tagLogInput || typeof tagLogInput !== "object") {
+    return {};
+  }
+
+  const clean = {};
+  Object.entries(tagLogInput).forEach(([dateKey, dayTags]) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey) || !dayTags || typeof dayTags !== "object") {
+      return;
+    }
+
+    const cleanedTags = {};
+    Object.entries(dayTags).forEach(([tag, minutes]) => {
+      const safeTag = String(tag || "").trim();
+      const value = Number(minutes || 0);
+      if (!safeTag || !Number.isFinite(value) || value <= 0) {
+        return;
+      }
+      cleanedTags[safeTag] = Number(value.toFixed(2));
+    });
+
+    if (Object.keys(cleanedTags).length > 0) {
+      clean[dateKey] = cleanedTags;
+    }
+  });
+  return clean;
+}
+
+function sanitizeAchievementMap(input) {
+  if (!input || typeof input !== "object") {
+    return {};
+  }
+
+  const validIds = new Set(STREAK_ACHIEVEMENTS.map((achievement) => achievement.id));
+  const clean = {};
+  Object.entries(input).forEach(([id, entry]) => {
+    if (!validIds.has(id) || !entry || typeof entry !== "object") {
+      return;
+    }
+
+    const days = Number(entry.days || 0);
+    const unlockedAt = String(entry.unlockedAt || "").trim();
+    clean[id] = {
+      days: Number.isFinite(days) && days > 0 ? days : STREAK_ACHIEVEMENTS.find((item) => item.id === id)?.days || 0,
+      unlockedAt: unlockedAt || new Date().toISOString()
+    };
+  });
+  return clean;
+}
+
+function mergeStudyLogs(localLog, remoteLog) {
+  const local = sanitizeStudyLog(localLog);
+  const remote = sanitizeStudyLog(remoteLog);
+  const merged = { ...remote };
+  Object.entries(local).forEach(([dateKey, minutes]) => {
+    merged[dateKey] = Math.max(Number(remote[dateKey] || 0), Number(minutes || 0));
+  });
+  return sanitizeStudyLog(merged);
+}
+
+function mergeTagLogs(localTagLog, remoteTagLog) {
+  const local = sanitizeTagLog(localTagLog);
+  const remote = sanitizeTagLog(remoteTagLog);
+  const merged = { ...remote };
+
+  Object.entries(local).forEach(([dateKey, tags]) => {
+    if (!merged[dateKey]) {
+      merged[dateKey] = {};
+    }
+
+    Object.entries(tags).forEach(([tag, minutes]) => {
+      merged[dateKey][tag] = Math.max(
+        Number((merged[dateKey] && merged[dateKey][tag]) || 0),
+        Number(minutes || 0)
+      );
+    });
+  });
+
+  return sanitizeTagLog(merged);
+}
+
+function mergeAchievementMaps(localInput, remoteInput) {
+  const local = sanitizeAchievementMap(localInput);
+  const remote = sanitizeAchievementMap(remoteInput);
+  const merged = { ...remote };
+
+  Object.entries(local).forEach(([id, localEntry]) => {
+    if (!merged[id]) {
+      merged[id] = localEntry;
+      return;
+    }
+
+    const remoteDate = Date.parse(String(merged[id].unlockedAt || ""));
+    const localDate = Date.parse(String(localEntry.unlockedAt || ""));
+    if (Number.isFinite(localDate) && (!Number.isFinite(remoteDate) || localDate < remoteDate)) {
+      merged[id] = localEntry;
+    }
+  });
+
+  return sanitizeAchievementMap(merged);
+}
+
+async function ensureCloudSyncClient() {
+  if (cloudSyncReady && cloudSyncDb && cloudSyncApi) {
+    return true;
+  }
+
+  try {
+    const [{ db }, firestoreModule] = await Promise.all([
+      import("./firebase.js"),
+      import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js")
+    ]);
+
+    cloudSyncDb = db;
+    cloudSyncApi = firestoreModule;
+    cloudSyncReady = true;
+    return true;
+  } catch (error) {
+    console.warn("Cloud analytics sync is unavailable right now.", error);
+    return false;
+  }
+}
+
+function getCloudAnalyticsDocRef(uid) {
+  if (!uid || !cloudSyncReady || !cloudSyncDb || !cloudSyncApi) {
+    return null;
+  }
+
+  return cloudSyncApi.doc(cloudSyncDb, "users", uid, "private", CLOUD_SYNC_DOC_NAME);
+}
+
+function buildLocalAnalyticsPayload(allowLocalData = true) {
+  if (!allowLocalData) {
+    return {
+      studyLog: {},
+      tagLog: {},
+      achievements: {}
+    };
+  }
+
+  return {
+    studyLog: sanitizeStudyLog(loadStudyLog()),
+    tagLog: sanitizeTagLog(loadTagLog()),
+    achievements: sanitizeAchievementMap(loadUnlockedAchievements())
+  };
+}
+
+function getUserDocRef(uid) {
+  if (!uid || !cloudSyncReady || !cloudSyncDb || !cloudSyncApi) {
+    return null;
+  }
+
+  return cloudSyncApi.doc(cloudSyncDb, "users", uid);
+}
+
+function getLastSessionAtFromLog(logInput) {
+  const log = sanitizeStudyLog(logInput);
+  const keys = Object.keys(log)
+    .filter((dateKey) => Number(log[dateKey] || 0) > 0)
+    .sort();
+
+  if (!keys.length) {
+    return null;
+  }
+
+  const latest = parseDateKey(keys[keys.length - 1]);
+  if (Number.isNaN(latest.getTime())) {
+    return null;
+  }
+
+  return latest.toISOString();
+}
+
+function buildUserDocPayload(reason = "update") {
+  const localLog = loadStudyLog();
+  const currentTheme = THEME_REFERENCE_MAP[selectedStudyTheme] ? selectedStudyTheme : "Perseverance";
+  const safePreferences = {
+    studyMinutes: clampMinutes(settings.studyMinutes, 1, 240),
+    breakMinutes: clampMinutes(settings.breakMinutes, 1, 120),
+    dailyGoalMinutes: clampMinutes(settings.dailyGoalMinutes, 10, 600),
+    theme: document.body.dataset.theme === "light" ? "light" : "dark",
+    focusMode: sanitizeFocusMode(settings.focusMode),
+    alarmMode: sanitizeAlarmMode(settings.alarmMode),
+    customAlarmUrl: String(settings.customAlarmUrl || "").trim(),
+    youtubeMusicUrl: String(settings.youtubeMusicUrl || "").trim(),
+    musicPresetId: sanitizeMusicPresetId(settings.musicPresetId)
+  };
+
+  return {
+    studyTheme: currentTheme,
+    preferences: safePreferences,
+    streakCount: calculateStreak(localLog),
+    lastSessionAt: getLastSessionAtFromLog(localLog),
+    updatedAt: new Date().toISOString(),
+    schemaVersion: USER_DOC_SCHEMA_VERSION,
+    source: reason
+  };
+}
+
+function applyUserDocSnapshot(data) {
+  if (!data || typeof data !== "object") {
+    return;
+  }
+
+  userDocApplyingRemote = true;
+
+  try {
+    const remoteTheme = String(data.studyTheme || "").trim();
+    if (THEME_REFERENCE_MAP[remoteTheme] && remoteTheme !== selectedStudyTheme) {
+      setStudyTheme(remoteTheme);
+    }
+
+    const preferences = data.preferences && typeof data.preferences === "object" ? data.preferences : null;
+    if (!preferences) {
+      return;
+    }
+
+    const parsedMusicUrl = String(preferences.youtubeMusicUrl || "").trim();
+    const parsedPresetId = sanitizeMusicPresetId(preferences.musicPresetId);
+
+    settings = {
+      studyMinutes: clampMinutes(preferences.studyMinutes, 1, 240),
+      breakMinutes: clampMinutes(preferences.breakMinutes, 1, 120),
+      dailyGoalMinutes: clampMinutes(preferences.dailyGoalMinutes, 10, 600),
+      theme: preferences.theme === "light" ? "light" : "dark",
+      focusMode: sanitizeFocusMode(preferences.focusMode),
+      alarmMode: sanitizeAlarmMode(preferences.alarmMode),
+      customAlarmUrl: String(preferences.customAlarmUrl || "").trim(),
+      youtubeMusicUrl: parsedMusicUrl,
+      musicPresetId: parsedPresetId || (parsedMusicUrl ? "" : defaultSettings.musicPresetId)
+    };
+
+    saveSettings(settings, { skipUserDocSync: true });
+    setTheme(settings.theme);
+    fillSettingsForm();
+    applyPresetByMinutes(settings.studyMinutes, settings.breakMinutes);
+    updateCustomAlarmVisibility();
+    initializeMusicDock();
+
+    if (!timerState.running) {
+      setUpBlock(timerState.phase);
+      updateTimerDisplay();
+      updateSessionStatus();
+    }
+
+    renderAnalytics();
+  } finally {
+    userDocApplyingRemote = false;
+  }
+}
+
+async function startUserDocRealtimeSync(uid) {
+  if (!uid) {
+    return false;
+  }
+
+  const ready = await ensureCloudSyncClient();
+  if (!ready) {
+    return false;
+  }
+
+  if (typeof userDocUnsubscribe === "function") {
+    try {
+      userDocUnsubscribe();
+    } catch (error) {
+      // Listener may already be detached.
+    }
+    userDocUnsubscribe = null;
+  }
+
+  const userDocRef = getUserDocRef(uid);
+  if (!userDocRef) {
+    return false;
+  }
+
+  try {
+    userDocUnsubscribe = cloudSyncApi.onSnapshot(userDocRef, (snapshot) => {
+      if (!snapshot.exists()) {
+        scheduleUserDocSync("bootstrap");
+        return;
+      }
+
+      const data = snapshot.data() || {};
+      applyUserDocSnapshot(data);
+    }, (error) => {
+      console.warn("User profile sync listener failed.", error);
+    });
+  } catch (error) {
+    console.warn("Could not start user profile listener.", error);
+    return false;
+  }
+
+  scheduleUserDocSync("login");
+  return true;
+}
+
+async function pushUserDocToCloud(reason = "manual") {
+  if (!canUseAnalyticsFeatures() || !currentUser || !currentUser.uid || userDocApplyingRemote) {
+    return false;
+  }
+
+  const ready = await ensureCloudSyncClient();
+  if (!ready) {
+    return false;
+  }
+
+  const userDocRef = getUserDocRef(currentUser.uid);
+  if (!userDocRef) {
+    return false;
+  }
+
+  try {
+    await cloudSyncApi.setDoc(userDocRef, buildUserDocPayload(reason), { merge: true });
+    return true;
+  } catch (error) {
+    console.warn("Could not save user profile to Firestore.", error);
+    return false;
+  }
+}
+
+function scheduleUserDocSync(reason = "change") {
+  if (!canUseAnalyticsFeatures() || !currentUser || !currentUser.uid || userDocApplyingRemote) {
+    return;
+  }
+
+  if (userDocSyncTimerId) {
+    window.clearTimeout(userDocSyncTimerId);
+  }
+
+  userDocSyncTimerId = window.setTimeout(() => {
+    userDocSyncTimerId = null;
+    void pushUserDocToCloud(reason);
+  }, USER_DOC_SYNC_DEBOUNCE_MS);
+}
+
+async function hydrateAnalyticsFromCloud(uid) {
+  if (!uid || cloudSyncHydrating) {
+    return false;
+  }
+
+  const ready = await ensureCloudSyncClient();
+  if (!ready) {
+    return false;
+  }
+
+  const docRef = getCloudAnalyticsDocRef(uid);
+  if (!docRef) {
+    return false;
+  }
+
+  cloudSyncHydrating = true;
+  try {
+    const lastUid = String(localStorage.getItem(LAST_SYNCED_UID_KEY) || "").trim();
+    const allowLocalMerge = !lastUid || lastUid === uid;
+    const localPayload = buildLocalAnalyticsPayload(allowLocalMerge);
+
+    const snapshot = await cloudSyncApi.getDoc(docRef);
+    if (!snapshot.exists()) {
+      await cloudSyncApi.setDoc(docRef, {
+        ...localPayload,
+        updatedAt: new Date().toISOString(),
+        schemaVersion: 1
+      }, { merge: true });
+      localStorage.setItem(LAST_SYNCED_UID_KEY, uid);
+      return true;
+    }
+
+    const remote = snapshot.data() || {};
+    const remoteStudyLog = sanitizeStudyLog(remote.studyLog);
+    const remoteTagLog = sanitizeTagLog(remote.tagLog);
+    const remoteAchievements = sanitizeAchievementMap(remote.achievements);
+
+    const mergedStudyLog = mergeStudyLogs(localPayload.studyLog, remoteStudyLog);
+    const mergedTagLog = mergeTagLogs(localPayload.tagLog, remoteTagLog);
+    const mergedAchievements = mergeAchievementMaps(localPayload.achievements, remoteAchievements);
+
+    saveStudyLog(mergedStudyLog, { skipCloudSync: true });
+    saveTagLog(mergedTagLog, { skipCloudSync: true });
+    saveUnlockedAchievements(mergedAchievements, { skipCloudSync: true });
+    localStorage.setItem(LAST_SYNCED_UID_KEY, uid);
+
+    const needsWriteBack = JSON.stringify(mergedStudyLog) !== JSON.stringify(remoteStudyLog)
+      || JSON.stringify(mergedTagLog) !== JSON.stringify(remoteTagLog)
+      || JSON.stringify(mergedAchievements) !== JSON.stringify(remoteAchievements);
+
+    if (needsWriteBack) {
+      await cloudSyncApi.setDoc(docRef, {
+        studyLog: mergedStudyLog,
+        tagLog: mergedTagLog,
+        achievements: mergedAchievements,
+        updatedAt: new Date().toISOString(),
+        schemaVersion: 1
+      }, { merge: true });
+    }
+
+    return true;
+  } catch (error) {
+    console.warn("Could not load analytics from cloud.", error);
+    return false;
+  } finally {
+    cloudSyncHydrating = false;
+  }
+}
+
+async function pushAnalyticsToCloud(reason = "manual") {
+  if (!canUseAnalyticsFeatures() || !currentUser || !currentUser.uid) {
+    return false;
+  }
+
+  if (cloudSyncHydrating || cloudSyncInFlight) {
+    cloudSyncQueued = true;
+    return false;
+  }
+
+  const ready = await ensureCloudSyncClient();
+  if (!ready) {
+    return false;
+  }
+
+  const docRef = getCloudAnalyticsDocRef(currentUser.uid);
+  if (!docRef) {
+    return false;
+  }
+
+  cloudSyncInFlight = true;
+  try {
+    await cloudSyncApi.setDoc(docRef, {
+      studyLog: sanitizeStudyLog(loadStudyLog()),
+      tagLog: sanitizeTagLog(loadTagLog()),
+      achievements: sanitizeAchievementMap(loadUnlockedAchievements()),
+      updatedAt: new Date().toISOString(),
+      schemaVersion: 1,
+      source: reason
+    }, { merge: true });
+
+    localStorage.setItem(LAST_SYNCED_UID_KEY, currentUser.uid);
+    return true;
+  } catch (error) {
+    console.warn("Could not save analytics to cloud.", error);
+    return false;
+  } finally {
+    cloudSyncInFlight = false;
+    if (cloudSyncQueued) {
+      cloudSyncQueued = false;
+      scheduleCloudAnalyticsSync("queued");
+    }
+  }
+}
+
+function scheduleCloudAnalyticsSync(reason = "change") {
+  if (!canUseAnalyticsFeatures() || !currentUser || !currentUser.uid) {
+    return;
+  }
+
+  if (cloudSyncTimerId) {
+    window.clearTimeout(cloudSyncTimerId);
+  }
+
+  cloudSyncTimerId = window.setTimeout(() => {
+    cloudSyncTimerId = null;
+    void pushAnalyticsToCloud(reason);
+  }, CLOUD_SYNC_DEBOUNCE_MS);
+}
+
+async function refreshAnalyticsFromCloud(_reason = "view", force = false) {
+  if (!canUseAnalyticsFeatures() || !currentUser || !currentUser.uid) {
+    return false;
+  }
+
+  const now = Date.now();
+  if (!force && now - lastCloudHydrateAt < CLOUD_HYDRATE_COOLDOWN_MS) {
+    return false;
+  }
+
+  const hydrated = await hydrateAnalyticsFromCloud(currentUser.uid);
+  if (!hydrated) {
+    return false;
+  }
+
+  lastCloudHydrateAt = Date.now();
+  syncAchievementsWithCurrentStreak();
+  renderAnalytics();
+  renderFavourites();
+
+  return true;
+}
+
 function enterGuestMode() {
   authMode = "guest";
   currentUser = null;
+  resetCloudSyncState();
   saveGuestModePreference(true);
   authSection.classList.add("hidden");
   setAuthMessage("");
@@ -648,6 +1212,7 @@ function requestAuthSignOut() {
   }
 
   currentUser = null;
+  resetCloudSyncState();
   showAuthScreen("You are signed out. Sign in again or continue as guest.");
   updateAuthUi();
 }
@@ -691,7 +1256,20 @@ function wireEvents() {
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
       loadScriptureOfTheDay();
+      void refreshAnalyticsFromCloud("visibility");
     }
+  });
+  window.addEventListener("resize", () => {
+    if (analyticsResizeTimeoutId) {
+      window.clearTimeout(analyticsResizeTimeoutId);
+    }
+
+    analyticsResizeTimeoutId = window.setTimeout(() => {
+      analyticsResizeTimeoutId = null;
+      if (currentView === "analytics") {
+        renderAnalytics();
+      }
+    }, 160);
   });
 
   authGuestBtn.addEventListener("click", () => {
@@ -933,6 +1511,7 @@ function switchSection(sectionName) {
 
   if (sectionName === "analytics") {
     renderAnalytics();
+    void refreshAnalyticsFromCloud("view");
   } else if (sectionName === "favourites") {
     renderFavourites();
   }
@@ -1014,6 +1593,7 @@ function setStudyTheme(theme) {
   });
 
   homeThemeBadge.textContent = theme;
+  scheduleUserDocSync("study-theme");
 }
 
 function applyPreset(presetId) {
@@ -1325,6 +1905,7 @@ function recordCompletedStudyBlock(blockMinutes, tag) {
   const previousBestStreak = calculateBestStreak(previousLog);
   const bestStreakAfterUpdate = calculateBestStreak(updatedLog);
   const goal = settings.dailyGoalMinutes;
+  scheduleUserDocSync("study-progress");
 
   return {
     blockMinutes: Math.round(blockMinutes),
@@ -1644,8 +2225,35 @@ function renderAnalytics() {
   renderAchievements();
 }
 
+function getGraphDaysForViewport() {
+  const viewportWidth = Math.max(0, window.innerWidth || 0);
+
+  if (viewportWidth <= 375) {
+    return GRAPH_DAYS_SMALL_MOBILE;
+  }
+  if (viewportWidth <= 430) {
+    return GRAPH_DAYS_MOBILE;
+  }
+  if (viewportWidth <= 760) {
+    return GRAPH_DAYS_TABLET;
+  }
+
+  return GRAPH_DAYS;
+}
+
+function updateStudyGraphTitle(dayCount) {
+  const chartTitle = document.querySelector("#analyticsSection .chart-card .chart-head h3");
+  if (!chartTitle) {
+    return;
+  }
+
+  chartTitle.textContent = `Last ${dayCount} Day${dayCount === 1 ? "" : "s"} (minutes)`;
+}
+
 function renderStudyGraph(log) {
-  const graphDays = getRecentDays(GRAPH_DAYS);
+  const graphDayCount = getGraphDaysForViewport();
+  const graphDays = getRecentDays(graphDayCount);
+  updateStudyGraphTitle(graphDayCount);
   const points = graphDays.map((date) => {
     const key = getDateKey(date);
     return {
@@ -1845,8 +2453,11 @@ function loadUnlockedAchievements() {
   }
 }
 
-function saveUnlockedAchievements(unlocked) {
+function saveUnlockedAchievements(unlocked, options = {}) {
   localStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(unlocked));
+  if (!options.skipCloudSync) {
+    scheduleCloudAnalyticsSync("achievements");
+  }
 }
 
 function sumMinutes(log) {
@@ -1951,8 +2562,11 @@ function loadStudyLog() {
   }
 }
 
-function saveStudyLog(log) {
+function saveStudyLog(log, options = {}) {
   localStorage.setItem(STUDY_LOG_KEY, JSON.stringify(log));
+  if (!options.skipCloudSync) {
+    scheduleCloudAnalyticsSync("study-log");
+  }
 }
 
 function loadTagLog() {
@@ -1969,8 +2583,11 @@ function loadTagLog() {
   }
 }
 
-function saveTagLog(tagLog) {
+function saveTagLog(tagLog, options = {}) {
   localStorage.setItem(TAG_LOG_KEY, JSON.stringify(tagLog));
+  if (!options.skipCloudSync) {
+    scheduleCloudAnalyticsSync("tag-log");
+  }
 }
 
 /*
@@ -2482,8 +3099,11 @@ function loadSettings() {
   }
 }
 
-function saveSettings(nextSettings) {
+function saveSettings(nextSettings, options = {}) {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(nextSettings));
+  if (!options.skipUserDocSync) {
+    scheduleUserDocSync("preferences");
+  }
 }
 
 function setTheme(theme) {
