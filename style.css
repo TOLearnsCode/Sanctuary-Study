@@ -2097,22 +2097,55 @@ body[data-theme="dark"] .btn-danger {
 }
 
 @media (max-width: 430px) {
+  button,
+  .btn,
+  .nav-btn,
+  [role="button"] {
+    padding: 8px 14px;
+    font-size: 14px;
+    min-height: 40px;
+    border-radius: 10px;
+  }
+
+  .nav-buttons,
+  .top-nav {
+    gap: 6px;
+    padding: 8px;
+    flex-wrap: wrap;
+  }
+
+  .container,
+  .main {
+    max-width: 100%;
+    padding: 12px;
+    margin-top: 60px;
+  }
+
+  h1 {
+    font-size: 26px;
+    line-height: 1.2;
+  }
+
+  h2 {
+    font-size: 20px;
+  }
+
+  p {
+    font-size: 15px;
+  }
+
+  .hero,
+  .home-hero {
+    gap: 12px;
+  }
+
   .container {
     max-width: 100%;
-    padding: 16px;
   }
 }
 
 @media (max-width: 375px) {
   .container {
     padding: 12px;
-  }
-
-  button,
-  input,
-  select,
-  textarea {
-    font-size: 16px;
-    min-height: 44px;
   }
 }
