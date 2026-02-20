@@ -849,6 +849,25 @@ body[data-theme="dark"] .phase-badge.break {
   font-size: 0.92rem;
 }
 
+.focus-lock-status {
+  margin: 0;
+  border: 1px solid rgba(167, 120, 56, 0.34);
+  border-radius: 999px;
+  background: rgba(167, 120, 56, 0.12);
+  color: #8c5f24;
+  padding: 7px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  justify-self: start;
+}
+
+body[data-theme="dark"] .focus-lock-status {
+  border-color: rgba(208, 172, 114, 0.42);
+  background: rgba(167, 120, 56, 0.2);
+  color: #f0cd95;
+}
+
 .session-tag-badge {
   margin: 0;
   border: 1px solid var(--line);
@@ -1322,6 +1341,56 @@ body[data-theme="dark"] .phase-badge.break {
   line-height: 1.35;
 }
 
+.achievement-tier {
+  margin: 0;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 0.68rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.achievement-tier.tier-bronze {
+  background: rgba(160, 109, 54, 0.15);
+  color: #8a5624;
+}
+
+.achievement-tier.tier-silver {
+  background: rgba(116, 125, 138, 0.16);
+  color: #4f5b6d;
+}
+
+.achievement-tier.tier-gold {
+  background: rgba(182, 140, 49, 0.18);
+  color: #8f6116;
+}
+
+.achievement-tier.tier-platinum {
+  background: rgba(75, 125, 155, 0.17);
+  color: #355b74;
+}
+
+body[data-theme="dark"] .achievement-tier.tier-bronze {
+  background: rgba(160, 109, 54, 0.24);
+  color: #efc082;
+}
+
+body[data-theme="dark"] .achievement-tier.tier-silver {
+  background: rgba(116, 125, 138, 0.24);
+  color: #d6dde8;
+}
+
+body[data-theme="dark"] .achievement-tier.tier-gold {
+  background: rgba(182, 140, 49, 0.26);
+  color: #f2db8f;
+}
+
+body[data-theme="dark"] .achievement-tier.tier-platinum {
+  background: rgba(75, 125, 155, 0.25);
+  color: #bfdeef;
+}
+
 .settings-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1408,7 +1477,8 @@ body[data-theme="dark"] .phase-badge.break {
 }
 
 .settings-form input,
-.settings-form select {
+.settings-form select,
+.settings-form textarea {
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 11px 12px;
@@ -1418,10 +1488,57 @@ body[data-theme="dark"] .phase-badge.break {
 }
 
 .settings-form input:focus,
-.settings-form select:focus {
+.settings-form select:focus,
+.settings-form textarea:focus {
   outline: none;
   border-color: var(--brand);
   box-shadow: 0 0 0 3px rgba(79, 140, 99, 0.2);
+}
+
+.settings-form textarea {
+  resize: vertical;
+  min-height: 82px;
+}
+
+.music-attribution-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 7px;
+}
+
+.music-attribution-list li {
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--glass);
+  padding: 8px 10px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+  display: grid;
+  gap: 4px;
+}
+
+.music-attribution-list strong {
+  color: var(--text);
+}
+
+.music-attribution-line {
+  margin: 0;
+  color: var(--muted);
+}
+
+.music-attribution-link {
+  width: fit-content;
+  color: var(--brand);
+  text-decoration: none;
+  border-bottom: 1px dashed transparent;
+}
+
+.music-attribution-link:hover,
+.music-attribution-link:focus-visible {
+  border-bottom-color: currentColor;
 }
 
 .settings-actions {
@@ -2157,6 +2274,25 @@ body[data-theme="dark"] .btn-danger {
   justify-content: flex-end;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.focus-exit-card {
+  gap: 14px;
+}
+
+.focus-blocked-sites-list {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--glass);
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.focus-blocked-sites-list p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
 }
 
 @keyframes typing {

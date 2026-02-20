@@ -260,6 +260,7 @@
           <p id="sessionStatus" class="session-status">Focus block in progress</p>
           <p id="sessionTagBadge" class="session-tag-badge">Tag: Algorithms</p>
         </div>
+        <p id="focusLockStatus" class="focus-lock-status hidden"></p>
 
         <p id="timerDisplay" class="timer-display">25:00</p>
 
@@ -479,6 +480,19 @@
           </select>
         </label>
 
+        <div class="settings-subpanel lockin-panel">
+          <p class="settings-subpanel-title">Lock-In Mode (Complete Focus)</p>
+          <label>
+            Commitment minutes (0 to disable)
+            <input id="focusCommitMinutesSetting" type="number" min="0" max="240" />
+          </label>
+          <label>
+            Blocked site reminders (one per line)
+            <textarea id="blockedSitesSetting" rows="3" placeholder="youtube.com&#10;x.com&#10;instagram.com"></textarea>
+          </label>
+          <p class="settings-subpanel-note">Sanctuary cannot block other websites at browser/system level, but lock-in guards exits and asks for break-glass confirmation with these domains.</p>
+        </div>
+
         <label>
           Alarm sound
           <select id="alarmModeSetting">
@@ -514,6 +528,13 @@
           Or choose local audio file
           <input id="localMusicFileInput" type="file" accept="audio/*" />
         </label>
+
+        <div class="settings-subpanel attribution-panel">
+          <p class="settings-subpanel-title">Music Attribution (FreeToUse)</p>
+          <p class="settings-subpanel-note">Tracks below are used under Free To Use terms. Keep these attributions when publishing your content.</p>
+          <p class="settings-subpanel-note">License reminder: monetized user-generated content is allowed with attribution, while standalone commercial re-use is restricted by the Free License.</p>
+          <ul id="musicAttributionList" class="music-attribution-list"></ul>
+        </div>
 
         <div class="settings-actions">
           <button type="submit" class="btn btn-primary">Save Settings</button>
@@ -649,6 +670,18 @@
       <div class="cancel-session-actions">
         <button id="keepSessionBtn" class="btn btn-glass" type="button">Keep Session</button>
         <button id="confirmCancelSessionBtn" class="btn btn-danger" type="button">Yes, Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="focusExitModal" class="cancel-session-modal hidden" role="dialog" aria-modal="true" aria-labelledby="focusExitTitle" aria-describedby="focusExitMessage">
+    <div class="cancel-session-card focus-exit-card">
+      <h3 id="focusExitTitle">Break glass and exit focus?</h3>
+      <p id="focusExitMessage">A lock-in commitment is active. Leaving now will end strict focus for this commitment.</p>
+      <div id="focusBlockedSitesList" class="focus-blocked-sites-list hidden"></div>
+      <div class="cancel-session-actions">
+        <button id="keepFocusBtn" class="btn btn-primary" type="button">Stay Focused</button>
+        <button id="breakGlassBtn" class="btn btn-danger" type="button">Break Glass & Exit</button>
       </div>
     </div>
   </div>

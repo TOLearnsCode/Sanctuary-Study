@@ -51,14 +51,120 @@ const LOCAL_ALARM_URLS = {
   mixkit_waiting: "sounds/mixkit-waiting-ringtone-1354.wav"
 };
 
+// Local tracks from FreeToUse lofi collection; keep attribution visible in settings.
 const DOWNLOADED_LOFI_TRACKS = [
-  { id: "kyoto", title: "Kyoto", artist: "Another Kid & Pratzapp", url: "music/kyoto.mp3" },
-  { id: "coming_of_age", title: "Coming Of Age", artist: "Hazelwood", url: "music/coming-of-age.mp3" },
-  { id: "jay", title: "Jay", artist: "Lukrembo", url: "music/jay.mp3" },
-  { id: "honey_jam", title: "Honey Jam", artist: "massobeats", url: "music/honey-jam.mp3" },
-  { id: "love_in_japan", title: "Love in Japan", artist: "Milky Wayvers", url: "music/love-in-japan.mp3" },
-  { id: "warm_cup_of_coffee", title: "Warm Cup of Coffee", artist: "Moavii", url: "music/warm-cup-of-coffee.mp3" },
-  { id: "meticulous", title: "Meticulous", artist: "Pufino", url: "music/meticulous.mp3" }
+  {
+    id: "kyoto",
+    title: "Kyoto",
+    artist: "Another Kid & Pratzapp",
+    url: "music/kyoto.mp3",
+    source: "https://freetouse.com/music/category/lofi",
+    attribution: "Kyoto — Another Kid & Pratzapp (FreeToUse Music)"
+  },
+  {
+    id: "coming_of_age",
+    title: "Coming Of Age",
+    artist: "Hazelwood",
+    url: "music/coming-of-age.mp3",
+    source: "https://freetouse.com/music/category/lofi",
+    attribution: "Coming Of Age — Hazelwood (FreeToUse Music)"
+  },
+  {
+    id: "jay",
+    title: "Jay",
+    artist: "Lukrembo",
+    url: "music/jay.mp3",
+    source: "https://freetouse.com/music/category/lofi",
+    attribution: "Jay — Lukrembo (FreeToUse Music)"
+  },
+  {
+    id: "honey_jam",
+    title: "Honey Jam",
+    artist: "massobeats",
+    url: "music/honey-jam.mp3",
+    source: "https://freetouse.com/music/category/lofi",
+    attribution: "Honey Jam — massobeats (FreeToUse Music)"
+  },
+  {
+    id: "love_in_japan",
+    title: "Love in Japan",
+    artist: "Milky Wayvers",
+    url: "music/love-in-japan.mp3",
+    source: "https://freetouse.com/music/category/lofi",
+    attribution: "Love in Japan — Milky Wayvers (FreeToUse Music)"
+  },
+  {
+    id: "warm_cup_of_coffee",
+    title: "Warm Cup of Coffee",
+    artist: "Moavii",
+    url: "music/warm-cup-of-coffee.mp3",
+    source: "https://freetouse.com/music/category/lofi",
+    attribution: "Warm Cup of Coffee — Moavii (FreeToUse Music)"
+  },
+  {
+    id: "meticulous",
+    title: "Meticulous",
+    artist: "Pufino",
+    url: "music/meticulous.mp3",
+    source: "https://freetouse.com/music/category/lofi",
+    attribution: "Meticulous — Pufino (FreeToUse Music)"
+  },
+  {
+    id: "bread",
+    title: "Bread",
+    artist: "Lukrembo",
+    url: "music/bread.mp3",
+    source: "https://freetouse.com/music/category/lofi",
+    attribution: "Bread — Lukrembo (FreeToUse Music)"
+  },
+  {
+    id: "butter",
+    title: "Butter",
+    artist: "Lukrembo",
+    url: "music/butter.mp3",
+    source: "https://freetouse.com/music/category/lofi",
+    attribution: "Butter — Lukrembo (FreeToUse Music)"
+  },
+  {
+    id: "donut",
+    title: "Donut",
+    artist: "Lukrembo",
+    url: "music/donut.mp3",
+    source: "https://freetouse.com/music/category/lofi",
+    attribution: "Donut — Lukrembo (FreeToUse Music)"
+  },
+  {
+    id: "imagine",
+    title: "Imagine",
+    artist: "Lukrembo",
+    url: "music/imagine.mp3",
+    source: "https://freetouse.com/music/category/lofi",
+    attribution: "Imagine — Lukrembo (FreeToUse Music)"
+  },
+  {
+    id: "storybook",
+    title: "Storybook",
+    artist: "Lukrembo",
+    url: "music/storybook.mp3",
+    source: "https://freetouse.com/music/category/lofi",
+    attribution: "Storybook — Lukrembo (FreeToUse Music)"
+  },
+  {
+    id: "this_is_for_you",
+    title: "This Is For You",
+    artist: "Lukrembo",
+    url: "music/this-is-for-you.mp3",
+    source: "https://freetouse.com/music/category/lofi",
+    attribution: "This Is For You — Lukrembo (FreeToUse Music)"
+  },
+  {
+    id: "feeling_good",
+    title: "Feeling Good",
+    artist: "Pufino",
+    url: "music/feeling-good.mp3",
+    source: "https://freetouse.com/music/category/lofi",
+    attribution: "Feeling Good — Pufino (FreeToUse Music)"
+  }
 ];
 
 const BUILTIN_MUSIC_PRESETS = [
@@ -225,6 +331,36 @@ const STREAK_ACHIEVEMENTS = [
   }
 ];
 
+const RARE_ACHIEVEMENTS = [
+  {
+    id: "rare_deep_work_60",
+    title: "Deep Work",
+    message: "One full hour in a single block. Quiet endurance builds real momentum.",
+    hint: "Complete one study block of at least 60 minutes.",
+    label: "Rare Badge",
+    medalText: "60",
+    tier: "Gold"
+  },
+  {
+    id: "rare_monthly_consistency",
+    title: "Steady Month",
+    message: "You showed up on 20 days this month. Faithful steps create lasting rhythm.",
+    hint: "Study on 20 different days within one calendar month.",
+    label: "Rare Badge",
+    medalText: "M",
+    tier: "Platinum"
+  },
+  {
+    id: "rare_streak_recovery",
+    title: "Graceful Comeback",
+    message: "You restarted after a gap and rebuilt your streak with perseverance.",
+    hint: "After a break of at least 2 days, rebuild to a 3-day streak (with prior best 7+ days).",
+    label: "Rare Badge",
+    medalText: "R",
+    tier: "Gold"
+  }
+];
+
 const WEEKDAY_PLAN_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 const WEEKDAY_PLAN_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const DEFAULT_WEEKLY_PLAN_TARGETS = {
@@ -248,6 +384,8 @@ const defaultSettings = {
   quietHoursEnd: "07:00",
   theme: "dark",
   focusMode: "partial",
+  focusCommitMinutes: 0,
+  blockedSites: [],
   alarmMode: "mixkit_chime",
   customAlarmUrl: "",
   youtubeMusicUrl: "",
@@ -320,6 +458,7 @@ const startBtn = document.getElementById("startBtn");
 const pauseBtn = document.getElementById("pauseBtn");
 const resetBtn = document.getElementById("resetBtn");
 const cancelSessionBtn = document.getElementById("cancelSessionBtn");
+const focusLockStatus = document.getElementById("focusLockStatus");
 const sessionVerseText = document.getElementById("sessionVerseText");
 const sessionVerseRef = document.getElementById("sessionVerseRef");
 const sessionEncouragementText = document.getElementById("sessionEncouragementText");
@@ -364,6 +503,8 @@ const reminderTimeSetting = document.getElementById("reminderTimeSetting");
 const quietHoursStartSetting = document.getElementById("quietHoursStartSetting");
 const quietHoursEndSetting = document.getElementById("quietHoursEndSetting");
 const enableReminderPermissionBtn = document.getElementById("enableReminderPermissionBtn");
+const focusCommitMinutesSetting = document.getElementById("focusCommitMinutesSetting");
+const blockedSitesSetting = document.getElementById("blockedSitesSetting");
 const themeSetting = document.getElementById("themeSetting");
 const focusModeSetting = document.getElementById("focusModeSetting");
 const alarmModeSetting = document.getElementById("alarmModeSetting");
@@ -372,6 +513,7 @@ const customAlarmUrlSetting = document.getElementById("customAlarmUrlSetting");
 const youtubeMusicUrlSetting = document.getElementById("youtubeMusicUrlSetting");
 const lofiPresetSelect = document.getElementById("lofiPresetSelect");
 const localMusicFileInput = document.getElementById("localMusicFileInput");
+const musicAttributionList = document.getElementById("musicAttributionList");
 const testAlarmBtn = document.getElementById("testAlarmBtn");
 const loadMusicBtn = document.getElementById("loadMusicBtn");
 const playMusicBtn = document.getElementById("playMusic");
@@ -399,6 +541,11 @@ const cancelSessionModal = document.getElementById("cancelSessionModal");
 const cancelSessionMessage = document.getElementById("cancelSessionMessage");
 const keepSessionBtn = document.getElementById("keepSessionBtn");
 const confirmCancelSessionBtn = document.getElementById("confirmCancelSessionBtn");
+const focusExitModal = document.getElementById("focusExitModal");
+const focusExitMessage = document.getElementById("focusExitMessage");
+const focusBlockedSitesList = document.getElementById("focusBlockedSitesList");
+const keepFocusBtn = document.getElementById("keepFocusBtn");
+const breakGlassBtn = document.getElementById("breakGlassBtn");
 const MUSIC_DOCK_POSITION_KEY = "sanctuaryMusicDockPositionV1";
 
 const miniTimerWidget = document.getElementById("miniTimerWidget");
@@ -471,6 +618,8 @@ let pendingSessionReviewId = null;
 let pendingServiceWorkerRegistration = null;
 let updateBarElement = null;
 let reloadOnControllerChangeArmed = false;
+let focusCommitRemainingSeconds = 0;
+let focusExitPendingAction = null;
 
 let currentFocus = {
   theme: selectedStudyTheme,
@@ -499,6 +648,7 @@ function init() {
   setTheme(savedTheme || "dark");
   settings.theme = document.body.dataset.theme === "light" ? "light" : "dark";
   populateLofiPresetSelect();
+  renderMusicAttributionList();
   fillSettingsForm();
   wireEvents();
   setStudyTheme(selectedStudyTheme);
@@ -833,6 +983,284 @@ function requestStudyReminderPermission() {
     });
 }
 
+function getAllAchievementDefinitions() {
+  return [...STREAK_ACHIEVEMENTS, ...RARE_ACHIEVEMENTS];
+}
+
+function getAchievementById(id) {
+  return getAllAchievementDefinitions().find((achievement) => achievement.id === id) || null;
+}
+
+function getStreakAchievementTier(days) {
+  const safeDays = Number(days || 0);
+  if (safeDays >= 120) {
+    return "Platinum";
+  }
+  if (safeDays >= 45) {
+    return "Gold";
+  }
+  if (safeDays >= 10) {
+    return "Silver";
+  }
+  return "Bronze";
+}
+
+function getAchievementTier(achievement) {
+  if (!achievement || typeof achievement !== "object") {
+    return "Bronze";
+  }
+  if (achievement.tier) {
+    return String(achievement.tier);
+  }
+  return getStreakAchievementTier(achievement.days);
+}
+
+function clampFocusCommitMinutes(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(240, Math.round(numeric)));
+}
+
+function normalizeBlockedSiteValue(input) {
+  let value = String(input || "").trim().toLowerCase();
+  if (!value) {
+    return "";
+  }
+
+  value = value.replace(/^https?:\/\//, "");
+  value = value.replace(/^www\./, "");
+  value = value.split("/")[0];
+  value = value.split("?")[0];
+  value = value.split("#")[0];
+  value = value.replace(/:\d+$/, "");
+
+  return value;
+}
+
+function sanitizeBlockedSites(input) {
+  const rawItems = Array.isArray(input)
+    ? input
+    : String(input || "")
+      .split(/\n|,/g);
+
+  const seen = new Set();
+  const items = [];
+
+  rawItems.forEach((item) => {
+    const normalized = normalizeBlockedSiteValue(item);
+    if (!normalized || seen.has(normalized)) {
+      return;
+    }
+
+    seen.add(normalized);
+    items.push(normalized);
+  });
+
+  return items.slice(0, 40);
+}
+
+function formatBlockedSitesForTextarea(sites) {
+  return sanitizeBlockedSites(sites).join("\n");
+}
+
+function isUrlBlockedBySettings(url) {
+  const blockedSites = sanitizeBlockedSites(settings.blockedSites);
+  if (!url || !blockedSites.length) {
+    return false;
+  }
+
+  let hostname = "";
+  try {
+    const parsed = new URL(url, window.location.origin);
+    hostname = normalizeBlockedSiteValue(parsed.hostname || "");
+  } catch (error) {
+    hostname = normalizeBlockedSiteValue(url);
+  }
+
+  if (!hostname) {
+    return false;
+  }
+
+  return blockedSites.some((blocked) => hostname === blocked || hostname.endsWith(`.${blocked}`));
+}
+
+function isFocusCommitEnabled() {
+  return clampFocusCommitMinutes(settings.focusCommitMinutes) > 0;
+}
+
+function isFocusCommitEnforced() {
+  return isCompleteFocusLockActive() && focusCommitRemainingSeconds > 0;
+}
+
+function formatDurationShort(totalSeconds) {
+  const safeSeconds = Math.max(0, Math.round(totalSeconds));
+  const minutes = Math.floor(safeSeconds / 60);
+  const seconds = safeSeconds % 60;
+  if (minutes >= 60) {
+    const hours = Math.floor(minutes / 60);
+    const remMinutes = minutes % 60;
+    return `${hours}h ${String(remMinutes).padStart(2, "0")}m`;
+  }
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function updateFocusLockStatus() {
+  if (!focusLockStatus) {
+    return;
+  }
+
+  if (sanitizeFocusMode(settings.focusMode) !== "complete" || !isFocusCommitEnabled() || focusCommitRemainingSeconds <= 0) {
+    focusLockStatus.classList.add("hidden");
+    focusLockStatus.textContent = "";
+    return;
+  }
+
+  focusLockStatus.classList.remove("hidden");
+  const blockedSites = sanitizeBlockedSites(settings.blockedSites);
+  const blockedSuffix = blockedSites.length
+    ? ` • ${blockedSites.length} blocked site reminder${blockedSites.length === 1 ? "" : "s"}`
+    : "";
+  focusLockStatus.textContent = `Lock-in commitment active: ${formatDurationShort(focusCommitRemainingSeconds)} left${blockedSuffix}`;
+}
+
+function activateFocusCommitIfNeeded() {
+  if (focusCommitRemainingSeconds > 0) {
+    updateFocusLockStatus();
+    return;
+  }
+
+  if (!isFocusCommitEnabled()) {
+    updateFocusLockStatus();
+    return;
+  }
+
+  const minutes = clampFocusCommitMinutes(settings.focusCommitMinutes);
+  if (minutes <= 0) {
+    updateFocusLockStatus();
+    return;
+  }
+
+  focusCommitRemainingSeconds = minutes * 60;
+  updateFocusLockStatus();
+  showToastMessage(`Lock-in commitment started for ${minutes} minute${minutes === 1 ? "" : "s"}.`);
+}
+
+function clearFocusCommitState() {
+  focusCommitRemainingSeconds = 0;
+  focusExitPendingAction = null;
+  closeFocusExitModal();
+  updateFocusLockStatus();
+}
+
+function closeFocusExitModal() {
+  if (!focusExitModal) {
+    return;
+  }
+
+  focusExitModal.classList.add("hidden");
+}
+
+function openFocusExitModal(action) {
+  if (!focusExitModal || !focusExitMessage || !breakGlassBtn) {
+    return;
+  }
+
+  focusExitPendingAction = action && typeof action === "object" ? action : { type: "leave" };
+  const blockedSites = sanitizeBlockedSites(settings.blockedSites);
+  const description = focusExitPendingAction.type === "open-url"
+    ? "Opening this link now"
+    : "Leaving this session now";
+
+  focusExitMessage.textContent = `${description} will end your lock-in commitment with ${formatDurationShort(focusCommitRemainingSeconds)} remaining.`;
+
+  if (focusBlockedSitesList) {
+    focusBlockedSitesList.innerHTML = "";
+    if (blockedSites.length) {
+      focusBlockedSitesList.classList.remove("hidden");
+      const head = document.createElement("p");
+      head.textContent = "Blocked site reminders:";
+      focusBlockedSitesList.appendChild(head);
+
+      blockedSites.slice(0, 8).forEach((site) => {
+        const item = document.createElement("p");
+        item.textContent = `• ${site}`;
+        focusBlockedSitesList.appendChild(item);
+      });
+    } else {
+      focusBlockedSitesList.classList.add("hidden");
+    }
+  }
+
+  focusExitModal.classList.remove("hidden");
+  breakGlassBtn.focus();
+}
+
+function executeFocusExitAction(action) {
+  if (!action || typeof action !== "object") {
+    return;
+  }
+
+  if (action.type === "switch-section" && action.sectionName) {
+    switchSection(action.sectionName, { bypassFocusLock: true });
+    return;
+  }
+
+  if (action.type === "go-home") {
+    showHomeView({ forceStopTypeEffect: true, bypassFocusLock: true });
+    return;
+  }
+
+  if (action.type === "cancel-session") {
+    cancelCurrentSession({ bypassFocusLock: true });
+    return;
+  }
+
+  if (action.type === "open-url" && action.url) {
+    openBackgroundMusicExternally(action.url, false, { bypassFocusLock: true });
+  }
+}
+
+function maybePromptFocusCommitExit(action) {
+  if (!isFocusCommitEnforced()) {
+    return false;
+  }
+
+  openFocusExitModal(action);
+  return true;
+}
+
+function renderMusicAttributionList() {
+  if (!musicAttributionList) {
+    return;
+  }
+
+  musicAttributionList.innerHTML = "";
+  DOWNLOADED_LOFI_TRACKS.forEach((track) => {
+    const item = document.createElement("li");
+    const title = document.createElement("strong");
+    title.textContent = `${track.title} — ${track.artist}`;
+
+    const attribution = document.createElement("p");
+    attribution.className = "music-attribution-line";
+    attribution.textContent = `Attribution: ${track.attribution || `${track.title} — ${track.artist} (FreeToUse Music)`}`;
+
+    const source = document.createElement("a");
+    source.className = "music-attribution-link";
+    source.href = track.source || "https://freetouse.com/music/category/lofi";
+    source.target = "_blank";
+    source.rel = "noopener noreferrer";
+    source.textContent = "Source: FreeToUse Lofi Category";
+
+    item.appendChild(title);
+    item.appendChild(attribution);
+    item.appendChild(source);
+    musicAttributionList.appendChild(item);
+  });
+}
+
 function hasAppAccess() {
   return authMode === "guest" || authMode === "user";
 }
@@ -870,6 +1298,7 @@ function showAuthScreen(message = "") {
   popupIntervalId = null;
   versePopup.classList.add("hidden");
   closeSessionReviewPrompt();
+  clearFocusCommitState();
   document.body.classList.remove("popup-open");
   updateTimerButtons();
   updateSessionStatus();
@@ -1122,17 +1551,19 @@ function sanitizeAchievementMap(input) {
     return {};
   }
 
-  const validIds = new Set(STREAK_ACHIEVEMENTS.map((achievement) => achievement.id));
+  const allDefinitions = getAllAchievementDefinitions();
+  const validIds = new Set(allDefinitions.map((achievement) => achievement.id));
   const clean = {};
   Object.entries(input).forEach(([id, entry]) => {
     if (!validIds.has(id) || !entry || typeof entry !== "object") {
       return;
     }
 
+    const definition = allDefinitions.find((item) => item.id === id) || null;
     const days = Number(entry.days || 0);
     const unlockedAt = String(entry.unlockedAt || "").trim();
     clean[id] = {
-      days: Number.isFinite(days) && days > 0 ? days : STREAK_ACHIEVEMENTS.find((item) => item.id === id)?.days || 0,
+      days: Number.isFinite(days) && days > 0 ? days : Number(definition?.days || 0),
       unlockedAt: unlockedAt || new Date().toISOString()
     };
   });
@@ -1340,6 +1771,8 @@ function buildUserDocPayload(reason = "update") {
     quietHoursEnd: sanitizeTimeInput(settings.quietHoursEnd, defaultSettings.quietHoursEnd),
     theme: document.body.dataset.theme === "light" ? "light" : "dark",
     focusMode: sanitizeFocusMode(settings.focusMode),
+    focusCommitMinutes: clampFocusCommitMinutes(settings.focusCommitMinutes),
+    blockedSites: sanitizeBlockedSites(settings.blockedSites),
     alarmMode: sanitizeAlarmMode(settings.alarmMode),
     customAlarmUrl: String(settings.customAlarmUrl || "").trim(),
     youtubeMusicUrl: String(settings.youtubeMusicUrl || "").trim(),
@@ -1389,11 +1822,19 @@ function applyUserDocSnapshot(data) {
       quietHoursEnd: sanitizeTimeInput(preferences.quietHoursEnd, defaultSettings.quietHoursEnd),
       theme: preferences.theme === "light" ? "light" : "dark",
       focusMode: sanitizeFocusMode(preferences.focusMode),
+      focusCommitMinutes: clampFocusCommitMinutes(preferences.focusCommitMinutes),
+      blockedSites: sanitizeBlockedSites(preferences.blockedSites),
       alarmMode: sanitizeAlarmMode(preferences.alarmMode),
       customAlarmUrl: String(preferences.customAlarmUrl || "").trim(),
       youtubeMusicUrl: parsedMusicUrl,
       musicPresetId: parsedPresetId || (parsedMusicUrl ? "" : defaultSettings.musicPresetId)
     };
+
+    if (!isFocusCommitEnabled()) {
+      clearFocusCommitState();
+    } else {
+      updateFocusLockStatus();
+    }
 
     saveSettings(settings, { skipUserDocSync: true });
     setTheme(settings.theme);
@@ -1847,7 +2288,7 @@ function wireEvents() {
   });
   focusModeSetting.addEventListener("change", () => {
     if (focusModeSetting.value === "complete") {
-      showToastMessage("Complete focus is strict: timer pauses if you leave the tab.");
+      showToastMessage("Complete focus is strict: timer pauses if you leave the tab. Lock-in commitment can be set below.");
     }
   });
   alarmModeSetting.addEventListener("change", onAlarmModeFieldChange);
@@ -1960,14 +2401,46 @@ function wireEvents() {
   }
   keepSessionBtn.addEventListener("click", closeCancelSessionModal);
   confirmCancelSessionBtn.addEventListener("click", confirmCancelSession);
+  if (keepFocusBtn) {
+    keepFocusBtn.addEventListener("click", () => {
+      closeFocusExitModal();
+      focusExitPendingAction = null;
+    });
+  }
+  if (breakGlassBtn) {
+    breakGlassBtn.addEventListener("click", () => {
+      const pendingAction = focusExitPendingAction;
+      focusExitPendingAction = null;
+      if (isStudyBlockRunning()) {
+        pauseTimer();
+      }
+      clearFocusCommitState();
+      showToastMessage("Lock-in commitment ended with break-glass exit.");
+      executeFocusExitAction(pendingAction);
+    });
+  }
   cancelSessionModal.addEventListener("click", (event) => {
     if (event.target === cancelSessionModal) {
       closeCancelSessionModal();
     }
   });
+  if (focusExitModal) {
+    focusExitModal.addEventListener("click", (event) => {
+      if (event.target === focusExitModal) {
+        closeFocusExitModal();
+        focusExitPendingAction = null;
+      }
+    });
+  }
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !cancelSessionModal.classList.contains("hidden")) {
       closeCancelSessionModal();
+      return;
+    }
+
+    if (event.key === "Escape" && focusExitModal && !focusExitModal.classList.contains("hidden")) {
+      closeFocusExitModal();
+      focusExitPendingAction = null;
     }
   });
 
@@ -1992,7 +2465,8 @@ function getLofiPresetById(presetId) {
   return BUILTIN_MUSIC_PRESETS.find((preset) => preset.id === presetId) || null;
 }
 
-function switchSection(sectionName) {
+function switchSection(sectionName, options = {}) {
+  const bypassFocusLock = Boolean(options.bypassFocusLock);
   if (!hasAppAccess()) {
     showAuthScreen("Sign in to continue, or use guest mode.");
     return;
@@ -2003,8 +2477,12 @@ function switchSection(sectionName) {
     return;
   }
 
-  if (sectionName !== "study" && isCompleteFocusLockActive()) {
-    showToastMessage("Complete focus is active. Pause the study timer before leaving this section.");
+  if (!bypassFocusLock && sectionName !== "study" && maybePromptFocusCommitExit({ type: "switch-section", sectionName })) {
+    return;
+  }
+
+  if (!bypassFocusLock && sectionName !== "study" && isCompleteFocusLockActive()) {
+    showToastMessage("Complete focus is active. Pause the study timer or use break-glass to leave.");
     return;
   }
 
@@ -2032,13 +2510,18 @@ function switchSection(sectionName) {
 }
 
 function showHomeView(options = {}) {
+  const bypassFocusLock = Boolean(options.bypassFocusLock);
   if (!hasAppAccess()) {
     showAuthScreen("Sign in to continue, or use guest mode.");
     return;
   }
 
-  if (isCompleteFocusLockActive()) {
-    showToastMessage("Complete focus is active. Pause the study timer before going home.");
+  if (!bypassFocusLock && maybePromptFocusCommitExit({ type: "go-home" })) {
+    return;
+  }
+
+  if (!bypassFocusLock && isCompleteFocusLockActive()) {
+    showToastMessage("Complete focus is active. Pause the study timer or use break-glass to go home.");
     return;
   }
 
@@ -2196,6 +2679,7 @@ async function beginStudyExperience() {
   updateSessionStatus();
 
   try {
+    clearFocusCommitState();
     prepareFocusModeBeforeSessionStart();
     const focus = await buildFocusForTheme(selectedStudyTheme);
     setCurrentFocus(focus);
@@ -2222,6 +2706,7 @@ async function beginStudyExperience() {
 function showSessionPanel() {
   studyPrep.classList.add("hidden");
   studySession.classList.remove("hidden");
+  updateFocusLockStatus();
   updateMiniTimerWidget();
 }
 
@@ -2253,6 +2738,7 @@ function resetToStudyBlock() {
   updateTimerDisplay();
   updateTimerButtons();
   updateSessionStatus();
+  updateFocusLockStatus();
 }
 
 function startTimer() {
@@ -2266,6 +2752,7 @@ function startTimer() {
 
   if (settings.focusMode === "complete" && timerState.phase === "study") {
     requestFocusFullscreenIfPossible();
+    activateFocusCommitIfNeeded();
   }
 
   timerState.running = true;
@@ -2275,6 +2762,13 @@ function startTimer() {
 
   timerState.intervalId = setInterval(() => {
     timerState.remainingSeconds -= 1;
+    if (timerState.phase === "study" && focusCommitRemainingSeconds > 0) {
+      focusCommitRemainingSeconds = Math.max(0, focusCommitRemainingSeconds - 1);
+      if (focusCommitRemainingSeconds === 0) {
+        showToastMessage("Lock-in commitment completed. You can now leave strict focus.");
+      }
+      updateFocusLockStatus();
+    }
     updateTimerDisplay();
 
     if (timerState.remainingSeconds <= 0) {
@@ -2289,6 +2783,7 @@ function pauseTimer() {
   syncFocusModeAfterTimerStateChange();
   updateTimerButtons();
   updateSessionStatus();
+  updateFocusLockStatus();
 }
 
 function resetTimer() {
@@ -2301,10 +2796,15 @@ function resetTimer() {
   updateTimerDisplay();
   updateTimerButtons();
   updateSessionStatus();
+  updateFocusLockStatus();
 }
 
 function openCancelSessionModal() {
   if (studySession.classList.contains("hidden")) {
+    return;
+  }
+
+  if (maybePromptFocusCommitExit({ type: "cancel-session" })) {
     return;
   }
 
@@ -2330,7 +2830,11 @@ function confirmCancelSession() {
   cancelCurrentSession();
 }
 
-function cancelCurrentSession() {
+function cancelCurrentSession(options = {}) {
+  if (!options.bypassFocusLock && maybePromptFocusCommitExit({ type: "cancel-session" })) {
+    return;
+  }
+
   stopTimerInterval();
   timerState.running = false;
   syncFocusModeAfterTimerStateChange();
@@ -2356,6 +2860,7 @@ function cancelCurrentSession() {
   studySession.classList.add("hidden");
   studyPrep.classList.remove("hidden");
   closeSessionReviewPrompt();
+  clearFocusCommitState();
   updateMiniTimerWidget();
 
   showToastMessage("Session cancelled. Incomplete study time was not tracked.");
@@ -2374,10 +2879,17 @@ function onBlockComplete() {
     if (canUseAnalyticsFeatures()) {
       const context = recordCompletedStudyBlock(blockMinutes, activeTag);
       const unlockedAchievement = unlockStreakAchievements(context.currentStreak, true);
+      const unlockedRareAchievement = unlockRareAchievements(context, true);
       renderAnalytics();
       showMotivationToast(getMotivationalMessage(context));
-      if (unlockedAchievement) {
-        showAchievementToast(unlockedAchievement);
+      const newAchievements = [unlockedAchievement, unlockedRareAchievement].filter(Boolean);
+      if (newAchievements.length > 0) {
+        showAchievementToast(newAchievements[0]);
+        if (newAchievements.length > 1) {
+          setTimeout(() => {
+            showAchievementToast(newAchievements[1]);
+          }, TOAST_SHOW_MS + 1200);
+        }
       }
       openSessionReviewPrompt(context.sessionId);
     } else {
@@ -2464,7 +2976,7 @@ function showAchievementToast(achievement) {
   clearTimeout(achievementToastTimeoutId);
   clearTimeout(achievementToastCleanupId);
 
-  achievementToastMedal.textContent = achievement.days;
+  achievementToastMedal.textContent = achievement.medalText || achievement.days || "★";
   achievementToastTitle.textContent = achievement.title;
   achievementToastMessage.textContent = achievement.message;
 
@@ -2617,6 +3129,8 @@ function syncFocusModeAfterTimerStateChange() {
     stopPartialFocusReminders();
     document.title = "Sanctuary Study";
   }
+
+  updateFocusLockStatus();
 }
 
 function handleBeforeUnloadFocusMode(event) {
@@ -3167,27 +3681,34 @@ function renderWeeklyTagBreakdown(tagLog) {
 function renderAchievements() {
   const analyticsAvailable = canUseAnalyticsFeatures();
   const unlocked = analyticsAvailable ? loadUnlockedAchievements() : {};
+  const achievementDefinitions = getAllAchievementDefinitions();
   const unlockedCount = analyticsAvailable
-    ? STREAK_ACHIEVEMENTS.filter((achievement) => Boolean(unlocked[achievement.id])).length
+    ? achievementDefinitions.filter((achievement) => Boolean(unlocked[achievement.id])).length
     : 0;
   achievementSummaryEl.textContent = analyticsAvailable
-    ? `${unlockedCount} / ${STREAK_ACHIEVEMENTS.length} unlocked`
+    ? `${unlockedCount} / ${achievementDefinitions.length} unlocked`
     : "Sign in to unlock achievements";
   achievementsGridEl.innerHTML = "";
 
-  STREAK_ACHIEVEMENTS.forEach((achievement) => {
+  achievementDefinitions.forEach((achievement) => {
     const unlockedEntry = analyticsAvailable ? (unlocked[achievement.id] || null) : null;
+    const tier = getAchievementTier(achievement);
+    const lockedHint = achievement.hint || "Keep showing up to unlock this badge.";
     const card = document.createElement("article");
     card.className = "achievement-card";
     card.classList.add(unlockedEntry ? "unlocked" : "locked");
 
     const medal = document.createElement("div");
     medal.className = "achievement-medal";
-    medal.textContent = achievement.days;
+    medal.textContent = achievement.medalText || achievement.days || "★";
 
     const label = document.createElement("p");
     label.className = "achievement-days";
-    label.textContent = `${achievement.days} day${achievement.days === 1 ? "" : "s"}`;
+    label.textContent = achievement.label || `${achievement.days} day${achievement.days === 1 ? "" : "s"}`;
+
+    const tierBadge = document.createElement("p");
+    tierBadge.className = `achievement-tier tier-${tier.toLowerCase()}`;
+    tierBadge.textContent = tier;
 
     const title = document.createElement("p");
     title.className = "achievement-title";
@@ -3198,11 +3719,12 @@ function renderAchievements() {
     message.textContent = unlockedEntry
       ? achievement.message
       : (analyticsAvailable
-        ? "Keep your streak growing to unlock this medal."
+        ? lockedHint
         : "Locked in guest mode. Sign in to earn this medal.");
 
     card.appendChild(medal);
     card.appendChild(label);
+    card.appendChild(tierBadge);
     card.appendChild(title);
     card.appendChild(message);
     achievementsGridEl.appendChild(card);
@@ -3216,6 +3738,116 @@ function syncAchievementsWithCurrentStreak() {
 
   const streak = calculateStreak(loadStudyLog());
   unlockStreakAchievements(streak, false);
+  unlockRareAchievements({}, false);
+}
+
+function countStudyDaysInCurrentMonth(log) {
+  const now = new Date();
+  const month = now.getMonth();
+  const year = now.getFullYear();
+
+  return Object.entries(log).filter(([dateKey, minutes]) => {
+    if (Number(minutes || 0) <= 0) {
+      return false;
+    }
+    const date = parseDateKey(dateKey);
+    if (Number.isNaN(date.getTime())) {
+      return false;
+    }
+    return date.getFullYear() === year && date.getMonth() === month;
+  }).length;
+}
+
+function hasRecoveryGapBeforeCurrentStreak(log, currentStreak, requiredGapDays) {
+  const safeStreak = Number(currentStreak || 0);
+  const safeGap = Math.max(1, Number(requiredGapDays || 1));
+  if (safeStreak <= 0) {
+    return false;
+  }
+
+  const startDate = new Date();
+  startDate.setHours(0, 0, 0, 0);
+  startDate.setDate(startDate.getDate() - (safeStreak - 1));
+
+  let gapDays = 0;
+  const cursor = new Date(startDate);
+  cursor.setDate(cursor.getDate() - 1);
+
+  // Count zero-minute days immediately before current streak.
+  for (let i = 0; i < 3660; i += 1) {
+    const key = getDateKey(cursor);
+    if (Number(log[key] || 0) > 0) {
+      break;
+    }
+    gapDays += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
+  if (gapDays < safeGap) {
+    return false;
+  }
+
+  // Ensure there was historical activity before the gap.
+  for (let i = 0; i < 3660; i += 1) {
+    const key = getDateKey(cursor);
+    if (Number(log[key] || 0) > 0) {
+      return true;
+    }
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
+  return false;
+}
+
+function unlockRareAchievements(context = {}, announce = true) {
+  if (!canUseAnalyticsFeatures()) {
+    return null;
+  }
+
+  const log = loadStudyLog();
+  const history = loadSessionHistory();
+  const unlocked = loadUnlockedAchievements();
+  const nowIso = new Date().toISOString();
+  const currentStreak = Number(context.currentStreak || calculateStreak(log));
+  const bestStreak = calculateBestStreak(log);
+  const monthStudyDays = countStudyDaysInCurrentMonth(log);
+  const hasDeepWork = Number(context.blockMinutes || 0) >= 60
+    || history.some((entry) => Number(entry.minutes || 0) >= 60);
+  const hasRecovery = bestStreak >= 7
+    && currentStreak >= 3
+    && hasRecoveryGapBeforeCurrentStreak(log, currentStreak, 2);
+  const hasSteadyMonth = monthStudyDays >= 20;
+
+  const checks = [
+    { id: "rare_deep_work_60", passed: hasDeepWork },
+    { id: "rare_monthly_consistency", passed: hasSteadyMonth },
+    { id: "rare_streak_recovery", passed: hasRecovery }
+  ];
+
+  let changed = false;
+  let achievementToAnnounce = null;
+
+  checks.forEach((check) => {
+    if (!check.passed || unlocked[check.id]) {
+      return;
+    }
+
+    unlocked[check.id] = {
+      unlockedAt: nowIso,
+      days: 0
+    };
+    changed = true;
+
+    if (!achievementToAnnounce && announce) {
+      achievementToAnnounce = getAchievementById(check.id);
+    }
+  });
+
+  if (changed) {
+    saveUnlockedAchievements(unlocked);
+  }
+
+  return achievementToAnnounce;
 }
 
 function unlockStreakAchievements(currentStreak, announceExactMatch) {
@@ -3869,6 +4501,8 @@ function fillSettingsForm() {
   reminderTimeSetting.value = sanitizeTimeInput(settings.reminderTime, defaultSettings.reminderTime);
   quietHoursStartSetting.value = sanitizeTimeInput(settings.quietHoursStart, defaultSettings.quietHoursStart);
   quietHoursEndSetting.value = sanitizeTimeInput(settings.quietHoursEnd, defaultSettings.quietHoursEnd);
+  focusCommitMinutesSetting.value = clampFocusCommitMinutes(settings.focusCommitMinutes);
+  blockedSitesSetting.value = formatBlockedSitesForTextarea(settings.blockedSites);
   themeSetting.value = settings.theme;
   focusModeSetting.value = settings.focusMode;
   alarmModeSetting.value = settings.alarmMode;
@@ -3913,6 +4547,8 @@ function onSettingsSubmit(event) {
     quietHoursEnd: sanitizeTimeInput(quietHoursEndSetting.value, defaultSettings.quietHoursEnd),
     theme: themeSetting.value === "dark" ? "dark" : "light",
     focusMode: sanitizeFocusMode(focusModeSetting.value),
+    focusCommitMinutes: clampFocusCommitMinutes(focusCommitMinutesSetting.value),
+    blockedSites: sanitizeBlockedSites(blockedSitesSetting.value),
     alarmMode: sanitizeAlarmMode(alarmModeSetting.value),
     customAlarmUrl: String(customAlarmUrlSetting.value || "").trim(),
     youtubeMusicUrl: String(youtubeMusicUrlSetting.value || "").trim(),
@@ -3920,6 +4556,17 @@ function onSettingsSubmit(event) {
   };
 
   saveSettings(settings);
+
+  if (sanitizeFocusMode(settings.focusMode) !== "complete" || !isFocusCommitEnabled()) {
+    clearFocusCommitState();
+  } else {
+    const maxCommitSeconds = clampFocusCommitMinutes(settings.focusCommitMinutes) * 60;
+    if (focusCommitRemainingSeconds > maxCommitSeconds) {
+      focusCommitRemainingSeconds = maxCommitSeconds;
+    }
+    updateFocusLockStatus();
+  }
+
   setTheme(settings.theme);
   fillSettingsForm();
   applyPresetByMinutes(settings.studyMinutes, settings.breakMinutes);
@@ -4017,6 +4664,8 @@ function loadSettings() {
       quietHoursEnd: sanitizeTimeInput(parsed.quietHoursEnd, defaultSettings.quietHoursEnd),
       theme: parsed.theme === "dark" ? "dark" : "light",
       focusMode: sanitizeFocusMode(parsed.focusMode),
+      focusCommitMinutes: clampFocusCommitMinutes(parsed.focusCommitMinutes),
+      blockedSites: sanitizeBlockedSites(parsed.blockedSites),
       alarmMode: sanitizeAlarmMode(parsed.alarmMode),
       customAlarmUrl: String(parsed.customAlarmUrl || "").trim(),
       youtubeMusicUrl: parsedUrl,
@@ -5013,7 +5662,8 @@ function setExternalMusicButtonState(url) {
   musicOpenExternalBtn.classList.remove("hidden");
 }
 
-function openBackgroundMusicExternally(providedUrl, silent = false) {
+function openBackgroundMusicExternally(providedUrl, silent = false, options = {}) {
+  const bypassFocusLock = Boolean(options.bypassFocusLock);
   const preset = getLofiPresetById(settings.musicPresetId);
   const fallbackUrl = preset
     ? (preset.url || downloadedPlaylistQueue[downloadedPlaylistCursor]?.url || DOWNLOADED_LOFI_TRACKS[0]?.url || "")
@@ -5023,6 +5673,11 @@ function openBackgroundMusicExternally(providedUrl, silent = false) {
     if (!silent) {
       showToastMessage("Set a valid music source first.");
     }
+    return false;
+  }
+
+  if (!bypassFocusLock && isFocusCommitEnforced() && isUrlBlockedBySettings(url)) {
+    openFocusExitModal({ type: "open-url", url });
     return false;
   }
 
