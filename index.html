@@ -11,9 +11,49 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="./style.css?v=20260220-themefix1" />
 </head>
-<body data-theme="dark">
+<body>
+  <script>
+    (() => {
+      const themes = ["dark", "light", "dawn", "ocean", "sage"];
+      const normalizeTheme = (value) => {
+        const raw = String(value || "").trim().toLowerCase();
+        if (!raw) {
+          return "";
+        }
+        const aliasMap = {
+          "theme-dark": "dark",
+          "theme-light": "light",
+          "theme-dawn": "dawn",
+          "theme-ocean": "ocean",
+          "theme-sage": "sage",
+          "mode-dark": "dark",
+          "mode-light": "light"
+        };
+        const resolved = aliasMap[raw] || raw.replace(/^theme:\s*/i, "");
+        return themes.includes(resolved) ? resolved : "";
+      };
+
+      let initialTheme = normalizeTheme(localStorage.getItem("theme"));
+
+      if (!initialTheme) {
+        try {
+          const parsed = JSON.parse(localStorage.getItem("sanctuaryStudySettingsV1") || "{}");
+          initialTheme = normalizeTheme(parsed.theme);
+        } catch (error) {
+          initialTheme = "";
+        }
+      }
+
+      const theme = initialTheme || "dark";
+      document.body.dataset.theme = theme;
+      themes.forEach((themeId) => {
+        document.body.classList.remove(`theme-${themeId}`);
+      });
+      document.body.classList.add(`theme-${theme}`);
+    })();
+  </script>
   <main class="app-shell">
     <header class="top-bar">
       <div class="top-left-controls">
@@ -387,7 +427,16 @@
         <p>Tune study length, break length, color mode, and alarm behavior.</p>
       </div>
 
+      <nav class="settings-quick-nav" aria-label="Settings quick navigation">
+        <button type="button" class="settings-quick-btn active" data-settings-target="settingsGeneralAnchor">General</button>
+        <button type="button" class="settings-quick-btn" data-settings-target="settingsPlanAnchor">Planning</button>
+        <button type="button" class="settings-quick-btn" data-settings-target="settingsFocusAnchor">Focus</button>
+        <button type="button" class="settings-quick-btn" data-settings-target="settingsAudioAnchor">Audio</button>
+        <button type="button" class="settings-quick-btn" data-settings-target="accountSettingsCard">Account</button>
+      </nav>
+
       <form id="settingsForm" class="settings-form">
+        <span id="settingsGeneralAnchor" class="settings-anchor" aria-hidden="true"></span>
         <label>
           Study minutes
           <input id="studyMinutesSetting" type="number" min="1" max="240" />
@@ -403,6 +452,7 @@
           <input id="dailyGoalMinutesSetting" type="number" min="10" max="600" />
         </label>
 
+        <span id="settingsPlanAnchor" class="settings-anchor" aria-hidden="true"></span>
         <details class="settings-subpanel settings-collapse weekly-plan-panel">
           <summary class="settings-subpanel-title">Weekly Study Plan (minutes)</summary>
           <div class="settings-collapse-body">
@@ -487,6 +537,7 @@
           </select>
         </label>
 
+        <span id="settingsFocusAnchor" class="settings-anchor" aria-hidden="true"></span>
         <details class="settings-subpanel settings-collapse lockin-panel">
           <summary class="settings-subpanel-title">Lock-In Mode (Complete Focus)</summary>
           <div class="settings-collapse-body">
@@ -521,6 +572,7 @@
           <input id="customAlarmUrlSetting" type="url" placeholder="https://example.com/alarm.mp3" />
         </label>
 
+        <span id="settingsAudioAnchor" class="settings-anchor" aria-hidden="true"></span>
         <label class="youtube-music-row">
           Music URL (YouTube or direct MP3/WAV)
           <input id="youtubeMusicUrlSetting" type="url" placeholder="https://www.youtube.com/watch?v=... or https://.../track.mp3" />
@@ -701,7 +753,7 @@
     </div>
   </div>
 
-  <script type="module" src="./auth.js"></script>
-  <script src="./app.js"></script>
+  <script type="module" src="./auth.js?v=20260220-themefix1"></script>
+  <script src="./app.js?v=20260220-themefix1"></script>
 </body>
 </html>

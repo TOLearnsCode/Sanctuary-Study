@@ -22,6 +22,7 @@ const SESSION_HISTORY_KEY = "sanctuarySessionHistoryV1";
 const ACHIEVEMENTS_KEY = "sanctuaryAchievementsV1";
 const GUEST_MODE_KEY = "sanctuaryGuestModeV1";
 const THEME_PREF_KEY = "theme";
+const SETTINGS_UPDATED_AT_KEY = "sanctuarySettingsUpdatedAtV1";
 const LAST_SYNCED_UID_KEY = "sanctuaryLastAnalyticsUidV1";
 const LAST_SUCCESSFUL_SYNC_AT_KEY = "sanctuaryLastSuccessfulSyncAtV1";
 const REMINDER_LAST_SENT_KEY = "sanctuaryReminderLastSentV1";
@@ -47,6 +48,7 @@ const TOAST_SHOW_MS = 4200;
 const SCRIPTURE_HISTORY_LIMIT = 14;
 const CLOUD_HYDRATE_COOLDOWN_MS = 6000;
 const REMINDER_CHECK_INTERVAL_MS = 30000;
+const LOCAL_PREF_OVERRIDE_GUARD_MS = 90000;
 
 const BIBLE_API_BASE_URL = "https://bible-api.com/";
 const COMMONS_API_BASE_URL = "https://commons.wikimedia.org/w/api.php";
@@ -496,6 +498,8 @@ const achievementSummaryEl = document.getElementById("achievementSummary");
 const achievementsGridEl = document.getElementById("achievementsGrid");
 
 const settingsForm = document.getElementById("settingsForm");
+const settingsQuickButtons = Array.from(document.querySelectorAll(".settings-quick-btn"));
+const settingsQuickAccountBtn = settingsQuickButtons.find((button) => button.dataset.settingsTarget === "accountSettingsCard") || null;
 const studyMinutesSetting = document.getElementById("studyMinutesSetting");
 const breakMinutesSetting = document.getElementById("breakMinutesSetting");
 const dailyGoalMinutesSetting = document.getElementById("dailyGoalMinutesSetting");
@@ -622,6 +626,8 @@ let reminderIntervalId = null;
 let lastReminderSentDayKey = loadLastReminderSentDayKey();
 let lastSuccessfulSyncAt = loadLastSuccessfulSyncAt();
 let syncIndicatorState = "idle"; // "idle" | "syncing" | "error"
+let lastLocalSettingsMutationAt = loadLastLocalSettingsMutationAt();
+let lastLocalThemeMutationAt = 0;
 let pendingSessionReviewId = null;
 let pendingServiceWorkerRegistration = null;
 let updateBarElement = null;
@@ -649,18 +655,22 @@ init();
 function init() {
   if (!settings.musicPresetId && !settings.youtubeMusicUrl) {
     settings.musicPresetId = defaultSettings.musicPresetId;
-    saveSettings(settings);
+    saveSettings(settings, {
+      skipThemeMutationStamp: true,
+      skipLocalMutationStamp: true
+    });
   }
 
   const savedTheme = localStorage.getItem(THEME_PREF_KEY);
   const initialTheme = resolveThemePreference(savedTheme, settings.theme, defaultSettings.theme);
-  setTheme(initialTheme);
+  setTheme(initialTheme, { fromRemote: true });
   settings.theme = initialTheme;
   localStorage.setItem(THEME_PREF_KEY, initialTheme);
   populateLofiPresetSelect();
   renderMusicAttributionList();
   fillSettingsForm();
   wireEvents();
+  activateSettingsQuickNav("settingsGeneralAnchor");
   setStudyTheme(selectedStudyTheme);
   setCurrentFocus(currentFocus);
   applyPresetByMinutes(settings.studyMinutes, settings.breakMinutes);
@@ -733,9 +743,10 @@ function registerServiceWorkerWithUpdatePrompt() {
       });
 
       // Faster checks so update banner appears soon after a deploy.
+      void checkForUpdates();
       window.setTimeout(checkForUpdates, 700);
-      window.setTimeout(checkForUpdates, 2500);
-      window.setInterval(checkForUpdates, 120000);
+      window.setTimeout(checkForUpdates, 2000);
+      window.setInterval(checkForUpdates, 60000);
 
       document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible") {
@@ -848,6 +859,35 @@ function saveLastReminderSentDayKey(dayKey) {
     return;
   }
   localStorage.setItem(REMINDER_LAST_SENT_KEY, safeDayKey);
+}
+
+function loadLastLocalSettingsMutationAt() {
+  const numeric = Number(localStorage.getItem(SETTINGS_UPDATED_AT_KEY));
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : 0;
+}
+
+function saveLastLocalSettingsMutationAt(timestampMs) {
+  const safeTimestamp = Number(timestampMs);
+  if (!Number.isFinite(safeTimestamp) || safeTimestamp <= 0) {
+    localStorage.removeItem(SETTINGS_UPDATED_AT_KEY);
+    return;
+  }
+
+  localStorage.setItem(SETTINGS_UPDATED_AT_KEY, String(Math.round(safeTimestamp)));
+}
+
+function parseTimestampToMs(value) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  const asNumber = Number(value);
+  if (Number.isFinite(asNumber) && asNumber > 0) {
+    return asNumber;
+  }
+
+  const parsed = Date.parse(String(value || ""));
+  return Number.isFinite(parsed) ? parsed : NaN;
 }
 
 function setSyncIndicatorState(state) {
@@ -1401,6 +1441,13 @@ function updateSettingsAccountControls() {
   accountSettingsCard.classList.toggle("hidden", !isSignedIn);
   settingsSignOutBtn.disabled = !isSignedIn;
   settingsDeleteAccountBtn.disabled = !isSignedIn;
+  if (settingsQuickAccountBtn) {
+    settingsQuickAccountBtn.disabled = !isSignedIn;
+    settingsQuickAccountBtn.classList.toggle("disabled", !isSignedIn);
+    if (!isSignedIn && settingsQuickAccountBtn.classList.contains("active")) {
+      activateSettingsQuickNav("settingsGeneralAnchor");
+    }
+  }
 
   if (!isSignedIn) {
     accountSettingsStatus.textContent = "Sign in to access account actions.";
@@ -1819,6 +1866,7 @@ function buildUserDocPayload(reason = "update") {
   return {
     studyTheme: currentTheme,
     preferences: safePreferences,
+    preferencesUpdatedAt: lastLocalSettingsMutationAt || Date.now(),
     streakCount: calculateStreak(localLog),
     lastSessionAt: getLastSessionAtFromLog(localLog),
     updatedAt: new Date().toISOString(),
@@ -1847,6 +1895,25 @@ function applyUserDocSnapshot(data) {
 
     const parsedMusicUrl = String(preferences.youtubeMusicUrl || "").trim();
     const parsedPresetId = sanitizeMusicPresetId(preferences.musicPresetId);
+    const remotePreferencesUpdatedAtMs = parseTimestampToMs(data.preferencesUpdatedAt || data.updatedAt);
+    const localSettingsRecentlyChanged = lastLocalSettingsMutationAt > 0
+      && (Date.now() - lastLocalSettingsMutationAt) < LOCAL_PREF_OVERRIDE_GUARD_MS;
+    const remoteLooksOlderThanLocal = Number.isFinite(remotePreferencesUpdatedAtMs)
+      && remotePreferencesUpdatedAtMs + 500 < lastLocalSettingsMutationAt;
+    const shouldKeepLocalPreferences = localSettingsRecentlyChanged
+      && (!Number.isFinite(remotePreferencesUpdatedAtMs) || remoteLooksOlderThanLocal);
+
+    if (shouldKeepLocalPreferences) {
+      scheduleUserDocSync("preferences-reconcile");
+      return;
+    }
+
+    const resolvedRemoteTheme = resolveThemePreference(
+      preferences.theme,
+      localStorage.getItem(THEME_PREF_KEY),
+      settings.theme,
+      defaultSettings.theme
+    );
 
     settings = {
       studyMinutes: clampMinutes(preferences.studyMinutes, 1, 240),
@@ -1857,7 +1924,7 @@ function applyUserDocSnapshot(data) {
       reminderTime: sanitizeTimeInput(preferences.reminderTime, defaultSettings.reminderTime),
       quietHoursStart: sanitizeTimeInput(preferences.quietHoursStart, defaultSettings.quietHoursStart),
       quietHoursEnd: sanitizeTimeInput(preferences.quietHoursEnd, defaultSettings.quietHoursEnd),
-      theme: resolveThemePreference(preferences.theme, localStorage.getItem(THEME_PREF_KEY), settings.theme, defaultSettings.theme),
+      theme: resolvedRemoteTheme,
       focusMode: sanitizeFocusMode(preferences.focusMode),
       focusCommitMinutes: clampFocusCommitMinutes(preferences.focusCommitMinutes),
       blockedSites: sanitizeBlockedSites(preferences.blockedSites),
@@ -1873,8 +1940,12 @@ function applyUserDocSnapshot(data) {
       updateFocusLockStatus();
     }
 
-    saveSettings(settings, { skipUserDocSync: true });
-    setTheme(settings.theme);
+    saveSettings(settings, {
+      skipUserDocSync: true,
+      skipThemeMutationStamp: true,
+      skipLocalMutationStamp: true
+    });
+    setTheme(settings.theme, { fromRemote: true });
     fillSettingsForm();
     applyPresetByMinutes(settings.studyMinutes, settings.breakMinutes);
     updateCustomAlarmVisibility();
@@ -2194,6 +2265,30 @@ function handleAuthActionClick() {
   showAuthScreen("Sign in to save analytics and achievements.");
 }
 
+function activateSettingsQuickNav(targetId = "") {
+  settingsQuickButtons.forEach((button) => {
+    button.classList.toggle("active", button.dataset.settingsTarget === targetId);
+  });
+}
+
+function expandSettingsPanelForTarget(targetId = "") {
+  const panelMap = {
+    settingsPlanAnchor: ".weekly-plan-panel",
+    settingsFocusAnchor: ".lockin-panel",
+    settingsAudioAnchor: ".attribution-dropdown"
+  };
+
+  const selector = panelMap[targetId];
+  if (!selector) {
+    return;
+  }
+
+  const panel = sections.settings ? sections.settings.querySelector(selector) : null;
+  if (panel && panel.tagName === "DETAILS") {
+    panel.open = true;
+  }
+}
+
 function wireEvents() {
   navButtons.forEach((button) => {
     button.addEventListener("click", () => {
@@ -2333,6 +2428,26 @@ function wireEvents() {
   cancelSessionBtn.addEventListener("click", openCancelSessionModal);
 
   settingsForm.addEventListener("submit", onSettingsSubmit);
+  settingsQuickButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const targetId = String(button.dataset.settingsTarget || "");
+      const target = document.getElementById(targetId);
+      if (!target) {
+        return;
+      }
+
+      if (currentView !== "settings") {
+        switchSection("settings");
+      }
+
+      activateSettingsQuickNav(targetId);
+      expandSettingsPanelForTarget(targetId);
+      target.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    });
+  });
   themeSetting.addEventListener("change", () => {
     setTheme(themeSetting.value);
     settings.theme = sanitizeThemeId(document.body.dataset.theme);
@@ -2553,6 +2668,9 @@ function switchSection(sectionName, options = {}) {
   if (sectionName === "analytics") {
     renderAnalytics();
     void refreshAnalyticsFromCloud("view");
+  } else if (sectionName === "settings") {
+    activateSettingsQuickNav("settingsGeneralAnchor");
+    sections.settings.scrollTop = 0;
   } else if (sectionName === "favourites") {
     renderFavourites();
   }
@@ -4735,6 +4853,18 @@ function loadSettings() {
 }
 
 function saveSettings(nextSettings, options = {}) {
+  if (!options.skipLocalMutationStamp) {
+    lastLocalSettingsMutationAt = Date.now();
+    saveLastLocalSettingsMutationAt(lastLocalSettingsMutationAt);
+  }
+
+  if (!options.skipThemeMutationStamp) {
+    const nextTheme = normalizeThemeId(nextSettings && nextSettings.theme);
+    if (nextTheme) {
+      lastLocalThemeMutationAt = Date.now();
+    }
+  }
+
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(nextSettings));
   if (!options.skipUserDocSync) {
     scheduleUserDocSync("preferences");
@@ -4785,13 +4915,16 @@ function getNextThemeId(currentTheme) {
   return AVAILABLE_COLOR_THEMES[(index + 1) % AVAILABLE_COLOR_THEMES.length];
 }
 
-function setTheme(theme) {
+function setTheme(theme, options = {}) {
   const resolvedTheme = sanitizeThemeId(theme);
   document.body.dataset.theme = resolvedTheme;
   AVAILABLE_COLOR_THEMES.forEach((themeId) => {
     document.body.classList.remove(`theme-${themeId}`);
   });
   document.body.classList.add(`theme-${resolvedTheme}`);
+  if (!options.fromRemote) {
+    lastLocalThemeMutationAt = Date.now();
+  }
   localStorage.setItem(THEME_PREF_KEY, resolvedTheme);
   if (themeSetting) {
     themeSetting.value = resolvedTheme;

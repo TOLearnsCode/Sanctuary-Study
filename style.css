@@ -242,9 +242,10 @@ body.popup-open::after {
 }
 
 .app-shell {
-  width: min(1360px, 100%);
+  width: min(1360px, calc(100vw - 36px));
   max-width: 100%;
   min-width: 0;
+  margin-inline: auto;
   display: grid;
   gap: 16px;
 }
@@ -297,6 +298,7 @@ table,
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  flex: 1 1 420px;
   min-width: 0;
   max-width: 100%;
 }
@@ -396,6 +398,7 @@ table,
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  flex: 1 1 420px;
   justify-content: flex-end;
   min-width: 0;
   max-width: 100%;
@@ -782,6 +785,7 @@ body.theme-dark .home-theme-badge {
 
 .panel {
   padding: clamp(18px, 3vw, 26px);
+  overflow: hidden;
 }
 
 .study-prep {
@@ -1156,8 +1160,12 @@ body.theme-dark .focus-lock-status {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 10px;
+}
+
+.stats-grid > * {
+  min-width: 0;
 }
 
 .stat-card {
@@ -1196,10 +1204,15 @@ body.theme-dark .focus-lock-status {
   margin-bottom: 8px;
 }
 
+.chart-head > * {
+  min-width: 0;
+}
+
 .chart-head p {
   margin: 0;
   color: var(--muted);
   font-size: 0.9rem;
+  overflow-wrap: anywhere;
 }
 
 .study-graph {
@@ -1507,22 +1520,78 @@ body.theme-dark .achievement-tier.tier-platinum {
 
 .settings-form {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
   align-items: start;
 }
 
 .settings-form label {
   display: grid;
   gap: 7px;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
 }
 
 .settings-form > label {
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--card-strong);
-  padding: 10px;
+  padding: 12px;
+}
+
+.settings-anchor {
+  display: block;
+  width: 100%;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+}
+
+.settings-quick-nav {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+  margin: 0 0 14px;
+  position: sticky;
+  top: 76px;
+  z-index: 4;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  backdrop-filter: blur(8px);
+}
+
+.settings-quick-btn {
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--glass);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  padding: 9px 11px;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.settings-quick-btn:hover {
+  transform: translateY(-1px);
+  background: var(--glass-hover);
+}
+
+.settings-quick-btn.active {
+  border-color: rgba(79, 140, 99, 0.52);
+  background: rgba(79, 140, 99, 0.14);
+  color: var(--brand-strong);
+}
+
+.settings-quick-btn.disabled,
+.settings-quick-btn:disabled {
+  opacity: 0.56;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .youtube-music-row {
@@ -1544,8 +1613,13 @@ body.theme-dark .achievement-tier.tier-platinum {
   overflow: hidden;
 }
 
+.settings-collapse[open] {
+  border-color: rgba(79, 140, 99, 0.34);
+  box-shadow: 0 8px 16px rgba(31, 58, 44, 0.06);
+}
+
 .settings-collapse > summary {
-  padding: 12px;
+  padding: 13px 12px;
   cursor: pointer;
   list-style: none;
   user-select: none;
@@ -1569,7 +1643,7 @@ body.theme-dark .achievement-tier.tier-platinum {
 }
 
 .settings-collapse-body {
-  padding: 0 12px 12px;
+  padding: 0 12px 14px;
   display: grid;
   gap: 9px;
 }
@@ -1741,7 +1815,7 @@ body.theme-dark .achievement-tier.tier-platinum {
 .settings-actions {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 10px;
 }
 
@@ -2666,6 +2740,11 @@ body.theme-dark .btn-danger {
     grid-template-columns: 1fr;
   }
 
+  .settings-quick-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    top: 8px;
+  }
+
   .weekly-plan-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
@@ -3042,6 +3121,21 @@ body.theme-dark .btn-danger {
 
   .weekly-plan-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .settings-quick-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    margin-bottom: 10px;
+    top: 6px;
+    padding: 6px;
+  }
+
+  .settings-quick-btn {
+    font-size: 0.74rem;
+    min-height: 34px;
+    padding: 7px 8px;
+    border-radius: 9px;
   }
 
   .settings-subpanel {

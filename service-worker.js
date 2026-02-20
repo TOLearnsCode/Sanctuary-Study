@@ -1,9 +1,17 @@
-const CACHE_NAME = "sanctuary-study-core-v4";
+const CACHE_NAME = "sanctuary-study-core-v5";
+const ASSET_VERSION = "20260220-themefix1";
+const withVersion = (path) => `${path}?v=${ASSET_VERSION}`;
 const CORE_ASSETS = [
   "/",
   "/index.html",
   "/privacy.html",
   "/terms.html",
+  withVersion("/style.css"),
+  withVersion("/legal.css"),
+  withVersion("/app.js"),
+  withVersion("/legal.js"),
+  withVersion("/auth.js"),
+  withVersion("/firebase.js"),
   "/style.css",
   "/legal.css",
   "/app.js",
@@ -30,7 +38,11 @@ const APP_SHELL_PATHS = new Set([
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS))
+    caches.open(CACHE_NAME).then(async (cache) => {
+      await Promise.allSettled(
+        CORE_ASSETS.map((assetPath) => cache.add(assetPath))
+      );
+    })
   );
 });
 
