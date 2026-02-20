@@ -5361,6 +5361,14 @@ function setMusicDockPosition(left, top) {
 }
 
 function clampMusicDockToViewport() {
+  if (window.innerWidth <= 430) {
+    musicDock.style.left = "";
+    musicDock.style.top = "";
+    musicDock.style.right = "";
+    musicDock.style.bottom = "";
+    return;
+  }
+
   const rect = musicDock.getBoundingClientRect();
   const maxLeft = Math.max(8, window.innerWidth - rect.width - 8);
   const maxTop = Math.max(8, window.innerHeight - rect.height - 8);

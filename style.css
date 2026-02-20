@@ -2965,6 +2965,10 @@ body.theme-dark .btn-danger {
   .music-dock.minimized {
     width: min(260px, calc(100% - 200px));
   }
+
+  .app-shell {
+    width: min(1360px, calc(100vw - 20px));
+  }
 }
 
 @media (max-width: 560px) {
@@ -3002,6 +3006,7 @@ body.theme-dark .btn-danger {
     gap: 6px;
     padding: 0;
     justify-content: center;
+    flex: none;
   }
 
   .top-left-controls {
@@ -3277,7 +3282,6 @@ body.theme-dark .btn-danger {
   }
 
   .session-review-prompt {
-    bottom: 126px;
     width: calc(100% - 14px);
     padding: 10px 11px;
   }
@@ -3301,6 +3305,98 @@ body.theme-dark .btn-danger {
 
   .app-shell {
     max-width: 100%;
+    width: min(1360px, calc(100vw - 16px));
+  }
+
+  #studySection,
+  #settingsSection,
+  #favouritesSection {
+    padding: 14px 10px;
+  }
+
+  .study-prep {
+    padding: 12px;
+  }
+
+  .quote-card,
+  .notes-card {
+    padding: 10px;
+  }
+
+  .verse-popup {
+    width: calc(100% - 16px);
+    padding: 14px;
+  }
+
+  .settings-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .mini-timer {
+    right: 8px;
+    bottom: 8px;
+    left: 8px;
+    width: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .mini-timer-btn {
+    margin-left: auto;
+  }
+
+  .music-dock {
+    left: 8px;
+    right: 8px;
+    bottom: 60px;
+    width: auto;
+  }
+
+  .music-dock.minimized {
+    width: auto;
+  }
+
+  .achievement-toast {
+    bottom: 56px;
+    width: calc(100% - 16px);
+  }
+
+  .motivation-toast {
+    width: calc(100% - 16px);
+    bottom: 8px;
+  }
+
+  .session-review-prompt {
+    bottom: auto;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  #analyticsSection .insight-item,
+  #analyticsSection .tag-trend-row {
+    flex-wrap: wrap;
+  }
+
+  #analyticsSection .insight-label,
+  #analyticsSection .insight-value,
+  #analyticsSection .tag-trend-name,
+  #analyticsSection .tag-trend-change {
+    min-width: 0;
+    word-break: break-word;
+  }
+
+  #analyticsSection .study-graph {
+    gap: 2px;
+  }
+
+  #analyticsSection .graph-col {
+    min-width: 6px;
+  }
+
+  #analyticsSection .graph-bar {
+    width: 6px;
   }
 }
 
@@ -3340,19 +3436,15 @@ body.theme-dark .btn-danger {
   }
 
   #analyticsSection .graph-col {
-    min-width: 8px;
+    min-width: 5px;
   }
 
   #analyticsSection .graph-bar {
-    width: 8px;
+    width: 5px;
   }
 
   .weekly-plan-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .session-review-prompt {
-    bottom: 118px;
   }
 
   .auth-title,
@@ -3362,7 +3454,8 @@ body.theme-dark .btn-danger {
 
   .home-copy,
   .auth-copy,
-  p {
+  .home-hero p,
+  .auth-gate p {
     font-size: 13px;
   }
 }
