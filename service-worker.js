@@ -1,9 +1,13 @@
-const CACHE_NAME = "sanctuary-study-core-v3";
+const CACHE_NAME = "sanctuary-study-core-v4";
 const CORE_ASSETS = [
   "/",
   "/index.html",
+  "/privacy.html",
+  "/terms.html",
   "/style.css",
+  "/legal.css",
   "/app.js",
+  "/legal.js",
   "/auth.js",
   "/firebase.js",
   "/favicon.ico",
@@ -14,8 +18,12 @@ const CORE_ASSETS = [
 const APP_SHELL_PATHS = new Set([
   "/",
   "/index.html",
+  "/privacy.html",
+  "/terms.html",
   "/style.css",
+  "/legal.css",
   "/app.js",
+  "/legal.js",
   "/auth.js",
   "/firebase.js"
 ]);
@@ -49,9 +57,15 @@ self.addEventListener("fetch", (event) => {
   const requestUrl = new URL(event.request.url);
   const isSameOrigin = requestUrl.origin === self.location.origin;
   const isAppShellRequest = isSameOrigin && APP_SHELL_PATHS.has(requestUrl.pathname);
+  const isCodeOrDocument = isSameOrigin && (
+    event.request.destination === "document"
+    || event.request.destination === "script"
+    || event.request.destination === "style"
+  );
+  const shouldUseNetworkFirst = isAppShellRequest || isCodeOrDocument;
 
-  // Keep auth/app logic fresh after deploys: try network first for core shell files.
-  if (isAppShellRequest) {
+  // Keep core HTML/CSS/JS fresh after deploys: network first, cache fallback.
+  if (shouldUseNetworkFirst) {
     event.respondWith(
       fetch(event.request)
         .then((networkResponse) => {

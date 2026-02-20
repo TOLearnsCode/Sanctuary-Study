@@ -403,40 +403,42 @@
           <input id="dailyGoalMinutesSetting" type="number" min="10" max="600" />
         </label>
 
-        <div class="settings-subpanel weekly-plan-panel">
-          <p class="settings-subpanel-title">Weekly Study Plan (minutes)</p>
-          <div class="weekly-plan-grid">
-            <label>
-              Mon
-              <input id="weeklyPlanMonSetting" type="number" min="0" max="360" />
-            </label>
-            <label>
-              Tue
-              <input id="weeklyPlanTueSetting" type="number" min="0" max="360" />
-            </label>
-            <label>
-              Wed
-              <input id="weeklyPlanWedSetting" type="number" min="0" max="360" />
-            </label>
-            <label>
-              Thu
-              <input id="weeklyPlanThuSetting" type="number" min="0" max="360" />
-            </label>
-            <label>
-              Fri
-              <input id="weeklyPlanFriSetting" type="number" min="0" max="360" />
-            </label>
-            <label>
-              Sat
-              <input id="weeklyPlanSatSetting" type="number" min="0" max="360" />
-            </label>
-            <label>
-              Sun
-              <input id="weeklyPlanSunSetting" type="number" min="0" max="360" />
-            </label>
+        <details class="settings-subpanel settings-collapse weekly-plan-panel">
+          <summary class="settings-subpanel-title">Weekly Study Plan (minutes)</summary>
+          <div class="settings-collapse-body">
+            <div class="weekly-plan-grid">
+              <label>
+                Mon
+                <input id="weeklyPlanMonSetting" type="number" min="0" max="360" />
+              </label>
+              <label>
+                Tue
+                <input id="weeklyPlanTueSetting" type="number" min="0" max="360" />
+              </label>
+              <label>
+                Wed
+                <input id="weeklyPlanWedSetting" type="number" min="0" max="360" />
+              </label>
+              <label>
+                Thu
+                <input id="weeklyPlanThuSetting" type="number" min="0" max="360" />
+              </label>
+              <label>
+                Fri
+                <input id="weeklyPlanFriSetting" type="number" min="0" max="360" />
+              </label>
+              <label>
+                Sat
+                <input id="weeklyPlanSatSetting" type="number" min="0" max="360" />
+              </label>
+              <label>
+                Sun
+                <input id="weeklyPlanSunSetting" type="number" min="0" max="360" />
+              </label>
+            </div>
+            <p class="settings-subpanel-note">Weekly target auto-calculates from the daily plan above.</p>
           </div>
-          <p class="settings-subpanel-note">Weekly target auto-calculates from the daily plan above.</p>
-        </div>
+        </details>
 
         <div class="settings-subpanel reminder-panel">
           <div class="settings-subpanel-head">
@@ -483,18 +485,20 @@
           </select>
         </label>
 
-        <div class="settings-subpanel lockin-panel">
-          <p class="settings-subpanel-title">Lock-In Mode (Complete Focus)</p>
-          <label>
-            Commitment minutes (0 to disable)
-            <input id="focusCommitMinutesSetting" type="number" min="0" max="240" />
-          </label>
-          <label>
-            Blocked site reminders (one per line)
-            <textarea id="blockedSitesSetting" rows="3" placeholder="youtube.com&#10;x.com&#10;instagram.com"></textarea>
-          </label>
-          <p class="settings-subpanel-note">Sanctuary cannot block other websites at browser/system level, but lock-in guards exits and asks for break-glass confirmation with these domains.</p>
-        </div>
+        <details class="settings-subpanel settings-collapse lockin-panel">
+          <summary class="settings-subpanel-title">Lock-In Mode (Complete Focus)</summary>
+          <div class="settings-collapse-body">
+            <label>
+              Commitment minutes (0 to disable)
+              <input id="focusCommitMinutesSetting" type="number" min="0" max="240" />
+            </label>
+            <label>
+              Blocked site reminders (one per line)
+              <textarea id="blockedSitesSetting" rows="3" placeholder="youtube.com&#10;x.com&#10;instagram.com"></textarea>
+            </label>
+            <p class="settings-subpanel-note">Sanctuary cannot block other websites at browser/system level, but lock-in guards exits and asks for break-glass confirmation with these domains.</p>
+          </div>
+        </details>
 
         <label>
           Alarm sound

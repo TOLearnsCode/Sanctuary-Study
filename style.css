@@ -1498,12 +1498,20 @@ body[data-theme="dark"] .achievement-tier.tier-platinum {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+  align-items: start;
 }
 
 .settings-form label {
   display: grid;
   gap: 7px;
   font-size: 0.92rem;
+}
+
+.settings-form > label {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card-strong);
+  padding: 10px;
 }
 
 .youtube-music-row {
@@ -1516,6 +1524,41 @@ body[data-theme="dark"] .achievement-tier.tier-platinum {
   border-radius: 14px;
   background: var(--card-strong);
   padding: 12px;
+  display: grid;
+  gap: 9px;
+}
+
+.settings-collapse {
+  padding: 0;
+  overflow: hidden;
+}
+
+.settings-collapse > summary {
+  padding: 12px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-collapse > summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-collapse > summary::after {
+  content: "▾";
+  color: var(--muted);
+  transition: transform 0.16s ease;
+}
+
+.settings-collapse[open] > summary::after {
+  transform: rotate(180deg);
+}
+
+.settings-collapse-body {
+  padding: 0 12px 12px;
   display: grid;
   gap: 9px;
 }
@@ -1686,7 +1729,14 @@ body[data-theme="dark"] .achievement-tier.tier-platinum {
 
 .settings-actions {
   grid-column: 1 / -1;
-  justify-content: flex-start;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.settings-actions .btn {
+  width: 100%;
+  justify-content: center;
 }
 
 .account-settings-card {

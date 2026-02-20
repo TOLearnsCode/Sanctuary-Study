@@ -700,9 +700,21 @@ function registerServiceWorkerWithUpdatePrompt() {
     return;
   }
 
-  window.addEventListener("load", async () => {
+  (async () => {
     try {
       const registration = await navigator.serviceWorker.register("/service-worker.js");
+
+      const checkForUpdates = async () => {
+        try {
+          await registration.update();
+        } catch (error) {
+          return;
+        }
+
+        if (registration.waiting) {
+          showUpdateBanner(registration);
+        }
+      };
 
       if (registration.waiting) {
         showUpdateBanner(registration);
@@ -720,10 +732,25 @@ function registerServiceWorkerWithUpdatePrompt() {
           }
         });
       });
+
+      // Faster checks so update banner appears soon after a deploy.
+      window.setTimeout(checkForUpdates, 700);
+      window.setTimeout(checkForUpdates, 2500);
+      window.setInterval(checkForUpdates, 120000);
+
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+          void checkForUpdates();
+        }
+      });
+
+      window.addEventListener("online", () => {
+        void checkForUpdates();
+      });
     } catch (error) {
       console.warn("Service worker registration failed.", error);
     }
-  });
+  })();
 }
 
 function showUpdateBanner(registration) {

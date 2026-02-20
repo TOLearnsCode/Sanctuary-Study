@@ -10,6 +10,76 @@
   --shadow: 0 14px 34px rgba(29, 60, 44, 0.1);
 }
 
+body[data-theme="light"],
+body.theme-light {
+  --bg: #f8fcf9;
+  --bg-deep: #e7f3ec;
+  --card: #ffffff;
+  --text: #203328;
+  --muted: #5b7366;
+  --line: rgba(113, 146, 126, 0.3);
+  --brand: #4f8c63;
+  --brand-strong: #2f6d48;
+  --shadow: 0 14px 34px rgba(29, 60, 44, 0.1);
+  color-scheme: light;
+}
+
+body[data-theme="dark"],
+body.theme-dark {
+  --bg: #0d1210;
+  --bg-deep: #1a2520;
+  --card: #1b2520;
+  --text: #edf2ee;
+  --muted: #a7b4ab;
+  --line: rgba(117, 139, 124, 0.42);
+  --brand: #84c79e;
+  --brand-strong: #c8f2d7;
+  --shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
+  color-scheme: dark;
+}
+
+body[data-theme="dawn"],
+body.theme-dawn {
+  --bg: #fff7f0;
+  --bg-deep: #fdebdc;
+  --card: #ffffff;
+  --text: #3a2a22;
+  --muted: #7d6357;
+  --line: rgba(174, 132, 112, 0.32);
+  --brand: #cc7f53;
+  --brand-strong: #a65d34;
+  --shadow: 0 14px 34px rgba(104, 58, 34, 0.12);
+  color-scheme: light;
+}
+
+body[data-theme="ocean"],
+body.theme-ocean {
+  --bg: #eef7fb;
+  --bg-deep: #d9ebf4;
+  --card: #ffffff;
+  --text: #1b3442;
+  --muted: #5b7785;
+  --line: rgba(93, 134, 154, 0.3);
+  --brand: #3a8eb8;
+  --brand-strong: #2f7395;
+  --shadow: 0 14px 34px rgba(22, 69, 91, 0.1);
+  color-scheme: light;
+}
+
+body[data-theme="sage"],
+body.theme-sage {
+  --bg: #f6faf3;
+  --bg-deep: #e5efdf;
+  --card: #ffffff;
+  --text: #273527;
+  --muted: #617362;
+  --line: rgba(122, 146, 124, 0.3);
+  --brand: #6f9d68;
+  --brand-strong: #547b50;
+  --shadow: 0 14px 34px rgba(52, 72, 45, 0.1);
+  color-scheme: light;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -81,6 +151,27 @@ body.legal-page {
   border-color: rgba(79, 140, 99, 0.38);
 }
 
+.legal-theme-btn {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 7px 12px;
+  background: rgba(255, 255, 255, 0.68);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.legal-theme-btn:hover {
+  background: #ffffff;
+  color: var(--brand-strong);
+  transform: translateY(-1px);
+}
+
 .legal-card {
   background: var(--card);
   border: 1px solid var(--line);
@@ -128,14 +219,14 @@ body.legal-page {
 
 .legal-section p {
   margin: 0;
-  color: #2b3f35;
+  color: var(--text);
   line-height: 1.55;
 }
 
 .legal-section ul {
   margin: 8px 0 0;
   padding-left: 20px;
-  color: #2b3f35;
+  color: var(--text);
 }
 
 .legal-section li {
