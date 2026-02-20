@@ -5732,6 +5732,12 @@ function queueYouTubePlayRequest(videoId, autoplay) {
 
   if (!youtubeApiReady) {
     musicDockLabel.textContent = "Loading YouTube player...";
+    setTimeout(() => {
+      if (pendingYouTubeRequest && !youtubeApiReady) {
+        musicDockLabel.textContent = "YouTube player failed to load. Check your connection.";
+        showToastMessage("YouTube player timed out. Try reloading the page.");
+      }
+    }, 15000);
     return;
   }
 
@@ -5777,7 +5783,14 @@ function onYouTubePlayerReady() {
 }
 
 function playQueuedYouTubeRequest() {
-  if (!pendingYouTubeRequest || !youtubePlayer) {
+  if (!pendingYouTubeRequest) {
+    return;
+  }
+
+  if (!youtubePlayer) {
+    if (youtubeApiReady) {
+      createYouTubePlayer(pendingYouTubeRequest.videoId, pendingYouTubeRequest.autoplay);
+    }
     return;
   }
 
