@@ -40,7 +40,7 @@
           <span>Home</span>
         </button>
 
-        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark mode">
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Cycle color theme">
           <span id="themeToggleIcon" class="icon-wrap" aria-hidden="true">
             <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.36 6.36-1.42-1.42M7.05 7.05 5.64 5.64m12.72 0-1.42 1.41M7.05 16.95l-1.41 1.41" />
@@ -467,8 +467,11 @@
         <label>
           Color mode
           <select id="themeSetting">
-            <option value="light">Light</option>
             <option value="dark">Dark</option>
+            <option value="light">Light</option>
+            <option value="dawn">Dawn</option>
+            <option value="ocean">Ocean</option>
+            <option value="sage">Sage</option>
           </select>
         </label>
 
@@ -530,10 +533,16 @@
         </label>
 
         <div class="settings-subpanel attribution-panel">
-          <p class="settings-subpanel-title">Music Attribution (FreeToUse)</p>
-          <p class="settings-subpanel-note">Tracks below are used under Free To Use terms. Keep these attributions when publishing your content.</p>
-          <p class="settings-subpanel-note">License reminder: monetized user-generated content is allowed with attribution, while standalone commercial re-use is restricted by the Free License.</p>
-          <ul id="musicAttributionList" class="music-attribution-list"></ul>
+          <details class="attribution-dropdown">
+            <summary class="settings-subpanel-title">Music Attribution (FreeToUse)</summary>
+            <div class="attribution-dropdown-body">
+              <p class="settings-subpanel-note">Tracks below are used under Free To Use terms. Keep these attributions when publishing your content.</p>
+              <p class="settings-subpanel-note">License reminder: monetized user-generated content is allowed with attribution, while standalone commercial re-use is restricted by the Free License.</p>
+              <div class="attribution-scroll-wrap">
+                <ul id="musicAttributionList" class="music-attribution-list"></ul>
+              </div>
+            </div>
+          </details>
         </div>
 
         <div class="settings-actions">

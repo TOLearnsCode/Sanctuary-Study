@@ -29,6 +29,14 @@ const CLOUD_SYNC_DOC_NAME = "appData";
 const CLOUD_SYNC_DEBOUNCE_MS = 900;
 const USER_DOC_SYNC_DEBOUNCE_MS = 750;
 const USER_DOC_SCHEMA_VERSION = 1;
+const AVAILABLE_COLOR_THEMES = ["dark", "light", "dawn", "ocean", "sage"];
+const COLOR_THEME_LABELS = {
+  dark: "Dark",
+  light: "Light",
+  dawn: "Dawn",
+  ocean: "Ocean",
+  sage: "Sage"
+};
 
 const GRAPH_DAYS = 60;
 const GRAPH_DAYS_TABLET = 42;
@@ -646,7 +654,7 @@ function init() {
 
   const savedTheme = localStorage.getItem(THEME_PREF_KEY);
   setTheme(savedTheme || "dark");
-  settings.theme = document.body.dataset.theme === "light" ? "light" : "dark";
+  settings.theme = sanitizeThemeId(document.body.dataset.theme);
   populateLofiPresetSelect();
   renderMusicAttributionList();
   fillSettingsForm();
@@ -1769,7 +1777,7 @@ function buildUserDocPayload(reason = "update") {
     reminderTime: sanitizeTimeInput(settings.reminderTime, defaultSettings.reminderTime),
     quietHoursStart: sanitizeTimeInput(settings.quietHoursStart, defaultSettings.quietHoursStart),
     quietHoursEnd: sanitizeTimeInput(settings.quietHoursEnd, defaultSettings.quietHoursEnd),
-    theme: document.body.dataset.theme === "light" ? "light" : "dark",
+    theme: sanitizeThemeId(document.body.dataset.theme),
     focusMode: sanitizeFocusMode(settings.focusMode),
     focusCommitMinutes: clampFocusCommitMinutes(settings.focusCommitMinutes),
     blockedSites: sanitizeBlockedSites(settings.blockedSites),
@@ -1820,7 +1828,7 @@ function applyUserDocSnapshot(data) {
       reminderTime: sanitizeTimeInput(preferences.reminderTime, defaultSettings.reminderTime),
       quietHoursStart: sanitizeTimeInput(preferences.quietHoursStart, defaultSettings.quietHoursStart),
       quietHoursEnd: sanitizeTimeInput(preferences.quietHoursEnd, defaultSettings.quietHoursEnd),
-      theme: preferences.theme === "light" ? "light" : "dark",
+      theme: sanitizeThemeId(preferences.theme),
       focusMode: sanitizeFocusMode(preferences.focusMode),
       focusCommitMinutes: clampFocusCommitMinutes(preferences.focusCommitMinutes),
       blockedSites: sanitizeBlockedSites(preferences.blockedSites),
@@ -2171,7 +2179,7 @@ function wireEvents() {
     handleAuthActionClick();
   });
   themeToggleBtn.addEventListener("click", () => {
-    const next = document.body.dataset.theme === "dark" ? "light" : "dark";
+    const next = getNextThemeId(document.body.dataset.theme);
     setTheme(next);
     settings.theme = next;
     saveSettings(settings);
@@ -2284,7 +2292,7 @@ function wireEvents() {
   settingsForm.addEventListener("submit", onSettingsSubmit);
   themeSetting.addEventListener("change", () => {
     setTheme(themeSetting.value);
-    settings.theme = document.body.dataset.theme === "light" ? "light" : "dark";
+    settings.theme = sanitizeThemeId(document.body.dataset.theme);
   });
   focusModeSetting.addEventListener("change", () => {
     if (focusModeSetting.value === "complete") {
@@ -4503,7 +4511,7 @@ function fillSettingsForm() {
   quietHoursEndSetting.value = sanitizeTimeInput(settings.quietHoursEnd, defaultSettings.quietHoursEnd);
   focusCommitMinutesSetting.value = clampFocusCommitMinutes(settings.focusCommitMinutes);
   blockedSitesSetting.value = formatBlockedSitesForTextarea(settings.blockedSites);
-  themeSetting.value = settings.theme;
+  themeSetting.value = sanitizeThemeId(settings.theme);
   focusModeSetting.value = settings.focusMode;
   alarmModeSetting.value = settings.alarmMode;
   customAlarmUrlSetting.value = settings.customAlarmUrl;
@@ -4545,7 +4553,7 @@ function onSettingsSubmit(event) {
     reminderTime: sanitizeTimeInput(reminderTimeSetting.value, defaultSettings.reminderTime),
     quietHoursStart: sanitizeTimeInput(quietHoursStartSetting.value, defaultSettings.quietHoursStart),
     quietHoursEnd: sanitizeTimeInput(quietHoursEndSetting.value, defaultSettings.quietHoursEnd),
-    theme: themeSetting.value === "dark" ? "dark" : "light",
+    theme: sanitizeThemeId(themeSetting.value),
     focusMode: sanitizeFocusMode(focusModeSetting.value),
     focusCommitMinutes: clampFocusCommitMinutes(focusCommitMinutesSetting.value),
     blockedSites: sanitizeBlockedSites(blockedSitesSetting.value),
@@ -4662,7 +4670,7 @@ function loadSettings() {
       reminderTime: sanitizeTimeInput(parsed.reminderTime, defaultSettings.reminderTime),
       quietHoursStart: sanitizeTimeInput(parsed.quietHoursStart, defaultSettings.quietHoursStart),
       quietHoursEnd: sanitizeTimeInput(parsed.quietHoursEnd, defaultSettings.quietHoursEnd),
-      theme: parsed.theme === "dark" ? "dark" : "light",
+      theme: sanitizeThemeId(parsed.theme),
       focusMode: sanitizeFocusMode(parsed.focusMode),
       focusCommitMinutes: clampFocusCommitMinutes(parsed.focusCommitMinutes),
       blockedSites: sanitizeBlockedSites(parsed.blockedSites),
@@ -4686,8 +4694,22 @@ function saveSettings(nextSettings, options = {}) {
   }
 }
 
+function sanitizeThemeId(value) {
+  const theme = String(value || "").trim().toLowerCase();
+  return AVAILABLE_COLOR_THEMES.includes(theme) ? theme : "dark";
+}
+
+function getNextThemeId(currentTheme) {
+  const resolvedCurrent = sanitizeThemeId(currentTheme);
+  const index = AVAILABLE_COLOR_THEMES.indexOf(resolvedCurrent);
+  if (index < 0) {
+    return AVAILABLE_COLOR_THEMES[0];
+  }
+  return AVAILABLE_COLOR_THEMES[(index + 1) % AVAILABLE_COLOR_THEMES.length];
+}
+
 function setTheme(theme) {
-  const resolvedTheme = theme === "light" ? "light" : "dark";
+  const resolvedTheme = sanitizeThemeId(theme);
   document.body.dataset.theme = resolvedTheme;
   localStorage.setItem(THEME_PREF_KEY, resolvedTheme);
   if (themeSetting) {
@@ -4697,8 +4719,15 @@ function setTheme(theme) {
 }
 
 function updateThemeToggleUi(theme) {
+  const label = COLOR_THEME_LABELS[theme] || "Dark";
+  themeToggleText.textContent = `Theme: ${label}`;
+  if (themeToggleBtn) {
+    const tooltip = `Cycle color theme (current: ${label})`;
+    themeToggleBtn.setAttribute("aria-label", tooltip);
+    themeToggleBtn.title = tooltip;
+  }
+
   if (theme === "dark") {
-    themeToggleText.textContent = "Dark Mode";
     themeToggleIcon.innerHTML = `
       <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
@@ -4707,11 +4736,20 @@ function updateThemeToggleUi(theme) {
     return;
   }
 
-  themeToggleText.textContent = "Light Mode";
+  if (theme === "light") {
+    themeToggleIcon.innerHTML = `
+      <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.36 6.36-1.42-1.42M7.05 7.05 5.64 5.64m12.72 0-1.42 1.41M7.05 16.95l-1.41 1.41" />
+        <circle cx="12" cy="12" r="4" />
+      </svg>
+    `;
+    return;
+  }
+
   themeToggleIcon.innerHTML = `
     <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.36 6.36-1.42-1.42M7.05 7.05 5.64 5.64m12.72 0-1.42 1.41M7.05 16.95l-1.41 1.41" />
-      <circle cx="12" cy="12" r="4" />
+      <circle cx="13" cy="12" r="3.2" />
+      <path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H9l2 2h4.5A2.5 2.5 0 0 1 18 9.5v5A2.5 2.5 0 0 1 15.5 17h-10A2.5 2.5 0 0 1 3 14.5z" />
     </svg>
   `;
 }
