@@ -652,9 +652,12 @@ function init() {
     saveSettings(settings);
   }
 
-  const savedTheme = localStorage.getItem(THEME_PREF_KEY);
-  setTheme(savedTheme || "dark");
-  settings.theme = sanitizeThemeId(document.body.dataset.theme);
+  const savedTheme = sanitizeThemeId(localStorage.getItem(THEME_PREF_KEY));
+  const settingsTheme = sanitizeThemeId(settings.theme);
+  const initialTheme = settingsTheme || savedTheme || "dark";
+  setTheme(initialTheme);
+  settings.theme = initialTheme;
+  localStorage.setItem(THEME_PREF_KEY, initialTheme);
   populateLofiPresetSelect();
   renderMusicAttributionList();
   fillSettingsForm();
@@ -2293,6 +2296,7 @@ function wireEvents() {
   themeSetting.addEventListener("change", () => {
     setTheme(themeSetting.value);
     settings.theme = sanitizeThemeId(document.body.dataset.theme);
+    saveSettings(settings);
   });
   focusModeSetting.addEventListener("change", () => {
     if (focusModeSetting.value === "complete") {
@@ -4648,10 +4652,12 @@ function sanitizeMusicPresetId(value) {
 }
 
 function loadSettings() {
+  const legacyThemePref = localStorage.getItem(THEME_PREF_KEY);
   const raw = localStorage.getItem(SETTINGS_KEY);
   if (!raw) {
     return {
       ...defaultSettings,
+      theme: sanitizeThemeId(legacyThemePref),
       weeklyPlanTargets: { ...defaultSettings.weeklyPlanTargets }
     };
   }
@@ -4670,7 +4676,7 @@ function loadSettings() {
       reminderTime: sanitizeTimeInput(parsed.reminderTime, defaultSettings.reminderTime),
       quietHoursStart: sanitizeTimeInput(parsed.quietHoursStart, defaultSettings.quietHoursStart),
       quietHoursEnd: sanitizeTimeInput(parsed.quietHoursEnd, defaultSettings.quietHoursEnd),
-      theme: sanitizeThemeId(parsed.theme),
+      theme: sanitizeThemeId(parsed.theme || legacyThemePref),
       focusMode: sanitizeFocusMode(parsed.focusMode),
       focusCommitMinutes: clampFocusCommitMinutes(parsed.focusCommitMinutes),
       blockedSites: sanitizeBlockedSites(parsed.blockedSites),
@@ -4682,6 +4688,7 @@ function loadSettings() {
   } catch (error) {
     return {
       ...defaultSettings,
+      theme: sanitizeThemeId(legacyThemePref),
       weeklyPlanTargets: { ...defaultSettings.weeklyPlanTargets }
     };
   }
@@ -4695,8 +4702,23 @@ function saveSettings(nextSettings, options = {}) {
 }
 
 function sanitizeThemeId(value) {
-  const theme = String(value || "").trim().toLowerCase();
-  return AVAILABLE_COLOR_THEMES.includes(theme) ? theme : "dark";
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw) {
+    return "dark";
+  }
+
+  const aliasMap = {
+    "theme-dark": "dark",
+    "theme-light": "light",
+    "theme-dawn": "dawn",
+    "theme-ocean": "ocean",
+    "theme-sage": "sage",
+    "mode-dark": "dark",
+    "mode-light": "light"
+  };
+
+  const normalized = aliasMap[raw] || raw.replace(/^theme:\s*/i, "");
+  return AVAILABLE_COLOR_THEMES.includes(normalized) ? normalized : "dark";
 }
 
 function getNextThemeId(currentTheme) {
@@ -4711,6 +4733,10 @@ function getNextThemeId(currentTheme) {
 function setTheme(theme) {
   const resolvedTheme = sanitizeThemeId(theme);
   document.body.dataset.theme = resolvedTheme;
+  AVAILABLE_COLOR_THEMES.forEach((themeId) => {
+    document.body.classList.remove(`theme-${themeId}`);
+  });
+  document.body.classList.add(`theme-${resolvedTheme}`);
   localStorage.setItem(THEME_PREF_KEY, resolvedTheme);
   if (themeSetting) {
     themeSetting.value = resolvedTheme;

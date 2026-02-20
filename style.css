@@ -19,7 +19,8 @@
   --success-text: #2f6d48;
 }
 
-body[data-theme="light"] {
+body[data-theme="light"],
+body.theme-light {
   --bg: #f8fcf9;
   --bg-deep: #e7f3ec;
   --card: rgba(255, 255, 255, 0.9);
@@ -39,7 +40,8 @@ body[data-theme="light"] {
   color-scheme: light;
 }
 
-body[data-theme="dark"] {
+body[data-theme="dark"],
+body.theme-dark {
   --bg: #0d1210;
   --bg-deep: #1a2520;
   --card: rgba(20, 27, 23, 0.74);
@@ -59,7 +61,8 @@ body[data-theme="dark"] {
   color-scheme: dark;
 }
 
-body[data-theme="dawn"] {
+body[data-theme="dawn"],
+body.theme-dawn {
   --bg: #fff7f0;
   --bg-deep: #fdebdc;
   --card: rgba(255, 255, 255, 0.88);
@@ -79,7 +82,8 @@ body[data-theme="dawn"] {
   color-scheme: light;
 }
 
-body[data-theme="ocean"] {
+body[data-theme="ocean"],
+body.theme-ocean {
   --bg: #eef7fb;
   --bg-deep: #d9ebf4;
   --card: rgba(255, 255, 255, 0.86);
@@ -99,7 +103,8 @@ body[data-theme="ocean"] {
   color-scheme: light;
 }
 
-body[data-theme="sage"] {
+body[data-theme="sage"],
+body.theme-sage {
   --bg: #f6faf3;
   --bg-deep: #e5efdf;
   --card: rgba(255, 255, 255, 0.88);
@@ -172,42 +177,50 @@ body::after {
   animation: driftB 18s ease-in-out infinite alternate;
 }
 
-body[data-theme="dark"]::before {
+body[data-theme="dark"]::before,
+body.theme-dark::before {
   background: #1d5a41;
   opacity: 0.28;
 }
 
-body[data-theme="dark"]::after {
+body[data-theme="dark"]::after,
+body.theme-dark::after {
   background: #2f4a3b;
   opacity: 0.24;
 }
 
-body[data-theme="dawn"]::before {
+body[data-theme="dawn"]::before,
+body.theme-dawn::before {
   background: #f7bd9a;
   opacity: 0.2;
 }
 
-body[data-theme="dawn"]::after {
+body[data-theme="dawn"]::after,
+body.theme-dawn::after {
   background: #f7dcc8;
   opacity: 0.2;
 }
 
-body[data-theme="ocean"]::before {
+body[data-theme="ocean"]::before,
+body.theme-ocean::before {
   background: #8cc0d8;
   opacity: 0.2;
 }
 
-body[data-theme="ocean"]::after {
+body[data-theme="ocean"]::after,
+body.theme-ocean::after {
   background: #b8dcec;
   opacity: 0.2;
 }
 
-body[data-theme="sage"]::before {
+body[data-theme="sage"]::before,
+body.theme-sage::before {
   background: #b7d0b0;
   opacity: 0.2;
 }
 
-body[data-theme="sage"]::after {
+body[data-theme="sage"]::after,
+body.theme-sage::after {
   background: #d4e4cd;
   opacity: 0.2;
 }
