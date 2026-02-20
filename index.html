@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sanctuary Study</title>
+  <meta name="description" content="A Christian-themed Pomodoro study app with scripture encouragement, analytics, achievements, and focus modes. Stay productive and spiritually grounded." />
+  <meta property="og:title" content="Sanctuary Study" />
+  <meta property="og:description" content="A Christian-themed Pomodoro study app with scripture encouragement, analytics, achievements, and focus modes." />
+  <meta property="og:type" content="website" />
   <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png?v=8" />
   <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png?v=8" />
   <link rel="shortcut icon" href="./favicon.ico?v=8" />
@@ -57,7 +61,7 @@
   <main class="app-shell">
     <header class="top-bar">
       <div class="top-left-controls">
-        <div id="logoHomeBtn" class="app-logo-btn" aria-label="Sanctuary Study logo">
+        <div id="logoHomeBtn" class="app-logo-btn" role="button" tabindex="0" aria-label="Sanctuary Study home">
           <span class="app-logo-mark" aria-hidden="true">
             <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12 3v18M6 9l6-6 6 6" />
@@ -176,6 +180,14 @@
       <div class="auth-gate-actions">
         <button id="authSignInBtn" class="btn btn-primary" type="button">Sign In</button>
         <button id="authSignUpBtn" class="btn btn-glass" type="button">Sign Up</button>
+        <button id="authGoogleBtn" class="btn btn-glass" type="button">
+          <span class="icon-wrap" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 12h8.4c.1.6.1 1.2.1 1.8 0 5.1-3.4 8.7-8.5 8.7A9.5 9.5 0 0 1 2.5 12 9.5 9.5 0 0 1 12 2.5c2.4 0 4.5.8 6.2 2.3l-2.7 2.6A5.6 5.6 0 0 0 12 6c-3.3 0-6 2.7-6 6s2.7 6 6 6c2.8 0 5-1.6 5.6-4H12z" />
+            </svg>
+          </span>
+          Sign in with Google
+        </button>
         <button id="authGuestBtn" class="btn btn-glass" type="button">Continue as Guest</button>
       </div>
       <button id="authResendVerificationBtn" class="btn btn-glass auth-resend-btn hidden" type="button">
@@ -424,213 +436,257 @@
     <section id="settingsSection" class="panel card hidden">
       <div class="panel-heading">
         <h2>Settings</h2>
-        <p>Tune study length, break length, color mode, and alarm behavior.</p>
+        <p>Clear controls for session timing, reminders, focus, and audio.</p>
       </div>
 
-      <nav class="settings-quick-nav" aria-label="Settings quick navigation">
-        <button type="button" class="settings-quick-btn active" data-settings-target="settingsGeneralAnchor">General</button>
-        <button type="button" class="settings-quick-btn" data-settings-target="settingsPlanAnchor">Planning</button>
-        <button type="button" class="settings-quick-btn" data-settings-target="settingsFocusAnchor">Focus</button>
-        <button type="button" class="settings-quick-btn" data-settings-target="settingsAudioAnchor">Audio</button>
-        <button type="button" class="settings-quick-btn" data-settings-target="accountSettingsCard">Account</button>
-      </nav>
+      <div class="settings-layout">
+        <aside class="settings-sidebar">
+          <article class="settings-sidebar-card">
+            <p class="settings-sidebar-kicker">Control Centre</p>
+            <h3>Quick Navigation</h3>
+            <p>Jump straight to each area and keep your setup easy to manage.</p>
+            <nav class="settings-quick-nav" aria-label="Settings quick navigation">
+              <button type="button" class="settings-quick-btn active" data-settings-target="settingsGeneralAnchor">General</button>
+              <button type="button" class="settings-quick-btn" data-settings-target="settingsPlanAnchor">Planning</button>
+              <button type="button" class="settings-quick-btn" data-settings-target="settingsFocusAnchor">Focus</button>
+              <button type="button" class="settings-quick-btn" data-settings-target="settingsAudioAnchor">Audio</button>
+              <button type="button" class="settings-quick-btn" data-settings-target="accountSettingsCard">Account</button>
+            </nav>
+          </article>
+        </aside>
 
-      <form id="settingsForm" class="settings-form">
-        <span id="settingsGeneralAnchor" class="settings-anchor" aria-hidden="true"></span>
-        <label>
-          Study minutes
-          <input id="studyMinutesSetting" type="number" min="1" max="240" />
-        </label>
-
-        <label>
-          Break minutes
-          <input id="breakMinutesSetting" type="number" min="1" max="120" />
-        </label>
-
-        <label>
-          Daily goal minutes
-          <input id="dailyGoalMinutesSetting" type="number" min="10" max="600" />
-        </label>
-
-        <span id="settingsPlanAnchor" class="settings-anchor" aria-hidden="true"></span>
-        <details class="settings-subpanel settings-collapse weekly-plan-panel">
-          <summary class="settings-subpanel-title">Weekly Study Plan (minutes)</summary>
-          <div class="settings-collapse-body">
-            <div class="weekly-plan-grid">
-              <label>
-                Mon
-                <input id="weeklyPlanMonSetting" type="number" min="0" max="360" />
-              </label>
-              <label>
-                Tue
-                <input id="weeklyPlanTueSetting" type="number" min="0" max="360" />
-              </label>
-              <label>
-                Wed
-                <input id="weeklyPlanWedSetting" type="number" min="0" max="360" />
-              </label>
-              <label>
-                Thu
-                <input id="weeklyPlanThuSetting" type="number" min="0" max="360" />
-              </label>
-              <label>
-                Fri
-                <input id="weeklyPlanFriSetting" type="number" min="0" max="360" />
-              </label>
-              <label>
-                Sat
-                <input id="weeklyPlanSatSetting" type="number" min="0" max="360" />
-              </label>
-              <label>
-                Sun
-                <input id="weeklyPlanSunSetting" type="number" min="0" max="360" />
-              </label>
-            </div>
-            <p class="settings-subpanel-note">Weekly target auto-calculates from the daily plan above.</p>
-          </div>
-        </details>
-
-        <details class="settings-subpanel settings-collapse reminder-panel">
-          <summary class="settings-subpanel-title">Study Reminder</summary>
-          <div class="settings-collapse-body">
-            <div class="settings-subpanel-head">
-              <p class="settings-subpanel-note">Reminder notifications while the app is open.</p>
-              <label class="toggle-inline">
-                <input id="remindersEnabledSetting" type="checkbox" />
-                <span>Enabled</span>
-              </label>
-            </div>
-            <div class="reminder-grid">
-              <label>
-                Reminder time
-                <input id="reminderTimeSetting" type="time" />
-              </label>
-              <label>
-                Quiet hours start
-                <input id="quietHoursStartSetting" type="time" />
-              </label>
-              <label>
-                Quiet hours end
-                <input id="quietHoursEndSetting" type="time" />
-              </label>
-            </div>
-            <button id="enableReminderPermissionBtn" type="button" class="btn btn-glass">Enable Notifications</button>
-          </div>
-        </details>
-
-        <label>
-          Color mode
-          <select id="themeSetting">
-            <option value="dark">Dark</option>
-            <option value="light">Light</option>
-            <option value="dawn">Dawn</option>
-            <option value="ocean">Ocean</option>
-            <option value="sage">Sage</option>
-          </select>
-        </label>
-
-        <label>
-          Focus mode
-          <select id="focusModeSetting">
-            <option value="partial">Partial focus (gentle reminders)</option>
-            <option value="complete">Complete focus (strict mode)</option>
-          </select>
-        </label>
-
-        <span id="settingsFocusAnchor" class="settings-anchor" aria-hidden="true"></span>
-        <details class="settings-subpanel settings-collapse lockin-panel">
-          <summary class="settings-subpanel-title">Lock-In Mode (Complete Focus)</summary>
-          <div class="settings-collapse-body">
-            <label>
-              Commitment minutes (0 to disable)
-              <input id="focusCommitMinutesSetting" type="number" min="0" max="240" />
-            </label>
-            <label>
-              Blocked site reminders (one per line)
-              <textarea id="blockedSitesSetting" rows="3" placeholder="youtube.com&#10;x.com&#10;instagram.com"></textarea>
-            </label>
-            <p class="settings-subpanel-note">Sanctuary cannot block other websites at browser/system level, but lock-in guards exits and asks for break-glass confirmation with these domains.</p>
-          </div>
-        </details>
-
-        <label>
-          Alarm sound
-          <select id="alarmModeSetting">
-            <option value="mixkit_chime">Mixkit Quick Chime</option>
-            <option value="mixkit_facility">Mixkit Facility Alarm</option>
-            <option value="mixkit_spaceship">Mixkit Spaceship Alarm</option>
-            <option value="mixkit_waiting">Mixkit Waiting Ringtone</option>
-            <option value="commons">Free API random (Wikimedia)</option>
-            <option value="soft">Soft tone</option>
-            <option value="bell">Bell tone</option>
-            <option value="custom">Custom URL</option>
-          </select>
-        </label>
-
-        <label id="customAlarmRow" class="hidden">
-          Custom alarm URL
-          <input id="customAlarmUrlSetting" type="url" placeholder="https://example.com/alarm.mp3" />
-        </label>
-
-        <span id="settingsAudioAnchor" class="settings-anchor" aria-hidden="true"></span>
-        <label class="youtube-music-row">
-          Music URL (YouTube or direct MP3/WAV)
-          <input id="youtubeMusicUrlSetting" type="url" placeholder="https://www.youtube.com/watch?v=... or https://.../track.mp3" />
-        </label>
-
-        <label>
-          Built-in lofi preset
-          <select id="lofiPresetSelect">
-            <option value="">None</option>
-          </select>
-        </label>
-
-        <label>
-          Or choose local audio file
-          <input id="localMusicFileInput" type="file" accept="audio/*" />
-        </label>
-
-        <div class="settings-subpanel attribution-panel">
-          <details class="attribution-dropdown">
-            <summary class="settings-subpanel-title">Music Attribution (FreeToUse)</summary>
-            <div class="attribution-dropdown-body">
-              <p class="settings-subpanel-note">Tracks below are used under Free To Use terms. Keep these attributions when publishing your content.</p>
-              <p class="settings-subpanel-note">License reminder: monetized user-generated content is allowed with attribution, while standalone commercial re-use is restricted by the Free License.</p>
-              <div class="attribution-scroll-wrap">
-                <ul id="musicAttributionList" class="music-attribution-list"></ul>
+        <div class="settings-content">
+          <form id="settingsForm" class="settings-form">
+            <section class="settings-block">
+              <span id="settingsGeneralAnchor" class="settings-anchor" aria-hidden="true"></span>
+              <div class="settings-block-head">
+                <h3 class="settings-block-title">General Session Setup</h3>
+                <p class="settings-block-note">Set the default structure for your focus rhythm.</p>
               </div>
-            </div>
-          </details>
-        </div>
+              <div class="settings-fields-grid">
+                <label class="settings-field">
+                  Study minutes
+                  <input id="studyMinutesSetting" type="number" min="1" max="240" />
+                </label>
 
-        <div class="settings-actions">
-          <button type="submit" class="btn btn-primary">Save Settings</button>
-          <button id="testAlarmBtn" type="button" class="btn btn-glass">Test Alarm</button>
-          <button id="loadMusicBtn" type="button" class="btn btn-glass">Load Music</button>
-          <button id="playMusic" type="button" class="btn btn-glass">Play Background Music</button>
-          <button id="stopMusicBtn" type="button" class="btn btn-glass">Stop Music</button>
-        </div>
-      </form>
+                <label class="settings-field">
+                  Break minutes
+                  <input id="breakMinutesSetting" type="number" min="1" max="120" />
+                </label>
 
-      <article id="accountSettingsCard" class="account-settings-card hidden">
-        <h3>Account</h3>
-        <p id="accountSettingsStatus" class="account-settings-status">Signed in account controls.</p>
-        <div class="account-settings-actions">
-          <button id="settingsSignOutBtn" type="button" class="btn btn-glass">Sign Out</button>
-          <button id="settingsDeleteAccountBtn" type="button" class="btn btn-danger">Delete Account</button>
-        </div>
-      </article>
+                <label class="settings-field">
+                  Daily goal minutes
+                  <input id="dailyGoalMinutesSetting" type="number" min="10" max="600" />
+                </label>
+              </div>
+            </section>
 
-      <article id="syncStatusCard" class="sync-status-card">
-        <h3>Sync Status</h3>
-        <div class="sync-status-line">
-          <span id="syncStatusDot" class="sync-status-dot" aria-hidden="true"></span>
-          <p id="syncStatusPrimary" class="sync-status-primary">Sign in to enable cloud sync.</p>
-        </div>
-        <p id="syncStatusSecondary" class="sync-status-secondary">Last synced: --</p>
-      </article>
+            <section class="settings-block">
+              <span id="settingsPlanAnchor" class="settings-anchor" aria-hidden="true"></span>
+              <div class="settings-block-head">
+                <h3 class="settings-block-title">Planning & Reminders</h3>
+                <p class="settings-block-note">Plan your weekly output and schedule gentle reminders.</p>
+              </div>
 
-      <p id="settingsMessage" class="settings-message" role="status" aria-live="polite"></p>
+              <details class="settings-subpanel settings-collapse weekly-plan-panel" open>
+                <summary class="settings-subpanel-title">Weekly Study Plan (minutes)</summary>
+                <div class="settings-collapse-body">
+                  <div class="weekly-plan-grid">
+                    <label>
+                      Mon
+                      <input id="weeklyPlanMonSetting" type="number" min="0" max="360" />
+                    </label>
+                    <label>
+                      Tue
+                      <input id="weeklyPlanTueSetting" type="number" min="0" max="360" />
+                    </label>
+                    <label>
+                      Wed
+                      <input id="weeklyPlanWedSetting" type="number" min="0" max="360" />
+                    </label>
+                    <label>
+                      Thu
+                      <input id="weeklyPlanThuSetting" type="number" min="0" max="360" />
+                    </label>
+                    <label>
+                      Fri
+                      <input id="weeklyPlanFriSetting" type="number" min="0" max="360" />
+                    </label>
+                    <label>
+                      Sat
+                      <input id="weeklyPlanSatSetting" type="number" min="0" max="360" />
+                    </label>
+                    <label>
+                      Sun
+                      <input id="weeklyPlanSunSetting" type="number" min="0" max="360" />
+                    </label>
+                  </div>
+                  <p class="settings-subpanel-note">Weekly target auto-calculates from the daily plan above.</p>
+                </div>
+              </details>
+
+              <details class="settings-subpanel settings-collapse reminder-panel" open>
+                <summary class="settings-subpanel-title">Study Reminder</summary>
+                <div class="settings-collapse-body">
+                  <div class="settings-subpanel-head">
+                    <p class="settings-subpanel-note">Reminder notifications while the app is open.</p>
+                    <label class="toggle-inline">
+                      <input id="remindersEnabledSetting" type="checkbox" />
+                      <span>Enabled</span>
+                    </label>
+                  </div>
+                  <div class="reminder-grid">
+                    <label>
+                      Reminder time
+                      <input id="reminderTimeSetting" type="time" />
+                    </label>
+                    <label>
+                      Quiet hours start
+                      <input id="quietHoursStartSetting" type="time" />
+                    </label>
+                    <label>
+                      Quiet hours end
+                      <input id="quietHoursEndSetting" type="time" />
+                    </label>
+                  </div>
+                  <button id="enableReminderPermissionBtn" type="button" class="btn btn-glass">Enable Notifications</button>
+                </div>
+              </details>
+            </section>
+
+            <section class="settings-block">
+              <span id="settingsFocusAnchor" class="settings-anchor" aria-hidden="true"></span>
+              <div class="settings-block-head">
+                <h3 class="settings-block-title">Appearance & Focus</h3>
+                <p class="settings-block-note">Choose your visual theme and how strict focus mode should be.</p>
+              </div>
+              <div class="settings-fields-grid">
+                <label class="settings-field">
+                  Color mode
+                  <select id="themeSetting">
+                    <option value="dark">Dark</option>
+                    <option value="light">Light</option>
+                    <option value="dawn">Dawn</option>
+                    <option value="ocean">Ocean</option>
+                    <option value="sage">Sage</option>
+                  </select>
+                </label>
+
+                <label class="settings-field">
+                  Focus mode
+                  <select id="focusModeSetting">
+                    <option value="partial">Partial focus (gentle reminders)</option>
+                    <option value="complete">Complete focus (strict mode)</option>
+                  </select>
+                </label>
+              </div>
+
+              <details class="settings-subpanel settings-collapse lockin-panel">
+                <summary class="settings-subpanel-title">Lock-In Mode (Complete Focus)</summary>
+                <div class="settings-collapse-body">
+                  <label>
+                    Commitment minutes (0 to disable)
+                    <input id="focusCommitMinutesSetting" type="number" min="0" max="240" />
+                  </label>
+                  <label>
+                    Blocked site reminders (one per line)
+                    <textarea id="blockedSitesSetting" rows="3" placeholder="youtube.com&#10;x.com&#10;instagram.com"></textarea>
+                  </label>
+                  <p class="settings-subpanel-note">Sanctuary cannot block other websites at browser/system level, but lock-in guards exits and asks for break-glass confirmation with these domains.</p>
+                </div>
+              </details>
+            </section>
+
+            <section class="settings-block">
+              <span id="settingsAudioAnchor" class="settings-anchor" aria-hidden="true"></span>
+              <div class="settings-block-head">
+                <h3 class="settings-block-title">Audio & Music</h3>
+                <p class="settings-block-note">Configure alarm behavior and background audio sources.</p>
+              </div>
+              <div class="settings-fields-grid">
+                <label class="settings-field">
+                  Alarm sound
+                  <select id="alarmModeSetting">
+                    <option value="mixkit_chime">Mixkit Quick Chime</option>
+                    <option value="mixkit_facility">Mixkit Facility Alarm</option>
+                    <option value="mixkit_spaceship">Mixkit Spaceship Alarm</option>
+                    <option value="mixkit_waiting">Mixkit Waiting Ringtone</option>
+                    <option value="commons">Free API random (Wikimedia)</option>
+                    <option value="soft">Soft tone</option>
+                    <option value="bell">Bell tone</option>
+                    <option value="custom">Custom URL</option>
+                  </select>
+                </label>
+
+                <label id="customAlarmRow" class="settings-field hidden">
+                  Custom alarm URL
+                  <input id="customAlarmUrlSetting" type="url" placeholder="https://example.com/alarm.mp3" />
+                </label>
+
+                <label class="settings-field youtube-music-row">
+                  Music URL (YouTube or direct MP3/WAV)
+                  <input id="youtubeMusicUrlSetting" type="url" placeholder="https://www.youtube.com/watch?v=... or https://.../track.mp3" />
+                </label>
+
+                <label class="settings-field">
+                  Built-in lofi preset
+                  <select id="lofiPresetSelect">
+                    <option value="">None</option>
+                  </select>
+                </label>
+
+                <label class="settings-field">
+                  Or choose local audio file
+                  <input id="localMusicFileInput" type="file" accept="audio/*" />
+                </label>
+              </div>
+
+              <div class="settings-subpanel attribution-panel">
+                <details class="attribution-dropdown">
+                  <summary class="settings-subpanel-title">Music Attribution (FreeToUse)</summary>
+                  <div class="attribution-dropdown-body">
+                    <p class="settings-subpanel-note">Tracks below are used under Free To Use terms. Keep these attributions when publishing your content.</p>
+                    <p class="settings-subpanel-note">License reminder: monetized user-generated content is allowed with attribution, while standalone commercial re-use is restricted by the Free License.</p>
+                    <div class="attribution-scroll-wrap">
+                      <ul id="musicAttributionList" class="music-attribution-list"></ul>
+                    </div>
+                  </div>
+                </details>
+              </div>
+
+              <div class="settings-actions">
+                <button type="submit" class="btn btn-primary">Save Settings</button>
+                <button id="testAlarmBtn" type="button" class="btn btn-glass">Test Alarm</button>
+                <button id="loadMusicBtn" type="button" class="btn btn-glass">Load Music</button>
+                <button id="playMusic" type="button" class="btn btn-glass">Play Background Music</button>
+                <button id="stopMusicBtn" type="button" class="btn btn-glass">Stop Music</button>
+              </div>
+            </section>
+          </form>
+
+          <div class="settings-meta-grid">
+            <article id="accountSettingsCard" class="account-settings-card hidden">
+              <h3>Account</h3>
+              <p id="accountSettingsStatus" class="account-settings-status">Signed in account controls.</p>
+              <div class="account-settings-actions">
+                <button id="settingsSignOutBtn" type="button" class="btn btn-glass">Sign Out</button>
+                <button id="settingsDeleteAccountBtn" type="button" class="btn btn-danger">Delete Account</button>
+              </div>
+            </article>
+
+            <article id="syncStatusCard" class="sync-status-card">
+              <h3>Sync Status</h3>
+              <div class="sync-status-line">
+                <span id="syncStatusDot" class="sync-status-dot" aria-hidden="true"></span>
+                <p id="syncStatusPrimary" class="sync-status-primary">Sign in to enable cloud sync.</p>
+              </div>
+              <p id="syncStatusSecondary" class="sync-status-secondary">Last synced: --</p>
+            </article>
+          </div>
+
+          <p id="settingsMessage" class="settings-message" role="status" aria-live="polite"></p>
+        </div>
+      </div>
     </section>
 
     <section id="favouritesSection" class="panel card hidden">
@@ -729,6 +785,8 @@
       <button id="reviewSkipBtn" type="button" class="btn btn-glass">Later</button>
     </div>
   </aside>
+
+  <div id="popupOverlay" class="popup-overlay hidden" aria-hidden="true"></div>
 
   <div id="cancelSessionModal" class="cancel-session-modal hidden" role="dialog" aria-modal="true" aria-labelledby="cancelSessionTitle" aria-describedby="cancelSessionMessage">
     <div class="cancel-session-card">

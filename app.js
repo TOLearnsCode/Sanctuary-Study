@@ -420,11 +420,8 @@ const authActionBtn = document.getElementById("authActionBtn");
 const authActionText = document.getElementById("authActionText");
 
 const authSection = document.getElementById("authSection");
-const authForm = document.getElementById("authForm");
-const authEmailInput = document.getElementById("authEmailInput");
-const authPasswordInput = document.getElementById("authPasswordInput");
-const authSignInBtn = document.getElementById("authSignInBtn");
-const authSignUpBtn = document.getElementById("authSignUpBtn");
+// authForm, authEmailInput, authPasswordInput, authSignInBtn, authSignUpBtn
+// are queried and managed exclusively by auth.js (ES module).
 const authGuestBtn = document.getElementById("authGuestBtn");
 const authMessage = document.getElementById("authMessage");
 const authModeNotice = document.getElementById("authModeNotice");
@@ -433,6 +430,11 @@ const homeBeginBtn = document.getElementById("homeBeginBtn");
 const homeSettingsBtn = document.getElementById("homeSettingsBtn");
 const homeThemeBadge = document.getElementById("homeThemeBadge");
 const homeTitle = document.querySelector(".type-title");
+if (homeTitle) {
+  const titleLength = (homeTitle.textContent || "").trim().length;
+  homeTitle.style.setProperty("--type-width", `${titleLength}ch`);
+  homeTitle.style.setProperty("--type-steps", String(titleLength));
+}
 const homeVerseText = document.getElementById("homeVerseText");
 const homeVerseRef = document.getElementById("homeVerseRef");
 const homeEncouragementText = document.getElementById("homeEncouragementText");
@@ -445,6 +447,7 @@ const studyPrep = document.getElementById("studyPrep");
 const prepBeginBtn = document.getElementById("prepBeginBtn");
 const prepSettingsBtn = document.getElementById("prepSettingsBtn");
 const versePopup = document.getElementById("versePopup");
+const popupOverlay = document.getElementById("popupOverlay");
 const popupVerseText = document.getElementById("popupVerseText");
 const popupVerseRef = document.getElementById("popupVerseRef");
 const popupCountdown = document.getElementById("popupCountdown");
@@ -647,7 +650,8 @@ const timerState = {
   running: false,
   intervalId: null,
   remainingSeconds: settings.studyMinutes * 60,
-  activeBlockSeconds: settings.studyMinutes * 60
+  activeBlockSeconds: settings.studyMinutes * 60,
+  lastTickTime: null
 };
 
 init();
@@ -711,7 +715,7 @@ function registerServiceWorkerWithUpdatePrompt() {
 
   (async () => {
     try {
-      const registration = await navigator.serviceWorker.register("/service-worker.js");
+      const registration = await navigator.serviceWorker.register("./service-worker.js");
 
       const checkForUpdates = async () => {
         try {
@@ -1377,6 +1381,7 @@ function showAuthScreen(message = "") {
   closeSessionReviewPrompt();
   clearFocusCommitState();
   document.body.classList.remove("popup-open");
+  popupOverlay.classList.add("hidden");
   updateTimerButtons();
   updateSessionStatus();
 
@@ -2274,8 +2279,7 @@ function activateSettingsQuickNav(targetId = "") {
 function expandSettingsPanelForTarget(targetId = "") {
   const panelMap = {
     settingsPlanAnchor: ".weekly-plan-panel",
-    settingsFocusAnchor: ".lockin-panel",
-    settingsAudioAnchor: ".attribution-dropdown"
+    settingsFocusAnchor: ".lockin-panel"
   };
 
   const selector = panelMap[targetId];
@@ -2297,6 +2301,9 @@ function wireEvents() {
   });
 
   homeNavBtn.addEventListener("click", () => {
+    showHomeView({ forceStopTypeEffect: true });
+  });
+  logoHomeBtn.addEventListener("click", () => {
     showHomeView({ forceStopTypeEffect: true });
   });
   authActionBtn.addEventListener("click", () => {
@@ -2926,14 +2933,23 @@ function startTimer() {
   }
 
   timerState.running = true;
+  timerState.lastTickTime = Date.now();
   syncFocusModeAfterTimerStateChange();
   updateTimerButtons();
   updateSessionStatus();
 
   timerState.intervalId = setInterval(() => {
-    timerState.remainingSeconds -= 1;
+    const now = Date.now();
+    const elapsedSeconds = Math.round((now - timerState.lastTickTime) / 1000);
+    timerState.lastTickTime = now;
+
+    if (elapsedSeconds <= 0) {
+      return;
+    }
+
+    timerState.remainingSeconds -= elapsedSeconds;
     if (timerState.phase === "study" && focusCommitRemainingSeconds > 0) {
-      focusCommitRemainingSeconds = Math.max(0, focusCommitRemainingSeconds - 1);
+      focusCommitRemainingSeconds = Math.max(0, focusCommitRemainingSeconds - elapsedSeconds);
       if (focusCommitRemainingSeconds === 0) {
         showToastMessage("Lock-in commitment completed. You can now leave strict focus.");
       }
@@ -2950,6 +2966,7 @@ function startTimer() {
 function pauseTimer() {
   stopTimerInterval();
   timerState.running = false;
+  timerState.lastTickTime = null;
   syncFocusModeAfterTimerStateChange();
   updateTimerButtons();
   updateSessionStatus();
@@ -3019,6 +3036,7 @@ function cancelCurrentSession(options = {}) {
   popupIntervalId = null;
   versePopup.classList.add("hidden");
   document.body.classList.remove("popup-open");
+  popupOverlay.classList.add("hidden");
 
   timerState.phase = "study";
   setUpBlock("study");
@@ -3322,6 +3340,7 @@ function setUpBlock(phase) {
 function stopTimerInterval() {
   clearInterval(timerState.intervalId);
   timerState.intervalId = null;
+  timerState.lastTickTime = null;
 }
 
 function updateTimerDisplay() {
@@ -3361,6 +3380,7 @@ function showVersePopupForSeconds(focus, seconds) {
   popupVerseRef.textContent = focus.reference;
   versePopup.classList.remove("hidden");
   document.body.classList.add("popup-open");
+  popupOverlay.classList.remove("hidden");
 
   return new Promise((resolve) => {
     let remaining = seconds;
@@ -3374,6 +3394,7 @@ function showVersePopupForSeconds(focus, seconds) {
         popupIntervalId = null;
         versePopup.classList.add("hidden");
         document.body.classList.remove("popup-open");
+        popupOverlay.classList.add("hidden");
         resolve();
       } else {
         popupCountdown.textContent = `Starting in ${remaining}s`;

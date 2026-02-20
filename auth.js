@@ -336,6 +336,33 @@ function removeStoredProfile(uid) {
   saveProfilesMap(map);
 }
 
+function clearLocalAppData() {
+  const appKeys = [
+    "sanctuaryStudyLogV1",
+    "sanctuaryTagLogV1",
+    "sanctuaryStudySettingsV1",
+    "sanctuaryFavouritesV1",
+    "sanctuaryDailyScriptureV1",
+    "sanctuaryDailyScriptureHistoryV1",
+    "sanctuarySessionNotesV1",
+    "sanctuarySessionHistoryV1",
+    "sanctuaryAchievementsV1",
+    "sanctuaryGuestModeV1",
+    "sanctuarySettingsUpdatedAtV1",
+    "sanctuaryLastAnalyticsUidV1",
+    "sanctuaryLastSuccessfulSyncAtV1",
+    "sanctuaryReminderLastSentV1"
+  ];
+
+  appKeys.forEach((key) => {
+    try {
+      localStorage.removeItem(key);
+    } catch (error) {
+      // Ignore removal failures.
+    }
+  });
+}
+
 function getStoredProfile(uid) {
   if (!uid) {
     return null;
@@ -1005,6 +1032,7 @@ function initializeAuthBridge() {
       await deleteUser(user);
       removeStoredProfile(user.uid);
       clearVerificationRequiredEmail();
+      clearLocalAppData();
       emitAuthChanged({ mode: "signed_out" });
       window.dispatchEvent(new CustomEvent("sanctuary:delete-account-result", {
         detail: { ok: true }

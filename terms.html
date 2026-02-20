@@ -10,43 +10,7 @@
   <link rel="stylesheet" href="./legal.css?v=20260220-themefix1" />
 </head>
 <body class="legal-page">
-  <script>
-    (() => {
-      const themes = ["dark", "light", "dawn", "ocean", "sage"];
-      const normalizeTheme = (value) => {
-        const raw = String(value || "").trim().toLowerCase();
-        if (!raw) {
-          return "";
-        }
-        const aliasMap = {
-          "theme-dark": "dark",
-          "theme-light": "light",
-          "theme-dawn": "dawn",
-          "theme-ocean": "ocean",
-          "theme-sage": "sage",
-          "mode-dark": "dark",
-          "mode-light": "light"
-        };
-        const resolved = aliasMap[raw] || raw.replace(/^theme:\s*/i, "");
-        return themes.includes(resolved) ? resolved : "";
-      };
-
-      let initialTheme = normalizeTheme(localStorage.getItem("theme"));
-      if (!initialTheme) {
-        try {
-          const parsed = JSON.parse(localStorage.getItem("sanctuaryStudySettingsV1") || "{}");
-          initialTheme = normalizeTheme(parsed.theme);
-        } catch (error) {
-          initialTheme = "";
-        }
-      }
-
-      const theme = initialTheme || "dark";
-      document.body.dataset.theme = theme;
-      themes.forEach((themeId) => document.body.classList.remove(`theme-${themeId}`));
-      document.body.classList.add(`theme-${theme}`);
-    })();
-  </script>
+  <script src="./legal-init.js"></script>
   <main class="legal-shell">
     <header class="legal-topbar">
       <p class="legal-brand">Sanctuary Study</p>
@@ -120,7 +84,7 @@
 
       <section class="legal-section">
         <h2>Contact</h2>
-        <p>For questions about these Terms, contact: <a href="mailto:buisnessot@gmail.com">buisnessot@gmail.com</a></p>
+        <p>For questions about these Terms, contact: <a href="mailto:businessot@gmail.com">businessot@gmail.com</a></p>
       </section>
     </article>
 
