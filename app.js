@@ -652,9 +652,8 @@ function init() {
     saveSettings(settings);
   }
 
-  const savedTheme = sanitizeThemeId(localStorage.getItem(THEME_PREF_KEY));
-  const settingsTheme = sanitizeThemeId(settings.theme);
-  const initialTheme = settingsTheme || savedTheme || "dark";
+  const savedTheme = localStorage.getItem(THEME_PREF_KEY);
+  const initialTheme = resolveThemePreference(savedTheme, settings.theme, defaultSettings.theme);
   setTheme(initialTheme);
   settings.theme = initialTheme;
   localStorage.setItem(THEME_PREF_KEY, initialTheme);
@@ -1858,7 +1857,7 @@ function applyUserDocSnapshot(data) {
       reminderTime: sanitizeTimeInput(preferences.reminderTime, defaultSettings.reminderTime),
       quietHoursStart: sanitizeTimeInput(preferences.quietHoursStart, defaultSettings.quietHoursStart),
       quietHoursEnd: sanitizeTimeInput(preferences.quietHoursEnd, defaultSettings.quietHoursEnd),
-      theme: sanitizeThemeId(preferences.theme),
+      theme: resolveThemePreference(preferences.theme, localStorage.getItem(THEME_PREF_KEY), settings.theme, defaultSettings.theme),
       focusMode: sanitizeFocusMode(preferences.focusMode),
       focusCommitMinutes: clampFocusCommitMinutes(preferences.focusCommitMinutes),
       blockedSites: sanitizeBlockedSites(preferences.blockedSites),
@@ -2228,6 +2227,20 @@ function wireEvents() {
   });
   window.addEventListener("offline", () => {
     renderSyncStatus();
+  });
+  window.addEventListener("storage", (event) => {
+    if (event.key !== THEME_PREF_KEY) {
+      return;
+    }
+
+    const nextTheme = resolveThemePreference(event.newValue, settings.theme, defaultSettings.theme);
+    if (nextTheme === sanitizeThemeId(document.body.dataset.theme)) {
+      return;
+    }
+
+    setTheme(nextTheme);
+    settings.theme = nextTheme;
+    saveSettings(settings);
   });
   window.addEventListener("resize", () => {
     if (analyticsResizeTimeoutId) {
@@ -4684,7 +4697,7 @@ function loadSettings() {
   if (!raw) {
     return {
       ...defaultSettings,
-      theme: sanitizeThemeId(legacyThemePref),
+      theme: resolveThemePreference(legacyThemePref, defaultSettings.theme),
       weeklyPlanTargets: { ...defaultSettings.weeklyPlanTargets }
     };
   }
@@ -4703,7 +4716,7 @@ function loadSettings() {
       reminderTime: sanitizeTimeInput(parsed.reminderTime, defaultSettings.reminderTime),
       quietHoursStart: sanitizeTimeInput(parsed.quietHoursStart, defaultSettings.quietHoursStart),
       quietHoursEnd: sanitizeTimeInput(parsed.quietHoursEnd, defaultSettings.quietHoursEnd),
-      theme: sanitizeThemeId(parsed.theme || legacyThemePref),
+      theme: resolveThemePreference(parsed.theme, legacyThemePref, defaultSettings.theme),
       focusMode: sanitizeFocusMode(parsed.focusMode),
       focusCommitMinutes: clampFocusCommitMinutes(parsed.focusCommitMinutes),
       blockedSites: sanitizeBlockedSites(parsed.blockedSites),
@@ -4715,7 +4728,7 @@ function loadSettings() {
   } catch (error) {
     return {
       ...defaultSettings,
-      theme: sanitizeThemeId(legacyThemePref),
+      theme: resolveThemePreference(legacyThemePref, defaultSettings.theme),
       weeklyPlanTargets: { ...defaultSettings.weeklyPlanTargets }
     };
   }
@@ -4728,10 +4741,10 @@ function saveSettings(nextSettings, options = {}) {
   }
 }
 
-function sanitizeThemeId(value) {
+function normalizeThemeId(value) {
   const raw = String(value || "").trim().toLowerCase();
   if (!raw) {
-    return "dark";
+    return null;
   }
 
   const aliasMap = {
@@ -4745,7 +4758,22 @@ function sanitizeThemeId(value) {
   };
 
   const normalized = aliasMap[raw] || raw.replace(/^theme:\s*/i, "");
-  return AVAILABLE_COLOR_THEMES.includes(normalized) ? normalized : "dark";
+  return AVAILABLE_COLOR_THEMES.includes(normalized) ? normalized : null;
+}
+
+function resolveThemePreference(...values) {
+  for (const value of values) {
+    const normalized = normalizeThemeId(value);
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return "dark";
+}
+
+function sanitizeThemeId(value) {
+  return resolveThemePreference(value);
 }
 
 function getNextThemeId(currentTheme) {

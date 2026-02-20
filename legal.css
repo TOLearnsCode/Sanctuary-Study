@@ -8,6 +8,8 @@
   --brand: #4f8c63;
   --brand-strong: #2f6d48;
   --shadow: 0 14px 34px rgba(29, 60, 44, 0.1);
+  --chip-bg: rgba(255, 255, 255, 0.68);
+  --chip-bg-hover: #ffffff;
 }
 
 body[data-theme="light"],
@@ -35,6 +37,8 @@ body.theme-dark {
   --brand: #84c79e;
   --brand-strong: #c8f2d7;
   --shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
+  --chip-bg: rgba(57, 72, 62, 0.48);
+  --chip-bg-hover: rgba(74, 93, 80, 0.62);
   color-scheme: dark;
 }
 
@@ -131,7 +135,7 @@ body.legal-page {
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 7px 12px;
-  background: rgba(255, 255, 255, 0.68);
+  background: var(--chip-bg);
   font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -140,7 +144,7 @@ body.legal-page {
 }
 
 .legal-link:hover {
-  background: #ffffff;
+  background: var(--chip-bg-hover);
   color: var(--brand-strong);
   transform: translateY(-1px);
 }
@@ -155,7 +159,7 @@ body.legal-page {
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 7px 12px;
-  background: rgba(255, 255, 255, 0.68);
+  background: var(--chip-bg);
   color: var(--muted);
   font: inherit;
   font-size: 0.82rem;
@@ -167,7 +171,7 @@ body.legal-page {
 }
 
 .legal-theme-btn:hover {
-  background: #ffffff;
+  background: var(--chip-bg-hover);
   color: var(--brand-strong);
   transform: translateY(-1px);
 }

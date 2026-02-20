@@ -440,31 +440,33 @@
           </div>
         </details>
 
-        <div class="settings-subpanel reminder-panel">
-          <div class="settings-subpanel-head">
-            <p class="settings-subpanel-title">Study Reminder</p>
-            <label class="toggle-inline">
-              <input id="remindersEnabledSetting" type="checkbox" />
-              <span>Enabled</span>
-            </label>
+        <details class="settings-subpanel settings-collapse reminder-panel">
+          <summary class="settings-subpanel-title">Study Reminder</summary>
+          <div class="settings-collapse-body">
+            <div class="settings-subpanel-head">
+              <p class="settings-subpanel-note">Reminder notifications while the app is open.</p>
+              <label class="toggle-inline">
+                <input id="remindersEnabledSetting" type="checkbox" />
+                <span>Enabled</span>
+              </label>
+            </div>
+            <div class="reminder-grid">
+              <label>
+                Reminder time
+                <input id="reminderTimeSetting" type="time" />
+              </label>
+              <label>
+                Quiet hours start
+                <input id="quietHoursStartSetting" type="time" />
+              </label>
+              <label>
+                Quiet hours end
+                <input id="quietHoursEndSetting" type="time" />
+              </label>
+            </div>
+            <button id="enableReminderPermissionBtn" type="button" class="btn btn-glass">Enable Notifications</button>
           </div>
-          <div class="reminder-grid">
-            <label>
-              Reminder time
-              <input id="reminderTimeSetting" type="time" />
-            </label>
-            <label>
-              Quiet hours start
-              <input id="quietHoursStartSetting" type="time" />
-            </label>
-            <label>
-              Quiet hours end
-              <input id="quietHoursEndSetting" type="time" />
-            </label>
-          </div>
-          <button id="enableReminderPermissionBtn" type="button" class="btn btn-glass">Enable Notifications</button>
-          <p class="settings-subpanel-note">Reminders trigger while Sanctuary Study is open in your browser.</p>
-        </div>
+        </details>
 
         <label>
           Color mode

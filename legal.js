@@ -1,4 +1,5 @@
 const LEGAL_THEME_KEY = "theme";
+const LEGAL_SETTINGS_KEY = "sanctuaryStudySettingsV1";
 const LEGAL_THEMES = ["dark", "light", "dawn", "ocean", "sage"];
 const LEGAL_THEME_LABELS = {
   dark: "Dark",
@@ -45,6 +46,7 @@ function applyTheme(theme) {
   });
   document.body.classList.add(`theme-${resolved}`);
   localStorage.setItem(LEGAL_THEME_KEY, resolved);
+  syncThemeToAppSettings(resolved);
 
   const toggleBtn = document.getElementById("legalThemeToggle");
   if (toggleBtn) {
@@ -52,6 +54,29 @@ function applyTheme(theme) {
     toggleBtn.textContent = `Theme: ${label}`;
     toggleBtn.title = `Cycle theme (current: ${label})`;
     toggleBtn.setAttribute("aria-label", `Cycle theme (current: ${label})`);
+  }
+}
+
+function syncThemeToAppSettings(theme) {
+  const rawSettings = localStorage.getItem(LEGAL_SETTINGS_KEY);
+  if (!rawSettings) {
+    return;
+  }
+
+  try {
+    const parsed = JSON.parse(rawSettings);
+    if (!parsed || typeof parsed !== "object") {
+      return;
+    }
+
+    if (parsed.theme === theme) {
+      return;
+    }
+
+    parsed.theme = theme;
+    localStorage.setItem(LEGAL_SETTINGS_KEY, JSON.stringify(parsed));
+  } catch (error) {
+    // Ignore malformed local settings.
   }
 }
 

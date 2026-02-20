@@ -433,7 +433,8 @@ table,
   color: var(--brand-strong);
 }
 
-body[data-theme="dark"] .nav-btn.active {
+body[data-theme="dark"] .nav-btn.active,
+body.theme-dark .nav-btn.active {
   color: #cbf3d9;
 }
 
@@ -665,7 +666,8 @@ body[data-theme="dark"] .nav-btn.active {
   color: var(--brand-strong);
 }
 
-body[data-theme="dark"] .theme-pill.active {
+body[data-theme="dark"] .theme-pill.active,
+body.theme-dark .theme-pill.active {
   color: #cbf3d9;
 }
 
@@ -705,7 +707,8 @@ body[data-theme="dark"] .theme-pill.active {
   font-weight: 800;
 }
 
-body[data-theme="dark"] .daily-scripture-card .quote-label {
+body[data-theme="dark"] .daily-scripture-card .quote-label,
+body.theme-dark .daily-scripture-card .quote-label {
   color: #d4f5e0;
   border-color: rgba(132, 199, 158, 0.45);
   background: rgba(132, 199, 158, 0.16);
@@ -730,7 +733,8 @@ body[data-theme="dark"] .daily-scripture-card .quote-label {
   color: var(--brand-strong);
 }
 
-body[data-theme="dark"] .home-theme-badge {
+body[data-theme="dark"] .home-theme-badge,
+body.theme-dark .home-theme-badge {
   color: #cbf3d9;
 }
 
@@ -938,11 +942,13 @@ body[data-theme="dark"] .home-theme-badge {
   color: #4f6b9f;
 }
 
-body[data-theme="dark"] .phase-badge.study {
+body[data-theme="dark"] .phase-badge.study,
+body.theme-dark .phase-badge.study {
   color: #c7f0d6;
 }
 
-body[data-theme="dark"] .phase-badge.break {
+body[data-theme="dark"] .phase-badge.break,
+body.theme-dark .phase-badge.break {
   color: #cedcff;
 }
 
@@ -965,7 +971,8 @@ body[data-theme="dark"] .phase-badge.break {
   justify-self: start;
 }
 
-body[data-theme="dark"] .focus-lock-status {
+body[data-theme="dark"] .focus-lock-status,
+body.theme-dark .focus-lock-status {
   border-color: rgba(208, 172, 114, 0.42);
   background: rgba(167, 120, 56, 0.2);
   color: #f0cd95;
@@ -1474,22 +1481,26 @@ body[data-theme="dark"] .focus-lock-status {
   color: #355b74;
 }
 
-body[data-theme="dark"] .achievement-tier.tier-bronze {
+body[data-theme="dark"] .achievement-tier.tier-bronze,
+body.theme-dark .achievement-tier.tier-bronze {
   background: rgba(160, 109, 54, 0.24);
   color: #efc082;
 }
 
-body[data-theme="dark"] .achievement-tier.tier-silver {
+body[data-theme="dark"] .achievement-tier.tier-silver,
+body.theme-dark .achievement-tier.tier-silver {
   background: rgba(116, 125, 138, 0.24);
   color: #d6dde8;
 }
 
-body[data-theme="dark"] .achievement-tier.tier-gold {
+body[data-theme="dark"] .achievement-tier.tier-gold,
+body.theme-dark .achievement-tier.tier-gold {
   background: rgba(182, 140, 49, 0.26);
   color: #f2db8f;
 }
 
-body[data-theme="dark"] .achievement-tier.tier-platinum {
+body[data-theme="dark"] .achievement-tier.tier-platinum,
+body.theme-dark .achievement-tier.tier-platinum {
   background: rgba(75, 125, 155, 0.25);
   color: #bfdeef;
 }
@@ -1855,7 +1866,8 @@ body[data-theme="dark"] .achievement-tier.tier-platinum {
   padding: 8px 10px;
 }
 
-body[data-theme="dark"] .settings-message.error {
+body[data-theme="dark"] .settings-message.error,
+body.theme-dark .settings-message.error {
   color: #ffc5c5;
   background: rgba(170, 65, 65, 0.22);
   border-color: rgba(230, 126, 126, 0.45);
@@ -2422,7 +2434,8 @@ body[data-theme="dark"] .settings-message.error {
   background: #9d4545;
 }
 
-body[data-theme="dark"] .btn-danger {
+body[data-theme="dark"] .btn-danger,
+body.theme-dark .btn-danger {
   color: #fff1f1;
   background: #a95656;
 }
