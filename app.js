@@ -15,7 +15,8 @@ const sections = {
 };
 
 const homeSection = document.getElementById("homeSection");
-const navButtons = Array.from(document.querySelectorAll(".nav-btn"));
+let navButtons = [];
+const desktopTopNav = document.querySelector(".top-nav-desktop");
 const mobileNavToggle = document.getElementById("mobileNavToggle");
 const mobileNavPanel = document.getElementById("mobileNavPanel");
 const logoHomeBtn = document.getElementById("logoHomeBtn");
@@ -301,6 +302,8 @@ function init() {
   settings.theme = initialTheme;
   safeSetItem(THEME_PREF_KEY, initialTheme);
 
+  buildMobileNavigationFromDesktop();
+  refreshNavButtons();
   wireEvents();
 
   try {
@@ -772,6 +775,7 @@ function showAuthScreen(message = "") {
   Object.values(sections).forEach((section) => {
     section.classList.add("hidden");
   });
+  refreshNavButtons();
   navButtons.forEach((button) => {
     button.classList.remove("active");
   });
@@ -783,6 +787,7 @@ function showAuthScreen(message = "") {
 }
 
 function updateAuthUi() {
+  refreshNavButtons();
   const analyticsLocked = !canUseAnalyticsFeatures();
   navButtons
     .filter((button) => button.dataset.section === "analytics")
@@ -1032,6 +1037,51 @@ function listen(el, event, handler) {
   if (el) {
     el.addEventListener(event, handler);
   }
+}
+
+function refreshNavButtons() {
+  navButtons = Array.from(document.querySelectorAll(".nav-btn[data-section]"));
+}
+
+function createMobileNavShortcut(label, action, iconMarkup) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "nav-btn mobile-nav-btn";
+  button.dataset.mobileAction = action;
+  button.innerHTML = `${iconMarkup}<span>${label}</span>`;
+  return button;
+}
+
+function buildMobileNavigationFromDesktop() {
+  if (!mobileNavPanel) {
+    return;
+  }
+
+  const desktopSectionButtons = desktopTopNav
+    ? Array.from(desktopTopNav.querySelectorAll(".nav-btn[data-section]"))
+    : [];
+  const fragment = document.createDocumentFragment();
+  const homeIconMarkup = homeNavBtn && homeNavBtn.querySelector(".icon-wrap")
+    ? homeNavBtn.querySelector(".icon-wrap").outerHTML
+    : `<span class="icon-wrap" aria-hidden="true"><svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 10 9-7 9 7" /><path d="M5 10v10h14V10" /></svg></span>`;
+  const achievementsIconMarkup = `<span class="icon-wrap" aria-hidden="true"><svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3h8v4a4 4 0 0 1-8 0z" /><path d="M6 7H4a2 2 0 0 0 2 2h2M18 7h2a2 2 0 0 1-2 2h-2" /><path d="M12 11v5" /><path d="M9 21h6" /></svg></span>`;
+
+  fragment.appendChild(createMobileNavShortcut("Home", "home", homeIconMarkup));
+
+  desktopSectionButtons.forEach((desktopButton) => {
+    const clone = desktopButton.cloneNode(true);
+    clone.classList.remove("active");
+    clone.classList.add("mobile-nav-btn");
+    clone.disabled = false;
+    clone.removeAttribute("aria-disabled");
+    fragment.appendChild(clone);
+
+    if (desktopButton.dataset.section === "analytics") {
+      fragment.appendChild(createMobileNavShortcut("Achievements", "achievements", achievementsIconMarkup));
+    }
+  });
+
+  mobileNavPanel.replaceChildren(fragment);
 }
 
 function setMobileNavOpen(open) {
@@ -1370,7 +1420,11 @@ function handleMusicPopupPlayPause() {
 }
 
 function wireEvents() {
-  navButtons.forEach((button) => {
+  const desktopNavButtons = desktopTopNav
+    ? Array.from(desktopTopNav.querySelectorAll(".nav-btn[data-section]"))
+    : [];
+
+  desktopNavButtons.forEach((button) => {
     button.addEventListener("click", () => {
       switchSection(button.dataset.section);
       setMobileNavOpen(false);
@@ -1385,8 +1439,36 @@ function wireEvents() {
     setMobileNavOpen(shouldOpen);
   });
   listen(mobileNavPanel, "click", (event) => {
-    const navButton = event.target.closest(".nav-btn");
-    if (navButton) {
+    const navButton = event.target.closest("button");
+    if (!navButton) {
+      return;
+    }
+
+    const sectionName = String(navButton.dataset.section || "");
+    const mobileAction = String(navButton.dataset.mobileAction || "");
+
+    if (sectionName) {
+      switchSection(sectionName);
+      setMobileNavOpen(false);
+      return;
+    }
+
+    if (mobileAction === "home") {
+      showHomeView({ forceStopTypeEffect: true });
+      setMobileNavOpen(false);
+      return;
+    }
+
+    if (mobileAction === "achievements") {
+      switchSection("analytics");
+      window.requestAnimationFrame(() => {
+        if (achievementsGridEl) {
+          achievementsGridEl.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+          });
+        }
+      });
       setMobileNavOpen(false);
     }
   });
@@ -1872,6 +1954,7 @@ function switchSection(sectionName, options = {}) {
     section.classList.toggle("hidden", key !== sectionName);
   });
 
+  refreshNavButtons();
   navButtons.forEach((button) => {
     button.classList.toggle("active", button.dataset.section === sectionName);
   });
@@ -1915,6 +1998,7 @@ function showHomeView(options = {}) {
     section.classList.add("hidden");
   });
 
+  refreshNavButtons();
   navButtons.forEach((button) => {
     button.classList.remove("active");
   });
