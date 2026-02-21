@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./style.css?v=20260221-musicpopup4" />
+  <link rel="stylesheet" href="./style.css?v=20260221-musictabs1" />
 </head>
 <body data-theme="dark">
   <script>
@@ -263,6 +263,7 @@
 
     <section id="homeSection" class="home-hero card">
       <p class="kicker fade-up">WELCOME</p>
+      <p id="homeGreeting" class="home-greeting fade-up delay-1">Welcome to Sanctuary Study 👋</p>
       <h1 class="type-title">Sanctuary Study</h1>
       <p class="home-copy fade-up delay-1">
         Build a daily study rhythm with focus, Scripture, and peace.
@@ -486,9 +487,9 @@
       <article class="chart-card">
         <div class="chart-head">
           <h3>Achievements</h3>
-          <p id="achievementSummary">0 / 13 unlocked</p>
+          <p id="achievementSummary">0 / 26 unlocked</p>
         </div>
-        <div id="achievementsGrid" class="achievements-grid" aria-label="Streak achievements"></div>
+        <div id="achievementsGrid" class="achievements-grid" aria-label="Study achievements"></div>
       </article>
     </section>
 
@@ -782,48 +783,68 @@
         <h3 id="musicPopupTitle">Background Music</h3>
         <button id="musicPopupCloseBtn" class="music-popup-close" type="button" aria-label="Close background music controls">×</button>
       </div>
-      <p id="musicPopupStatus" class="music-popup-status">Choose a source below, then load and play.</p>
-      <label class="music-popup-field">
-        Built-in lofi preset
-        <select id="lofiPresetSelect">
-          <option value="">None</option>
-        </select>
-      </label>
-      <label class="music-popup-field">
-        Music URL (YouTube or direct MP3/WAV)
-        <input id="youtubeMusicUrlSetting" type="url" placeholder="https://www.youtube.com/watch?v=... or https://.../track.mp3" />
-      </label>
-      <label class="music-popup-field">
-        Or choose local audio file
-        <input id="localMusicFileInput" type="file" accept="audio/*" />
-      </label>
-      <div class="music-popup-toggles">
-        <label class="music-toggle-chip" for="musicPopupShuffleToggle">
-          <input id="musicPopupShuffleToggle" type="checkbox" checked />
-          <span>Shuffle</span>
+      <div class="music-popup-tabs" role="tablist" aria-label="Music source tabs">
+        <button id="musicTabBtnBuiltIn" class="music-tab-btn active" type="button" role="tab" aria-selected="true" aria-controls="musicTabBuiltInPanel" data-music-tab="builtin">Built-in</button>
+        <button id="musicTabBtnUrl" class="music-tab-btn" type="button" role="tab" aria-selected="false" aria-controls="musicTabUrlPanel" data-music-tab="url">URL</button>
+        <button id="musicTabBtnUpload" class="music-tab-btn" type="button" role="tab" aria-selected="false" aria-controls="musicTabUploadPanel" data-music-tab="upload">My Music</button>
+      </div>
+
+      <div id="musicTabBuiltInPanel" class="music-tab-panel" role="tabpanel" aria-labelledby="musicTabBtnBuiltIn" data-music-panel="builtin">
+        <p id="musicPopupStatus" class="music-popup-status">Choose a source below, then load and play.</p>
+        <div id="musicBuiltInList" class="music-built-in-list" aria-label="Built-in songs"></div>
+        <div class="music-popup-toggles">
+          <label class="music-toggle-chip" for="musicPopupShuffleToggle">
+            <input id="musicPopupShuffleToggle" type="checkbox" checked />
+            <span>Shuffle</span>
+          </label>
+          <label class="music-toggle-chip" for="musicPopupLoopToggle">
+            <input id="musicPopupLoopToggle" type="checkbox" checked />
+            <span>Loop</span>
+          </label>
+        </div>
+      </div>
+
+      <div id="musicTabUrlPanel" class="music-tab-panel hidden" role="tabpanel" aria-labelledby="musicTabBtnUrl" data-music-panel="url">
+        <label class="music-popup-field">
+          Audio URL (direct MP3/WAV)
+          <input id="youtubeMusicUrlSetting" type="url" placeholder="https://.../track.mp3" />
         </label>
-        <label class="music-toggle-chip" for="musicPopupLoopToggle">
-          <input id="musicPopupLoopToggle" type="checkbox" checked />
-          <span>Loop</span>
+        <div class="music-popup-controls">
+          <button id="musicUrlPlayBtn" class="btn btn-primary" type="button">Play URL</button>
+        </div>
+        <p id="musicUrlCurrent" class="music-popup-status">No URL loaded.</p>
+      </div>
+
+      <div id="musicTabUploadPanel" class="music-tab-panel hidden" role="tabpanel" aria-labelledby="musicTabBtnUpload" data-music-panel="upload">
+        <label class="music-popup-field">
+          Upload audio file
+          <input id="localMusicFileInput" type="file" accept="audio/*" />
+        </label>
+        <p id="musicUploadCurrent" class="music-popup-status">No local file loaded.</p>
+      </div>
+
+      <div class="music-popup-footer">
+        <div class="music-popup-controls music-popup-controls-extended">
+          <button id="musicPopupPlayPauseBtn" class="btn btn-primary" type="button">Play</button>
+          <button id="stopMusicBtn" class="btn btn-glass" type="button">Stop</button>
+        </div>
+        <label class="music-popup-volume" for="musicPopupVolume">
+          Volume
+          <input id="musicPopupVolume" type="range" min="0" max="100" value="30" />
         </label>
       </div>
-      <div class="music-popup-controls music-popup-controls-extended">
-        <button id="loadMusicBtn" class="btn btn-glass" type="button">Load</button>
-        <button id="musicPopupPlayPauseBtn" class="btn btn-primary" type="button">Play</button>
-        <button id="stopMusicBtn" class="btn btn-glass" type="button">Stop</button>
-      </div>
-      <label class="music-popup-volume" for="musicPopupVolume">
-        Volume
-        <input id="musicPopupVolume" type="range" min="0" max="100" value="30" />
-      </label>
+
       <details class="music-popup-attribution">
-        <summary>Music Attribution (FreeToUse)</summary>
-        <p class="settings-subpanel-note">Tracks below are used under Free To Use terms. Keep these attributions when publishing your content.</p>
-        <p class="settings-subpanel-note">License reminder: monetized user-generated content is allowed with attribution, while standalone commercial re-use is restricted by the Free License.</p>
+        <summary>Attribution</summary>
         <div class="attribution-scroll-wrap">
           <ul id="musicAttributionList" class="music-attribution-list"></ul>
         </div>
       </details>
+
+      <select id="lofiPresetSelect" class="music-hidden-select" aria-hidden="true" tabindex="-1">
+        <option value="">None</option>
+      </select>
+      <button id="loadMusicBtn" class="hidden" type="button" aria-hidden="true" tabindex="-1">Load</button>
     </section>
   </div>
 
@@ -925,13 +946,13 @@
     </div>
   </div>
 
-  <script src="./js/constants.js?v=20260221-musicpopup4"></script>
-  <script src="./js/sync.js?v=20260221-musicpopup4"></script>
-  <script src="./js/analytics.js?v=20260221-musicpopup4"></script>
-  <script src="./js/ui.js?v=20260221-musicpopup4"></script>
-  <script src="./js/timer.js?v=20260221-musicpopup4"></script>
-  <script src="./js/music.js?v=20260221-musicpopup4"></script>
-  <script type="module" src="./auth.js?v=20260221-musicpopup4"></script>
-  <script src="./app.js?v=20260221-musicpopup4"></script>
+  <script src="./js/constants.js?v=20260221-musictabs1"></script>
+  <script src="./js/sync.js?v=20260221-musictabs1"></script>
+  <script src="./js/analytics.js?v=20260221-musictabs1"></script>
+  <script src="./js/ui.js?v=20260221-musictabs1"></script>
+  <script src="./js/timer.js?v=20260221-musictabs1"></script>
+  <script src="./js/music.js?v=20260221-musictabs1"></script>
+  <script type="module" src="./auth.js?v=20260221-musictabs1"></script>
+  <script src="./app.js?v=20260221-musictabs1"></script>
 </body>
 </html>

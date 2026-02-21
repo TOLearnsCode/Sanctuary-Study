@@ -704,6 +704,14 @@ body.theme-dark .nav-btn.active {
   color: var(--muted);
 }
 
+.home-greeting {
+  margin: -4px 0 0;
+  color: var(--brand);
+  font-size: clamp(1rem, 2.1vw, 1.24rem);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
 .type-title {
   margin: 0;
   font-family: "Cormorant Garamond", Georgia, serif;
@@ -2738,6 +2746,96 @@ body.theme-dark .achievement-tier.tier-platinum {
   letter-spacing: 0.02em;
 }
 
+.music-popup-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.music-tab-btn {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: var(--glass);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.music-tab-btn.active {
+  background: rgb(var(--brand-rgb) / 0.15);
+  color: var(--text);
+  border-color: rgb(var(--brand-rgb) / 0.42);
+}
+
+.music-tab-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.music-built-in-list {
+  display: grid;
+  gap: 8px;
+}
+
+.music-track-row {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: var(--glass);
+  color: var(--text);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.16s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.music-track-row:hover {
+  transform: translateY(-1px);
+  background: var(--glass-hover);
+}
+
+.music-track-row.active {
+  border-color: rgb(var(--brand-rgb) / 0.5);
+  background: rgb(var(--brand-rgb) / 0.14);
+  box-shadow: 0 8px 18px rgb(var(--brand-rgb) / 0.14);
+}
+
+.music-track-meta {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.music-track-title {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.music-track-artist {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.music-track-play {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--brand);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
 .music-popup-close {
   border: 1px solid var(--line);
   background: var(--glass);
@@ -2770,6 +2868,11 @@ body.theme-dark .achievement-tier.tier-platinum {
 
 .music-popup-controls-extended .btn {
   flex: 1 1 120px;
+}
+
+.music-popup-footer {
+  display: grid;
+  gap: 10px;
 }
 
 .music-popup-volume {
@@ -3440,6 +3543,18 @@ body.theme-dark .btn-danger {
     max-width: 420px;
   }
 
+  .music-popup-tabs {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .music-tab-btn {
+    flex: 0 0 auto;
+    min-width: 92px;
+  }
+
   .app-shell {
     width: min(1360px, calc(100vw - 20px));
   }
@@ -3855,6 +3970,25 @@ body.theme-dark .btn-danger {
     bottom: 68px;
     width: 90vw;
     max-width: none;
+  }
+
+  .music-tab-btn {
+    min-width: 84px;
+    font-size: 0.8rem;
+    padding: 7px 8px;
+  }
+
+  .music-track-row {
+    padding: 9px 10px;
+    gap: 8px;
+  }
+
+  .music-track-title {
+    font-size: 0.88rem;
+  }
+
+  .music-track-artist {
+    font-size: 0.74rem;
   }
 
   .achievement-toast {

@@ -347,6 +347,7 @@ function clearLocalAppData() {
     "sanctuarySessionNotesV1",
     "sanctuarySessionHistoryV1",
     "sanctuaryAchievementsV1",
+    "sanctuaryAchievementProgressV1",
     "sanctuaryGuestModeV1",
     "sanctuarySettingsUpdatedAtV1",
     "sanctuaryLastAnalyticsUidV1",

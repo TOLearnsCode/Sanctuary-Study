@@ -582,16 +582,17 @@ function onBlockComplete() {
       const context = recordCompletedStudyBlock(blockMinutes, activeTag);
       const unlockedAchievement = unlockStreakAchievements(context.currentStreak, true);
       const unlockedRareAchievement = unlockRareAchievements(context, true);
+      const unlockedConsistency = unlockConsistencyAchievements(context, true);
       scheduleRenderAnalytics();
       showMotivationToast(getMotivationalMessage(context));
-      const newAchievements = [unlockedAchievement, unlockedRareAchievement].filter(Boolean);
+      const newAchievements = [unlockedAchievement, unlockedRareAchievement, ...unlockedConsistency].filter(Boolean);
       if (newAchievements.length > 0) {
         showAchievementToast(newAchievements[0]);
-        if (newAchievements.length > 1) {
+        newAchievements.slice(1, 3).forEach((achievement, index) => {
           setTimeout(() => {
-            showAchievementToast(newAchievements[1]);
-          }, TOAST_SHOW_MS + 1200);
-        }
+            showAchievementToast(achievement);
+          }, ((index + 1) * (TOAST_SHOW_MS + 1200)));
+        });
       }
       openSessionReviewPrompt(context.sessionId);
     } else {

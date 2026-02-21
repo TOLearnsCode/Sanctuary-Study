@@ -301,6 +301,9 @@ function loadBackgroundMusicFromSettings() {
     settings.musicPresetId = "";
     settings.youtubeMusicUrl = "";
     saveSettings(settings);
+    if (typeof markMusicSourceUsed === "function") {
+      markMusicSourceUsed("upload", { announce: true });
+    }
     showToastMessage("Music loaded. Press Play background music.");
     return;
   }
@@ -320,6 +323,9 @@ function loadBackgroundMusicFromSettings() {
       return;
     }
 
+    if (typeof markMusicSourceUsed === "function") {
+      markMusicSourceUsed("builtin", { announce: true });
+    }
     showToastMessage("Lofi preset loaded. Press Play background music.");
     return;
   }
@@ -339,6 +345,9 @@ function loadBackgroundMusicFromSettings() {
     return;
   }
 
+  if (typeof markMusicSourceUsed === "function") {
+    markMusicSourceUsed("url", { announce: true });
+  }
   showToastMessage("Background music loaded. Press Play background music.");
 }
 
@@ -349,6 +358,9 @@ function startBackgroundMusicFromSavedPreference(autoplay) {
 
   const preset = getLofiPresetById(settings.musicPresetId);
   if (preset) {
+    if (typeof markMusicSourceUsed === "function") {
+      markMusicSourceUsed("builtin", { announce: true });
+    }
     if (preset.mode === "playlist") {
       return prepareDownloadedShufflePlaylist();
     }
@@ -495,6 +507,13 @@ function toggleDockMusicPlayback() {
     } else {
       bgAudio.pause();
       musicDockLabel.textContent = "Paused.";
+      if (
+        typeof isStudyBlockRunning === "function"
+        && isStudyBlockRunning()
+        && typeof unlockAchievementAndAnnounce === "function"
+      ) {
+        unlockAchievementAndAnnounce("eng_silent_mode");
+      }
     }
     return;
   }
@@ -511,6 +530,13 @@ function toggleDockMusicPlayback() {
       youtubePlayer.pauseVideo();
       musicDockLabel.textContent = "Paused.";
       syncMusicPlayPauseButton();
+      if (
+        typeof isStudyBlockRunning === "function"
+        && isStudyBlockRunning()
+        && typeof unlockAchievementAndAnnounce === "function"
+      ) {
+        unlockAchievementAndAnnounce("eng_silent_mode");
+      }
     } else {
       playBackgroundMusicFromUserGesture();
     }

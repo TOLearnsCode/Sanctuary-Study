@@ -24,11 +24,199 @@ function cancelPendingAnalyticsRender() {
 
 
 function getAllAchievementDefinitions() {
-  return [...STREAK_ACHIEVEMENTS, ...RARE_ACHIEVEMENTS];
+  return [...STREAK_ACHIEVEMENTS, ...RARE_ACHIEVEMENTS, ...ENGAGEMENT_ACHIEVEMENTS];
 }
 
 function getAchievementById(id) {
   return getAllAchievementDefinitions().find((achievement) => achievement.id === id) || null;
+}
+
+const REQUIRED_EXPLORER_SECTIONS = ["home", "study", "analytics", "settings", "favourites"];
+const REQUIRED_MUSIC_SOURCE_TYPES = ["builtin", "url", "upload"];
+
+function normalizeAchievementProgress(input) {
+  const source = input && typeof input === "object" ? input : {};
+  const visitedSections = Array.isArray(source.visitedSections)
+    ? source.visitedSections.map((entry) => String(entry || "").trim().toLowerCase()).filter(Boolean)
+    : [];
+  const musicSources = Array.isArray(source.musicSources)
+    ? source.musicSources.map((entry) => String(entry || "").trim().toLowerCase()).filter(Boolean)
+    : [];
+
+  return {
+    visitedSections: Array.from(new Set(visitedSections)),
+    musicSources: Array.from(new Set(musicSources))
+  };
+}
+
+function loadAchievementProgress() {
+  const raw = safeGetItem(ACHIEVEMENT_PROGRESS_KEY);
+  if (!raw) {
+    return {
+      visitedSections: [],
+      musicSources: []
+    };
+  }
+
+  try {
+    return normalizeAchievementProgress(JSON.parse(raw));
+  } catch (error) {
+    return {
+      visitedSections: [],
+      musicSources: []
+    };
+  }
+}
+
+function saveAchievementProgress(progress) {
+  safeSetItem(ACHIEVEMENT_PROGRESS_KEY, JSON.stringify(normalizeAchievementProgress(progress)));
+}
+
+function unlockAchievementById(id) {
+  if (!canUseAnalyticsFeatures()) {
+    return null;
+  }
+
+  const achievement = getAchievementById(id);
+  if (!achievement) {
+    return null;
+  }
+
+  const unlocked = loadUnlockedAchievements();
+  if (unlocked[id]) {
+    return null;
+  }
+
+  unlocked[id] = {
+    unlockedAt: new Date().toISOString(),
+    days: Number(achievement.days || 0)
+  };
+
+  saveUnlockedAchievements(unlocked);
+  return achievement;
+}
+
+function unlockAchievementsByIds(ids) {
+  const unlockedNow = [];
+  ids.forEach((id) => {
+    const unlockedAchievement = unlockAchievementById(id);
+    if (unlockedAchievement) {
+      unlockedNow.push(unlockedAchievement);
+    }
+  });
+  return unlockedNow;
+}
+
+function announceAchievementUnlock(achievement) {
+  if (!achievement) {
+    return null;
+  }
+  if (typeof showAchievementToast === "function") {
+    showAchievementToast(achievement);
+  }
+  scheduleRenderAnalytics();
+  return achievement;
+}
+
+function unlockAchievementAndAnnounce(id) {
+  const achievement = unlockAchievementById(id);
+  if (!achievement) {
+    return null;
+  }
+  return announceAchievementUnlock(achievement);
+}
+
+function unlockConsistencyAchievements(context = {}, announce = true) {
+  if (!canUseAnalyticsFeatures()) {
+    return [];
+  }
+
+  const log = loadStudyLog();
+  const streak = Number(context.currentStreak || calculateStreak(log));
+  const studyDays = countStudyDays(log);
+  const unlockedNow = [];
+
+  if (streak >= 3) {
+    unlockedNow.push(...unlockAchievementsByIds(["eng_on_a_roll"]));
+  }
+  if (studyDays >= 7) {
+    unlockedNow.push(...unlockAchievementsByIds(["eng_dedicated"]));
+  }
+
+  if (unlockedNow.length) {
+    scheduleRenderAnalytics();
+  }
+
+  if (!announce) {
+    return [];
+  }
+
+  return unlockedNow;
+}
+
+function syncProgressBasedAchievements(announce = false) {
+  const progress = loadAchievementProgress();
+  const unlockedNow = [];
+
+  const visitedAllSections = REQUIRED_EXPLORER_SECTIONS.every((sectionId) => progress.visitedSections.includes(sectionId));
+  if (visitedAllSections) {
+    unlockedNow.push(...unlockAchievementsByIds(["eng_explorer"]));
+  }
+
+  const usedAllMusicSources = REQUIRED_MUSIC_SOURCE_TYPES.every((sourceType) => progress.musicSources.includes(sourceType));
+  if (usedAllMusicSources) {
+    unlockedNow.push(...unlockAchievementsByIds(["eng_dj"]));
+  }
+
+  if (unlockedNow.length) {
+    scheduleRenderAnalytics();
+  }
+
+  if (!announce) {
+    return [];
+  }
+
+  return unlockedNow;
+}
+
+function markSectionVisited(sectionName, options = {}) {
+  const normalized = String(sectionName || "").trim().toLowerCase();
+  if (!normalized) {
+    return null;
+  }
+
+  const progress = loadAchievementProgress();
+  if (!progress.visitedSections.includes(normalized)) {
+    progress.visitedSections.push(normalized);
+    saveAchievementProgress(progress);
+  }
+
+  const unlockedNow = syncProgressBasedAchievements(options.announce !== false);
+  if (options.announce !== false && unlockedNow.length) {
+    return announceAchievementUnlock(unlockedNow[0]);
+  }
+
+  return unlockedNow[0] || null;
+}
+
+function markMusicSourceUsed(sourceType, options = {}) {
+  const normalized = String(sourceType || "").trim().toLowerCase();
+  if (!REQUIRED_MUSIC_SOURCE_TYPES.includes(normalized)) {
+    return null;
+  }
+
+  const progress = loadAchievementProgress();
+  if (!progress.musicSources.includes(normalized)) {
+    progress.musicSources.push(normalized);
+    saveAchievementProgress(progress);
+  }
+
+  const unlockedNow = syncProgressBasedAchievements(options.announce !== false);
+  if (options.announce !== false && unlockedNow.length) {
+    return announceAchievementUnlock(unlockedNow[0]);
+  }
+
+  return unlockedNow[0] || null;
 }
 
 function getStreakAchievementTier(days) {
@@ -638,6 +826,8 @@ function syncAchievementsWithCurrentStreak() {
   const streak = calculateStreak(loadStudyLog());
   unlockStreakAchievements(streak, false);
   unlockRareAchievements({}, false);
+  unlockConsistencyAchievements({ currentStreak: streak }, false);
+  syncProgressBasedAchievements(false);
 }
 
 function countStudyDaysInCurrentMonth(log) {

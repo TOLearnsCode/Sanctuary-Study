@@ -205,7 +205,7 @@ function saveFavouriteItem(item) {
   const alreadyExists = favourites.some((entry) => entry.key === favouriteKey);
 
   if (alreadyExists) {
-    return { saved: false };
+    return { saved: false, count: favourites.length };
   }
 
   favourites.unshift({
@@ -221,7 +221,7 @@ function saveFavouriteItem(item) {
   });
 
   saveFavourites(favourites);
-  return { saved: true };
+  return { saved: true, count: favourites.length };
 }
 
 function deleteFavouriteItem(favouriteId) {
@@ -249,6 +249,11 @@ function saveCurrentFocusToFavourites() {
   });
 
   renderFavourites();
+  if (result.saved && Number(result.count || 0) === 1) {
+    if (typeof unlockAchievementAndAnnounce === "function") {
+      unlockAchievementAndAnnounce("eng_bookmarked");
+    }
+  }
   showToastMessage(result.saved ? "Saved to Sanctuary." : "Already saved in Sanctuary.");
 }
 
@@ -563,6 +568,9 @@ function onSettingsSubmit(event) {
   initializeReminderScheduler();
   maybeSendStudyReminder();
   scheduleRenderAnalytics();
+  if (typeof unlockAchievementAndAnnounce === "function") {
+    unlockAchievementAndAnnounce("eng_customizer");
+  }
   showSettingsSuccess("Settings saved.");
 }
 

@@ -35,6 +35,7 @@ const authModeNotice = document.getElementById("authModeNotice");
 
 const homeBeginBtn = document.getElementById("homeBeginBtn");
 const homeSettingsBtn = document.getElementById("homeSettingsBtn");
+const homeGreeting = document.getElementById("homeGreeting");
 const homeThemeBadge = document.getElementById("homeThemeBadge");
 const homeTitle = document.querySelector(".type-title");
 if (homeTitle) {
@@ -195,6 +196,12 @@ const musicPopupVolume = document.getElementById("musicPopupVolume");
 const musicPopupStatus = document.getElementById("musicPopupStatus");
 const musicPopupShuffleToggle = document.getElementById("musicPopupShuffleToggle");
 const musicPopupLoopToggle = document.getElementById("musicPopupLoopToggle");
+const musicTabButtons = Array.from(document.querySelectorAll("[data-music-tab]"));
+const musicTabPanels = Array.from(document.querySelectorAll("[data-music-panel]"));
+const musicBuiltInList = document.getElementById("musicBuiltInList");
+const musicUrlPlayBtn = document.getElementById("musicUrlPlayBtn");
+const musicUrlCurrent = document.getElementById("musicUrlCurrent");
+const musicUploadCurrent = document.getElementById("musicUploadCurrent");
 
 let settings = loadSettings();
 let alarmSoundUrl = null;
@@ -254,6 +261,12 @@ let focusCommitRemainingSeconds = 0;
 let focusExitPendingAction = null;
 let musicShuffleEnabled = safeGetItem("sanctuaryMusicShuffleEnabledV1") !== "false";
 let musicLoopEnabled = safeGetItem("sanctuaryMusicLoopEnabledV1") !== "false";
+let activeMusicTab = "builtin";
+let selectedBuiltInTrackId = String(settings.musicPresetId || "").startsWith("track_")
+  ? String(settings.musicPresetId).replace("track_", "")
+  : "";
+let activeUrlSource = settings.musicPresetId ? "" : String(settings.youtubeMusicUrl || "").trim();
+let activeUploadFileName = "";
 
 let currentFocus = {
   theme: selectedStudyTheme,
@@ -338,6 +351,7 @@ function init() {
     console.warn("Reminder/scripture initialization failed:", error);
   }
   initializeAuthenticationFlow();
+  updateHomeGreeting();
   registerServiceWorkerWithUpdatePrompt();
 }
 
@@ -784,9 +798,10 @@ function updateAuthUi() {
   if (authMode === "user") {
     authActionText.textContent = "Sign In";
     authActionBtn.setAttribute("aria-label", "Sign in");
-    const hasName = currentUser && (currentUser.firstName || currentUser.lastName);
+    const displayName = String(currentUser && currentUser.displayName ? currentUser.displayName : "").trim();
+    const hasName = currentUser && (displayName || currentUser.firstName || currentUser.lastName);
     const fullName = hasName
-      ? `${currentUser.firstName || ""} ${currentUser.lastName || ""}`.trim()
+      ? (displayName || `${currentUser.firstName || ""} ${currentUser.lastName || ""}`.trim())
       : "";
     const userLabel = fullName
       ? `Signed in as ${fullName}`
@@ -805,6 +820,7 @@ function updateAuthUi() {
   }
 
   updateSettingsAccountControls();
+  updateHomeGreeting();
 }
 
 function updateSettingsAccountControls() {
@@ -829,9 +845,10 @@ function updateSettingsAccountControls() {
     return;
   }
 
-  const hasName = currentUser && (currentUser.firstName || currentUser.lastName);
+  const displayName = String(currentUser && currentUser.displayName ? currentUser.displayName : "").trim();
+  const hasName = currentUser && (displayName || currentUser.firstName || currentUser.lastName);
   const fullName = hasName
-    ? `${currentUser.firstName || ""} ${currentUser.lastName || ""}`.trim()
+    ? (displayName || `${currentUser.firstName || ""} ${currentUser.lastName || ""}`.trim())
     : "";
   accountSettingsStatus.textContent = fullName
     ? `Signed in as ${fullName}${currentUser.email ? ` (${currentUser.email})` : ""}.`
@@ -861,6 +878,7 @@ function initializeAuthenticationFlow() {
       currentUser = {
         uid: String(detailUser.uid || ""),
         email: String(detail.email || detailUser.email || profile.email || ""),
+        displayName: String(detailUser.displayName || profile.displayName || "").trim(),
         firstName: String(profile.firstName || "").trim(),
         lastName: String(profile.lastName || "").trim()
       };
@@ -870,6 +888,13 @@ function initializeAuthenticationFlow() {
       setAuthMessage("");
       showHomeView({ forceStopTypeEffect: true });
       syncAchievementsWithCurrentStreak();
+      unlockAchievementAndAnnounce("eng_verified");
+      const loginHour = new Date().getHours();
+      if (loginHour >= 0 && loginHour < 4) {
+        unlockAchievementAndAnnounce("eng_night_owl");
+      } else if (loginHour >= 4 && loginHour < 6) {
+        unlockAchievementAndAnnounce("eng_early_bird");
+      }
       scheduleRenderAnalytics();
       updateAuthUi();
       renderSyncStatus();
@@ -1051,6 +1076,233 @@ function getMusicPopupStatusText() {
   return "Choose a source below, then load and play.";
 }
 
+function getPopupBuiltInTracks() {
+  return DOWNLOADED_LOFI_TRACKS.slice(0, 5);
+}
+
+function setMusicPopupTab(tabId) {
+  const allowedTabs = new Set(["builtin", "url", "upload"]);
+  const safeTab = allowedTabs.has(tabId) ? tabId : "builtin";
+  activeMusicTab = safeTab;
+
+  musicTabButtons.forEach((button) => {
+    const isActive = button.dataset.musicTab === safeTab;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-selected", String(isActive));
+    button.tabIndex = isActive ? 0 : -1;
+  });
+
+  musicTabPanels.forEach((panel) => {
+    panel.classList.toggle("hidden", panel.dataset.musicPanel !== safeTab);
+  });
+}
+
+function getTrackIdFromSettingsPreset() {
+  const presetId = String(settings.musicPresetId || "");
+  if (!presetId.startsWith("track_")) {
+    return "";
+  }
+  return presetId.replace("track_", "");
+}
+
+function getBuiltInTrackIdFromAudioSrc() {
+  if (!bgAudio || !bgAudio.src) {
+    return "";
+  }
+
+  try {
+    const currentPath = new URL(bgAudio.src, window.location.href).pathname;
+    const matchedTrack = getPopupBuiltInTracks().find((track) => {
+      const trackPath = new URL(track.url, window.location.href).pathname;
+      return currentPath === trackPath;
+    });
+    return matchedTrack ? matchedTrack.id : "";
+  } catch (error) {
+    return "";
+  }
+}
+
+function getActiveBuiltInTrackId() {
+  if (selectedBuiltInTrackId) {
+    return selectedBuiltInTrackId;
+  }
+
+  const fromPreset = getTrackIdFromSettingsPreset();
+  if (fromPreset) {
+    return fromPreset;
+  }
+
+  return getBuiltInTrackIdFromAudioSrc();
+}
+
+function renderBuiltInMusicList() {
+  if (!musicBuiltInList) {
+    return;
+  }
+
+  const tracks = getPopupBuiltInTracks();
+  const activeTrackId = getActiveBuiltInTrackId();
+  musicBuiltInList.innerHTML = "";
+
+  tracks.forEach((track) => {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "music-track-row";
+    row.dataset.trackId = track.id;
+    row.setAttribute("aria-label", `Play ${track.title} by ${track.artist}`);
+    row.classList.toggle("active", activeTrackId === track.id);
+
+    const trackMeta = document.createElement("span");
+    trackMeta.className = "music-track-meta";
+
+    const trackTitle = document.createElement("span");
+    trackTitle.className = "music-track-title";
+    trackTitle.textContent = track.title;
+
+    const trackArtist = document.createElement("span");
+    trackArtist.className = "music-track-artist";
+    trackArtist.textContent = track.artist;
+
+    trackMeta.appendChild(trackTitle);
+    trackMeta.appendChild(trackArtist);
+
+    const playGlyph = document.createElement("span");
+    playGlyph.className = "music-track-play";
+    playGlyph.setAttribute("aria-hidden", "true");
+    playGlyph.textContent = "▶";
+
+    row.appendChild(trackMeta);
+    row.appendChild(playGlyph);
+    musicBuiltInList.appendChild(row);
+  });
+}
+
+function updateMusicSourceLabels() {
+  if (musicUrlCurrent) {
+    musicUrlCurrent.textContent = activeUrlSource
+      ? `Loaded URL: ${shortenUrl(activeUrlSource)}`
+      : "No URL loaded.";
+  }
+
+  if (musicUploadCurrent) {
+    musicUploadCurrent.textContent = activeUploadFileName
+      ? `Loaded file: ${activeUploadFileName}`
+      : "No local file loaded.";
+  }
+}
+
+function playBuiltInTrack(trackId) {
+  const track = getPopupBuiltInTracks().find((entry) => entry.id === trackId);
+  if (!track) {
+    return;
+  }
+
+  selectedBuiltInTrackId = track.id;
+  activeUrlSource = "";
+  activeUploadFileName = "";
+  if (youtubeMusicUrlSetting) {
+    youtubeMusicUrlSetting.value = track.url;
+  }
+  if (localMusicFileInput) {
+    localMusicFileInput.value = "";
+  }
+  if (lofiPresetSelect) {
+    lofiPresetSelect.value = `track_${track.id}`;
+  }
+
+  settings.musicPresetId = `track_${track.id}`;
+  settings.youtubeMusicUrl = track.url;
+  saveSettings(settings);
+
+  const prepared = startAudioFromUrl(track.url, `${track.title} • ${track.artist}`, { loop: true });
+  if (!prepared) {
+    showToastMessage("This track could not be loaded.");
+    return;
+  }
+
+  markMusicSourceUsed("builtin", { announce: true });
+  renderBuiltInMusicList();
+  updateMusicSourceLabels();
+  playBackgroundMusicFromUserGesture();
+  window.setTimeout(updateMusicPopupUi, 120);
+}
+
+function playAudioFromUrlTab() {
+  const enteredUrl = String(youtubeMusicUrlSetting ? youtubeMusicUrlSetting.value : "").trim();
+  if (!enteredUrl) {
+    showToastMessage("Paste an audio URL first.");
+    return;
+  }
+
+  selectedBuiltInTrackId = "";
+  activeUrlSource = enteredUrl;
+  activeUploadFileName = "";
+  if (localMusicFileInput) {
+    localMusicFileInput.value = "";
+  }
+  if (lofiPresetSelect) {
+    lofiPresetSelect.value = "";
+  }
+
+  settings.musicPresetId = "";
+  settings.youtubeMusicUrl = enteredUrl;
+  saveSettings(settings);
+
+  const videoId = extractYouTubeVideoId(enteredUrl);
+  const prepared = videoId
+    ? startBackgroundMusicFromSavedPreference(false)
+    : startAudioFromUrl(enteredUrl, shortenUrl(enteredUrl), { loop: true });
+
+  if (!prepared) {
+    showToastMessage("This URL could not be loaded. Try another direct audio link.");
+    return;
+  }
+
+  markMusicSourceUsed("url", { announce: true });
+  renderBuiltInMusicList();
+  updateMusicSourceLabels();
+  playBackgroundMusicFromUserGesture();
+  window.setTimeout(updateMusicPopupUi, 120);
+}
+
+function playUploadedMusicFile() {
+  if (!localMusicFileInput || !localMusicFileInput.files || localMusicFileInput.files.length === 0) {
+    return;
+  }
+
+  const file = localMusicFileInput.files[0];
+  if (!file) {
+    return;
+  }
+
+  const objectUrl = createObjectUrlForLocalMusic(file);
+  selectedBuiltInTrackId = "";
+  activeUrlSource = "";
+  activeUploadFileName = file.name;
+  if (youtubeMusicUrlSetting) {
+    youtubeMusicUrlSetting.value = "";
+  }
+  if (lofiPresetSelect) {
+    lofiPresetSelect.value = "";
+  }
+
+  settings.musicPresetId = "";
+  settings.youtubeMusicUrl = "";
+  saveSettings(settings);
+
+  const prepared = startAudioFromUrl(objectUrl, `Local file: ${file.name}`, { loop: true });
+  if (!prepared) {
+    showToastMessage("Could not load this local audio file.");
+    return;
+  }
+
+  markMusicSourceUsed("upload", { announce: true });
+  renderBuiltInMusicList();
+  updateMusicSourceLabels();
+  playBackgroundMusicFromUserGesture();
+  window.setTimeout(updateMusicPopupUi, 120);
+}
+
 function updateMusicPopupUi() {
   if (!musicPopupPlayPauseBtn || !musicPopupStatus) {
     return;
@@ -1071,6 +1323,10 @@ function updateMusicPopupUi() {
   if (musicPopupLoopToggle) {
     musicPopupLoopToggle.checked = Boolean(musicLoopEnabled);
   }
+
+  updateMusicSourceLabels();
+  renderBuiltInMusicList();
+  setMusicPopupTab(activeMusicTab);
 }
 
 if (typeof window !== "undefined") {
@@ -1089,6 +1345,7 @@ function setMusicPopupOpen(open) {
   document.body.classList.toggle("music-popup-open", shouldOpen);
 
   if (shouldOpen) {
+    setMusicPopupTab("builtin");
     updateMusicPopupUi();
   }
 }
@@ -1168,6 +1425,7 @@ function wireEvents() {
       loadScriptureOfTheDay();
       void refreshAnalyticsFromCloud("visibility");
       maybeSendStudyReminder();
+      updateHomeGreeting();
     }
   });
   window.addEventListener("online", () => {
@@ -1340,27 +1598,69 @@ function wireEvents() {
   });
   listen(stopMusicBtn, "click", () => {
     stopBackgroundMusic();
+    selectedBuiltInTrackId = "";
+    activeUrlSource = "";
+    activeUploadFileName = "";
     updateMusicPopupUi();
+  });
+  musicTabButtons.forEach((button) => {
+    listen(button, "click", () => {
+      const tabId = String(button.dataset.musicTab || "").trim().toLowerCase();
+      setMusicPopupTab(tabId);
+    });
+  });
+  listen(musicBuiltInList, "click", (event) => {
+    const trackButton = event.target.closest("[data-track-id]");
+    if (!trackButton) {
+      return;
+    }
+
+    playBuiltInTrack(String(trackButton.dataset.trackId || ""));
+  });
+  listen(musicUrlPlayBtn, "click", () => {
+    playAudioFromUrlTab();
   });
   listen(lofiPresetSelect, "change", () => {
     if (lofiPresetSelect.value) {
-      localMusicFileInput.value = "";
       const preset = getLofiPresetById(lofiPresetSelect.value);
-      if (preset) {
+      if (preset && preset.mode === "single" && preset.id.startsWith("track_")) {
+        selectedBuiltInTrackId = preset.id.replace("track_", "");
+      }
+      if (localMusicFileInput) {
+        localMusicFileInput.value = "";
+      }
+      activeUploadFileName = "";
+      if (preset && youtubeMusicUrlSetting) {
         youtubeMusicUrlSetting.value = preset.url || "";
       }
+      activeUrlSource = preset ? String(preset.url || "") : "";
     }
     updateMusicPopupUi();
   });
   listen(localMusicFileInput, "change", () => {
-    if (localMusicFileInput.files && localMusicFileInput.files.length > 0) {
-      lofiPresetSelect.value = "";
+    if (!localMusicFileInput.files || localMusicFileInput.files.length === 0) {
+      activeUploadFileName = "";
+      updateMusicPopupUi();
+      return;
     }
-    updateMusicPopupUi();
+
+    playUploadedMusicFile();
   });
   listen(youtubeMusicUrlSetting, "input", () => {
-    if (String(youtubeMusicUrlSetting.value || "").trim()) {
-      lofiPresetSelect.value = "";
+    const enteredUrl = String(youtubeMusicUrlSetting.value || "").trim();
+    if (enteredUrl) {
+      if (lofiPresetSelect) {
+        lofiPresetSelect.value = "";
+      }
+      selectedBuiltInTrackId = "";
+    }
+    activeUrlSource = enteredUrl;
+    updateMusicSourceLabels();
+  });
+  listen(youtubeMusicUrlSetting, "keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      playAudioFromUrlTab();
     }
   });
   listen(musicPopupShuffleToggle, "change", () => {
@@ -1389,6 +1689,9 @@ function wireEvents() {
   });
   listen(musicDockCloseBtn, "click", () => {
     stopBackgroundMusic();
+    selectedBuiltInTrackId = "";
+    activeUrlSource = "";
+    activeUploadFileName = "";
     updateMusicPopupUi();
   });
   listen(musicOpenExternalBtn, "click", () => {
@@ -1572,6 +1875,7 @@ function switchSection(sectionName, options = {}) {
   navButtons.forEach((button) => {
     button.classList.toggle("active", button.dataset.section === sectionName);
   });
+  markSectionVisited(sectionName, { announce: true });
 
   if (sectionName === "analytics") {
     renderAnalytics();
@@ -1615,6 +1919,7 @@ function showHomeView(options = {}) {
     button.classList.remove("active");
   });
   setMobileNavOpen(false);
+  markSectionVisited("home", { announce: true });
 
   updateHomeTypeEffect(options.forceStopTypeEffect === true);
   // Re-check daily scripture whenever home opens; cached result prevents extra work.
@@ -1655,6 +1960,79 @@ function lockHomeTypeEffect() {
     window.clearTimeout(homeTypeEffectTimeoutId);
     homeTypeEffectTimeoutId = null;
   }
+}
+
+function getGreetingMetaForHour(hour) {
+  const safeHour = Number.isFinite(hour) ? hour : new Date().getHours();
+  if (safeHour >= 5 && safeHour <= 11) {
+    return { text: "Good morning", emoji: "☀️" };
+  }
+  if (safeHour >= 12 && safeHour <= 16) {
+    return { text: "Good afternoon", emoji: "🌤️" };
+  }
+  if (safeHour >= 17 && safeHour <= 20) {
+    return { text: "Good evening", emoji: "🌙" };
+  }
+  return { text: "Good night", emoji: "🌌" };
+}
+
+function formatNameForGreeting(rawValue) {
+  const cleaned = String(rawValue || "").trim();
+  if (!cleaned) {
+    return "";
+  }
+
+  const withoutSymbols = cleaned.replace(/[._-]+/g, " ").replace(/\s+/g, " ").trim();
+  if (!withoutSymbols) {
+    return "";
+  }
+
+  const firstToken = withoutSymbols.split(" ")[0] || "";
+  if (!firstToken) {
+    return "";
+  }
+
+  return firstToken.charAt(0).toUpperCase() + firstToken.slice(1);
+}
+
+function getGreetingNameFromUser() {
+  if (!currentUser || authMode !== "user") {
+    return "";
+  }
+
+  const displayName = formatNameForGreeting(currentUser.displayName);
+  if (displayName) {
+    return displayName;
+  }
+
+  const firstName = formatNameForGreeting(currentUser.firstName);
+  if (firstName) {
+    return firstName;
+  }
+
+  const email = String(currentUser.email || "");
+  if (!email.includes("@")) {
+    return "";
+  }
+
+  return formatNameForGreeting(email.split("@")[0]);
+}
+
+function updateHomeGreeting() {
+  if (!homeGreeting) {
+    return;
+  }
+
+  if (authMode !== "user") {
+    homeGreeting.textContent = "Welcome to Sanctuary Study 👋";
+    return;
+  }
+
+  const greetingMeta = getGreetingMetaForHour(new Date().getHours());
+  const name = getGreetingNameFromUser();
+  homeGreeting.textContent = name
+    ? `${greetingMeta.text}, ${name} ${greetingMeta.emoji}`
+    : `${greetingMeta.text} ${greetingMeta.emoji}`;
 }
 
 function setStudyTheme(theme) {

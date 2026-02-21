@@ -20,6 +20,7 @@ const DAILY_SCRIPTURE_HISTORY_KEY = "sanctuaryDailyScriptureHistoryV1";
 const SESSION_NOTES_KEY = "sanctuarySessionNotesV1";
 const SESSION_HISTORY_KEY = "sanctuarySessionHistoryV1";
 const ACHIEVEMENTS_KEY = "sanctuaryAchievementsV1";
+const ACHIEVEMENT_PROGRESS_KEY = "sanctuaryAchievementProgressV1";
 const GUEST_MODE_KEY = "sanctuaryGuestModeV1";
 const THEME_PREF_KEY = "theme";
 const SETTINGS_UPDATED_AT_KEY = "sanctuarySettingsUpdatedAtV1";
@@ -368,6 +369,99 @@ const RARE_ACHIEVEMENTS = [
     label: "Rare Badge",
     medalText: "R",
     tier: "Gold"
+  }
+];
+
+const ENGAGEMENT_ACHIEVEMENTS = [
+  {
+    id: "eng_night_owl",
+    title: "Night Owl",
+    message: "You signed in after midnight and still chose steady focus.",
+    hint: "Sign in between 12:00am and 3:59am.",
+    label: "Special Badge",
+    medalText: "🦉",
+    tier: "Silver"
+  },
+  {
+    id: "eng_early_bird",
+    title: "Early Bird",
+    message: "You showed up before 6am to begin the day with intention.",
+    hint: "Sign in between 4:00am and 5:59am.",
+    label: "Special Badge",
+    medalText: "🌅",
+    tier: "Silver"
+  },
+  {
+    id: "eng_bookmarked",
+    title: "Bookmarked",
+    message: "You saved your first scripture to Sanctuary for later reflection.",
+    hint: "Save your first verse or encouragement.",
+    label: "Special Badge",
+    medalText: "🔖",
+    tier: "Bronze"
+  },
+  {
+    id: "eng_on_a_roll",
+    title: "On a Roll",
+    message: "You completed study sessions on three consecutive days.",
+    hint: "Reach a 3-day active study streak.",
+    label: "Special Badge",
+    medalText: "🎯",
+    tier: "Silver"
+  },
+  {
+    id: "eng_dedicated",
+    title: "Dedicated",
+    message: "You have studied on seven total days. Consistency is forming.",
+    hint: "Reach 7 total active study days.",
+    label: "Special Badge",
+    medalText: "📚",
+    tier: "Gold"
+  },
+  {
+    id: "eng_explorer",
+    title: "Explorer",
+    message: "You visited every Sanctuary section and learned your full workflow.",
+    hint: "Open Home, Study, Analytics, Settings, and Sanctuary at least once.",
+    label: "Special Badge",
+    medalText: "🧭",
+    tier: "Silver"
+  },
+  {
+    id: "eng_silent_mode",
+    title: "Silent Mode",
+    message: "You paused music during a live study block to refocus deeply.",
+    hint: "Pause background music while a study block is running.",
+    label: "Special Badge",
+    medalText: "🔇",
+    tier: "Bronze"
+  },
+  {
+    id: "eng_dj",
+    title: "DJ",
+    message: "You played music from built-in tracks, URL audio, and uploaded files.",
+    hint: "Use all 3 music sources: Built-in, URL, and My Music.",
+    label: "Special Badge",
+    medalText: "🎧",
+    tier: "Gold"
+  },
+  {
+    id: "eng_customizer",
+    title: "Customizer",
+    message: "You changed your settings to shape Sanctuary around your rhythm.",
+    hint: "Save any settings change.",
+    label: "Special Badge",
+    medalText: "🎛️",
+    tier: "Bronze"
+  },
+  {
+    id: "eng_verified",
+    title: "Verified",
+    message: "Your email is verified, so your study data is secured to your account.",
+    hint: "Verify your email and sign in.",
+    label: "Special Badge",
+    medalText: "✅",
+    tier: "Silver"
   }
 ];
 
