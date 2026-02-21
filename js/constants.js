@@ -32,11 +32,11 @@ const USER_DOC_SYNC_DEBOUNCE_MS = 750;
 const USER_DOC_SCHEMA_VERSION = 1;
 const AVAILABLE_COLOR_THEMES = ["dark", "light", "dawn", "ocean", "sage"];
 const COLOR_THEME_LABELS = {
-  dark: "Dark",
-  light: "Light",
-  dawn: "Dawn",
-  ocean: "Ocean",
-  sage: "Sage"
+  dark: "Midnight",
+  light: "Pearl",
+  dawn: "Ember",
+  ocean: "Azure",
+  sage: "Forest"
 };
 
 const GRAPH_DAYS = 60;

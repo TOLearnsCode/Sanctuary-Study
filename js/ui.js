@@ -403,6 +403,45 @@ function renderDailyScripture(verse) {
   dailyVerseRef.textContent = verse.reference;
 }
 
+function getThemeSettingRadios() {
+  if (!themeSetting || typeof themeSetting.querySelectorAll !== "function") {
+    return [];
+  }
+
+  return Array.from(themeSetting.querySelectorAll('input[name="themeSetting"]'));
+}
+
+function setThemeSettingValue(themeId) {
+  if (!themeSetting) {
+    return;
+  }
+
+  const resolvedTheme = sanitizeThemeId(themeId);
+  if (typeof themeSetting.value === "string" && String(themeSetting.tagName || "").toUpperCase() === "SELECT") {
+    themeSetting.value = resolvedTheme;
+    return;
+  }
+
+  const radios = getThemeSettingRadios();
+  radios.forEach((radio) => {
+    radio.checked = radio.value === resolvedTheme;
+  });
+}
+
+function getThemeSettingValue() {
+  if (!themeSetting) {
+    return sanitizeThemeId(defaultSettings.theme);
+  }
+
+  if (typeof themeSetting.value === "string" && String(themeSetting.tagName || "").toUpperCase() === "SELECT") {
+    return sanitizeThemeId(themeSetting.value);
+  }
+
+  const selectedRadio = getThemeSettingRadios().find((radio) => radio.checked);
+  const fallbackTheme = typeof settings !== "undefined" && settings ? settings.theme : defaultSettings.theme;
+  return sanitizeThemeId(selectedRadio ? selectedRadio.value : fallbackTheme);
+}
+
 function fillSettingsForm() {
   const weeklyTargets = sanitizeWeeklyPlanTargets(settings.weeklyPlanTargets);
   studyMinutesSetting.value = settings.studyMinutes;
@@ -421,7 +460,7 @@ function fillSettingsForm() {
   quietHoursEndSetting.value = sanitizeTimeInput(settings.quietHoursEnd, defaultSettings.quietHoursEnd);
   focusCommitMinutesSetting.value = clampFocusCommitMinutes(settings.focusCommitMinutes);
   blockedSitesSetting.value = formatBlockedSitesForTextarea(settings.blockedSites);
-  themeSetting.value = sanitizeThemeId(settings.theme);
+  setThemeSettingValue(settings.theme);
   focusModeSetting.value = settings.focusMode;
   alarmModeSetting.value = settings.alarmMode;
   customAlarmUrlSetting.value = settings.customAlarmUrl;
@@ -463,7 +502,7 @@ function onSettingsSubmit(event) {
     reminderTime: sanitizeTimeInput(reminderTimeSetting.value, defaultSettings.reminderTime),
     quietHoursStart: sanitizeTimeInput(quietHoursStartSetting.value, defaultSettings.quietHoursStart),
     quietHoursEnd: sanitizeTimeInput(quietHoursEndSetting.value, defaultSettings.quietHoursEnd),
-    theme: sanitizeThemeId(themeSetting.value),
+    theme: getThemeSettingValue(),
     focusMode: sanitizeFocusMode(focusModeSetting.value),
     focusCommitMinutes: clampFocusCommitMinutes(focusCommitMinutesSetting.value),
     blockedSites: sanitizeBlockedSites(blockedSitesSetting.value),
@@ -674,14 +713,12 @@ function setTheme(theme, options = {}) {
     lastLocalThemeMutationAt = Date.now();
   }
   safeSetItem(THEME_PREF_KEY, resolvedTheme);
-  if (themeSetting) {
-    themeSetting.value = resolvedTheme;
-  }
+  setThemeSettingValue(resolvedTheme);
   updateThemeToggleUi(resolvedTheme);
 }
 
 function updateThemeToggleUi(theme) {
-  const label = COLOR_THEME_LABELS[theme] || "Dark";
+  const label = COLOR_THEME_LABELS[theme] || "Midnight";
   themeToggleText.textContent = `Theme: ${label}`;
   if (themeToggleBtn) {
     const tooltip = `Cycle color theme (current: ${label})`;

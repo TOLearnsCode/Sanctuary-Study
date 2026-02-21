@@ -1,5 +1,5 @@
 const CACHE_NAME = "sanctuary-study-core-v7";
-const ASSET_VERSION = "20260220-modular2";
+const ASSET_VERSION = "20260221-theme-refresh1";
 const withVersion = (path) => `${path}?v=${ASSET_VERSION}`;
 const CORE_ASSETS = [
   "/",

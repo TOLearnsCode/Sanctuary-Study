@@ -2,11 +2,11 @@ const LEGAL_THEME_KEY = "theme";
 const LEGAL_SETTINGS_KEY = "sanctuaryStudySettingsV1";
 const LEGAL_THEMES = ["dark", "light", "dawn", "ocean", "sage"];
 const LEGAL_THEME_LABELS = {
-  dark: "Dark",
-  light: "Light",
-  dawn: "Dawn",
-  ocean: "Ocean",
-  sage: "Sage"
+  dark: "Midnight",
+  light: "Pearl",
+  dawn: "Ember",
+  ocean: "Azure",
+  sage: "Forest"
 };
 
 function sanitizeTheme(theme) {
@@ -38,19 +38,25 @@ function getNextTheme(theme) {
   return LEGAL_THEMES[(index + 1) % LEGAL_THEMES.length];
 }
 
-function applyTheme(theme) {
+function applyTheme(theme, options = {}) {
+  const shouldPersist = Boolean(options.persist);
+  const shouldSyncSettings = Boolean(options.syncSettings);
   const resolved = sanitizeTheme(theme);
   document.body.dataset.theme = resolved;
   LEGAL_THEMES.forEach((themeId) => {
     document.body.classList.remove(`theme-${themeId}`);
   });
   document.body.classList.add(`theme-${resolved}`);
-  localStorage.setItem(LEGAL_THEME_KEY, resolved);
-  syncThemeToAppSettings(resolved);
+  if (shouldPersist) {
+    localStorage.setItem(LEGAL_THEME_KEY, resolved);
+  }
+  if (shouldSyncSettings) {
+    syncThemeToAppSettings(resolved);
+  }
 
   const toggleBtn = document.getElementById("legalThemeToggle");
   if (toggleBtn) {
-    const label = LEGAL_THEME_LABELS[resolved] || "Dark";
+    const label = LEGAL_THEME_LABELS[resolved] || "Midnight";
     toggleBtn.textContent = `Theme: ${label}`;
     toggleBtn.title = `Cycle theme (current: ${label})`;
     toggleBtn.setAttribute("aria-label", `Cycle theme (current: ${label})`);
@@ -58,6 +64,11 @@ function applyTheme(theme) {
 }
 
 function syncThemeToAppSettings(theme) {
+  if (theme == null || theme === "") {
+    return;
+  }
+
+  const resolvedTheme = sanitizeTheme(theme);
   const rawSettings = localStorage.getItem(LEGAL_SETTINGS_KEY);
   if (!rawSettings) {
     return;
@@ -69,11 +80,15 @@ function syncThemeToAppSettings(theme) {
       return;
     }
 
-    if (parsed.theme === theme) {
+    if (parsed.theme == null) {
       return;
     }
 
-    parsed.theme = theme;
+    if (sanitizeTheme(parsed.theme) === resolvedTheme) {
+      return;
+    }
+
+    parsed.theme = resolvedTheme;
     localStorage.setItem(LEGAL_SETTINGS_KEY, JSON.stringify(parsed));
   } catch (error) {
     // Ignore malformed local settings.
@@ -81,13 +96,14 @@ function syncThemeToAppSettings(theme) {
 }
 
 function initializeLegalThemeSync() {
-  applyTheme(localStorage.getItem(LEGAL_THEME_KEY));
+  const savedTheme = localStorage.getItem(LEGAL_THEME_KEY);
+  applyTheme(savedTheme || "dark", { persist: false, syncSettings: false });
 
   const toggleBtn = document.getElementById("legalThemeToggle");
   if (toggleBtn) {
     toggleBtn.addEventListener("click", () => {
       const nextTheme = getNextTheme(document.body.dataset.theme);
-      applyTheme(nextTheme);
+      applyTheme(nextTheme, { persist: true, syncSettings: true });
     });
   }
 
@@ -95,7 +111,7 @@ function initializeLegalThemeSync() {
     if (event.key !== LEGAL_THEME_KEY) {
       return;
     }
-    applyTheme(event.newValue);
+    applyTheme(event.newValue || "dark", { persist: false, syncSettings: false });
   });
 }
 

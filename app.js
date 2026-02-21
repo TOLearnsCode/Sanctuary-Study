@@ -1126,8 +1126,15 @@ function wireEvents() {
       });
     });
   });
-  listen(themeSetting, "change", () => {
-    setTheme(themeSetting.value);
+  listen(themeSetting, "change", (event) => {
+    const nextTheme = event && event.target && event.target.name === "themeSetting"
+      ? event.target.value
+      : null;
+    if (!nextTheme) {
+      return;
+    }
+
+    setTheme(nextTheme);
     settings.theme = sanitizeThemeId(document.body.dataset.theme);
     saveSettings(settings);
   });

@@ -15,9 +15,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./style.css?v=20260220-themefix1" />
+  <link rel="stylesheet" href="./style.css?v=20260221-theme-refresh1" />
 </head>
-<body>
+<body data-theme="dark">
   <script>
     (() => {
       const themes = ["dark", "light", "dawn", "ocean", "sage"];
@@ -91,7 +91,7 @@
               <circle cx="12" cy="12" r="4" />
             </svg>
           </span>
-          <span id="themeToggleText">Dark Mode</span>
+          <span id="themeToggleText">Theme: Midnight</span>
         </button>
 
         <button id="authActionBtn" class="home-nav-btn" type="button" aria-label="Sign in or sign out">
@@ -530,9 +530,10 @@
                 <div class="settings-collapse-body">
                   <div class="settings-subpanel-head">
                     <p class="settings-subpanel-note">Reminder notifications while the app is open.</p>
-                    <label class="toggle-inline">
+                    <label class="toggle-switch" for="remindersEnabledSetting">
                       <input id="remindersEnabledSetting" type="checkbox" />
-                      <span>Enabled</span>
+                      <span class="toggle-switch-track" aria-hidden="true"></span>
+                      <span class="toggle-switch-text">Enabled</span>
                     </label>
                   </div>
                   <div class="reminder-grid">
@@ -561,16 +562,51 @@
                 <p class="settings-block-note">Choose your visual theme and how strict focus mode should be.</p>
               </div>
               <div class="settings-fields-grid">
-                <label class="settings-field">
-                  Color mode
-                  <select id="themeSetting">
-                    <option value="dark">Dark</option>
-                    <option value="light">Light</option>
-                    <option value="dawn">Dawn</option>
-                    <option value="ocean">Ocean</option>
-                    <option value="sage">Sage</option>
-                  </select>
-                </label>
+                <div class="settings-field settings-theme-field">
+                  <p class="settings-field-label">Color mode</p>
+                  <div id="themeSetting" class="settings-theme-picker" role="radiogroup" aria-label="Color mode">
+                    <label class="theme-option-card theme-option-midnight">
+                      <input type="radio" name="themeSetting" value="dark" />
+                      <span class="theme-option-swatch" aria-hidden="true"></span>
+                      <span class="theme-option-copy">
+                        <strong>Midnight</strong>
+                        <small>Deep and calm</small>
+                      </span>
+                    </label>
+                    <label class="theme-option-card theme-option-pearl">
+                      <input type="radio" name="themeSetting" value="light" />
+                      <span class="theme-option-swatch" aria-hidden="true"></span>
+                      <span class="theme-option-copy">
+                        <strong>Pearl</strong>
+                        <small>Clean and bright</small>
+                      </span>
+                    </label>
+                    <label class="theme-option-card theme-option-ember">
+                      <input type="radio" name="themeSetting" value="dawn" />
+                      <span class="theme-option-swatch" aria-hidden="true"></span>
+                      <span class="theme-option-copy">
+                        <strong>Ember</strong>
+                        <small>Warm and focused</small>
+                      </span>
+                    </label>
+                    <label class="theme-option-card theme-option-azure">
+                      <input type="radio" name="themeSetting" value="ocean" />
+                      <span class="theme-option-swatch" aria-hidden="true"></span>
+                      <span class="theme-option-copy">
+                        <strong>Azure</strong>
+                        <small>Cool and clear</small>
+                      </span>
+                    </label>
+                    <label class="theme-option-card theme-option-forest">
+                      <input type="radio" name="themeSetting" value="sage" />
+                      <span class="theme-option-swatch" aria-hidden="true"></span>
+                      <span class="theme-option-copy">
+                        <strong>Forest</strong>
+                        <small>Natural and steady</small>
+                      </span>
+                    </label>
+                  </div>
+                </div>
 
                 <label class="settings-field">
                   Focus mode
@@ -811,13 +847,13 @@
     </div>
   </div>
 
-  <script src="./js/constants.js?v=20260220-modular2"></script>
-  <script src="./js/sync.js?v=20260220-modular2"></script>
-  <script src="./js/analytics.js?v=20260220-modular2"></script>
-  <script src="./js/ui.js?v=20260220-modular2"></script>
-  <script src="./js/timer.js?v=20260220-modular2"></script>
-  <script src="./js/music.js?v=20260220-modular2"></script>
-  <script type="module" src="./auth.js?v=20260220-modular2"></script>
-  <script src="./app.js?v=20260220-modular2"></script>
+  <script src="./js/constants.js?v=20260221-theme-refresh1"></script>
+  <script src="./js/sync.js?v=20260221-theme-refresh1"></script>
+  <script src="./js/analytics.js?v=20260221-theme-refresh1"></script>
+  <script src="./js/ui.js?v=20260221-theme-refresh1"></script>
+  <script src="./js/timer.js?v=20260221-theme-refresh1"></script>
+  <script src="./js/music.js?v=20260221-theme-refresh1"></script>
+  <script type="module" src="./auth.js?v=20260221-theme-refresh1"></script>
+  <script src="./app.js?v=20260221-theme-refresh1"></script>
 </body>
 </html>
