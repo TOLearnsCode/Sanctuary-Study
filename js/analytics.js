@@ -193,9 +193,8 @@ function getGraphDaysForViewport() {
 }
 
 function updateStudyGraphTitle(dayCount) {
-  const chartTitle = studyGraphEl
-    ? studyGraphEl.closest(".chart-card")?.querySelector(".chart-head h3")
-    : null;
+  const chartCard = studyGraphEl ? studyGraphEl.closest(".chart-card") : null;
+  const chartTitle = chartCard ? chartCard.querySelector(".chart-head h3") : null;
   if (!chartTitle) {
     return;
   }
@@ -218,7 +217,8 @@ function sanitizeWeeklyPlanTargets(input) {
 
   WEEKDAY_PLAN_KEYS.forEach((key) => {
     const fallback = DEFAULT_WEEKLY_PLAN_TARGETS[key] || 0;
-    targets[key] = clampPlanMinutes(source[key] ?? fallback);
+    const value = Object.prototype.hasOwnProperty.call(source, key) ? source[key] : fallback;
+    targets[key] = clampPlanMinutes(value);
   });
 
   return targets;

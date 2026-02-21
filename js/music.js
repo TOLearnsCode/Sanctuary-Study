@@ -853,8 +853,10 @@ function setExternalMusicButtonState(url) {
 function openBackgroundMusicExternally(providedUrl, silent = false, options = {}) {
   const bypassFocusLock = Boolean(options.bypassFocusLock);
   const preset = getLofiPresetById(settings.musicPresetId);
+  const queuedTrack = downloadedPlaylistQueue[downloadedPlaylistCursor] || null;
+  const defaultTrack = DOWNLOADED_LOFI_TRACKS[0] || null;
   const fallbackUrl = preset
-    ? (preset.url || downloadedPlaylistQueue[downloadedPlaylistCursor]?.url || DOWNLOADED_LOFI_TRACKS[0]?.url || "")
+    ? (preset.url || (queuedTrack ? queuedTrack.url : "") || (defaultTrack ? defaultTrack.url : "") || "")
     : settings.youtubeMusicUrl;
   const fallbackButtonUrl = musicOpenExternalBtn ? musicOpenExternalBtn.dataset.url : "";
   const url = providedUrl || fallbackButtonUrl || fallbackUrl;

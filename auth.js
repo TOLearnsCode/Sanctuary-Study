@@ -427,12 +427,13 @@ function syncProfileFromAuthUser(user, preferredProfile = null) {
 
   const stored = getStoredProfile(user.uid) || {};
   const firebaseProfile = getProfileFromFirebaseUser(user) || {};
+  const preferred = preferredProfile && typeof preferredProfile === "object" ? preferredProfile : {};
   const merged = {
-    firstName: String(preferredProfile?.firstName || stored.firstName || firebaseProfile.firstName || "").trim(),
-    lastName: String(preferredProfile?.lastName || stored.lastName || firebaseProfile.lastName || "").trim(),
-    email: String(preferredProfile?.email || user.email || stored.email || "").trim(),
-    dob: String(preferredProfile?.dob || stored.dob || "").trim(),
-    createdAt: String(stored.createdAt || preferredProfile?.createdAt || new Date().toISOString())
+    firstName: String(preferred.firstName || stored.firstName || firebaseProfile.firstName || "").trim(),
+    lastName: String(preferred.lastName || stored.lastName || firebaseProfile.lastName || "").trim(),
+    email: String(preferred.email || user.email || stored.email || "").trim(),
+    dob: String(preferred.dob || stored.dob || "").trim(),
+    createdAt: String(stored.createdAt || preferred.createdAt || new Date().toISOString())
   };
 
   return saveUserProfile(user.uid, merged);
@@ -440,11 +441,11 @@ function syncProfileFromAuthUser(user, preferredProfile = null) {
 
 function normalizeAuthInput() {
   return {
-    firstName: String(authFirstNameInput?.value || "").trim(),
-    lastName: String(authLastNameInput?.value || "").trim(),
-    email: String(authEmailInput?.value || "").trim(),
-    dob: String(authDobInput?.value || "").trim(),
-    password: String(authPasswordInput?.value || "")
+    firstName: String(authFirstNameInput ? authFirstNameInput.value : "").trim(),
+    lastName: String(authLastNameInput ? authLastNameInput.value : "").trim(),
+    email: String(authEmailInput ? authEmailInput.value : "").trim(),
+    dob: String(authDobInput ? authDobInput.value : "").trim(),
+    password: String(authPasswordInput ? authPasswordInput.value : "")
   };
 }
 
@@ -642,7 +643,7 @@ async function onSignInClick() {
       AUTH_REQUEST_TIMEOUT_MS
     );
 
-    if (credential?.user) {
+    if (credential && credential.user) {
       const signedInUser = auth.currentUser || credential.user;
       if (!signedInUser.emailVerified) {
         const verificationResult = await sendVerificationEmailIfPossible(signedInUser);
@@ -668,7 +669,7 @@ async function onSignInClick() {
     }
 
     clearVerificationRequiredEmail();
-    syncProfileFromAuthUser(credential?.user);
+    syncProfileFromAuthUser(credential ? credential.user : null);
     setAuthMessage("Signed in successfully.");
   } catch (error) {
     setAuthMessage(getFriendlyAuthError(error), true);
@@ -718,7 +719,8 @@ async function onSignUpClick() {
     } else {
       console.error("Verification email send failed:", verificationResult);
     }
-    setVerificationRequiredEmail(String(input.email || credential.user?.email || "").trim());
+    const createdUserEmail = credential && credential.user ? credential.user.email : "";
+    setVerificationRequiredEmail(String(input.email || createdUserEmail || "").trim());
 
     const displayName = `${input.firstName} ${input.lastName}`.trim();
     if (displayName) {
@@ -794,7 +796,7 @@ async function onGoogleSignInClick() {
   try {
     const credential = await withTimeout(signInWithGoogle(), AUTH_REQUEST_TIMEOUT_MS);
 
-    if (credential?.user) {
+    if (credential && credential.user) {
       const signedInUser = auth.currentUser || credential.user;
       if (!signedInUser.emailVerified) {
         setVerificationRequiredEmail(String(signedInUser.email || "").trim());
@@ -805,7 +807,7 @@ async function onGoogleSignInClick() {
     }
 
     clearVerificationRequiredEmail();
-    syncProfileFromAuthUser(credential?.user);
+    syncProfileFromAuthUser(credential ? credential.user : null);
     setAuthMessage("Signed in with Google.");
   } catch (error) {
     setAuthMessage(getFriendlyAuthError(error), true);
@@ -840,7 +842,7 @@ async function onResendVerificationClick() {
       AUTH_REQUEST_TIMEOUT_MS
     );
 
-    let activeUser = credential?.user || auth.currentUser;
+    let activeUser = (credential && credential.user) ? credential.user : auth.currentUser;
     if (!activeUser) {
       throw { code: "auth/invalid-credential" };
     }
@@ -894,14 +896,18 @@ function initializeAuthPageBindings() {
   authSignInBtn.addEventListener("click", () => {
     setAuthFormMode("signin");
     setAuthMessage("");
-    authEmailInput?.focus();
+    if (authEmailInput) {
+      authEmailInput.focus();
+    }
   });
 
   authSignUpBtn.addEventListener("click", () => {
     setAuthFormMode("signup");
     clearVerificationRequiredEmail();
     setAuthMessage("");
-    authFirstNameInput?.focus();
+    if (authFirstNameInput) {
+      authFirstNameInput.focus();
+    }
   });
 
   if (authGoogleBtn) {

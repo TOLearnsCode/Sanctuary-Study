@@ -96,10 +96,13 @@ function sanitizeAchievementMap(input) {
     }
 
     const definition = allDefinitions.find((item) => item.id === id) || null;
+    const definitionDays = definition && typeof definition === "object"
+      ? Number(definition.days || 0)
+      : 0;
     const days = Number(entry.days || 0);
     const unlockedAt = String(entry.unlockedAt || "").trim();
     clean[id] = {
-      days: Number.isFinite(days) && days > 0 ? days : Number(definition?.days || 0),
+      days: Number.isFinite(days) && days > 0 ? days : definitionDays,
       unlockedAt: unlockedAt || new Date().toISOString()
     };
   });

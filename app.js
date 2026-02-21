@@ -469,10 +469,18 @@ function loadLastSuccessfulSyncAt() {
   return new Date(timestamp).toISOString();
 }
 
+function safeRemoveItem(key) {
+  try {
+    localStorage.removeItem(key);
+  } catch (error) {
+    // Storage can be unavailable in strict/private browser modes.
+  }
+}
+
 function saveLastSuccessfulSyncAt(isoString) {
   const safeIso = String(isoString || "").trim();
   if (!safeIso) {
-    localStorage.removeItem(LAST_SUCCESSFUL_SYNC_AT_KEY);
+    safeRemoveItem(LAST_SUCCESSFUL_SYNC_AT_KEY);
     return;
   }
 
@@ -487,7 +495,7 @@ function loadLastReminderSentDayKey() {
 function saveLastReminderSentDayKey(dayKey) {
   const safeDayKey = String(dayKey || "").trim();
   if (!safeDayKey) {
-    localStorage.removeItem(REMINDER_LAST_SENT_KEY);
+    safeRemoveItem(REMINDER_LAST_SENT_KEY);
     return;
   }
   safeSetItem(REMINDER_LAST_SENT_KEY, safeDayKey);
@@ -501,7 +509,7 @@ function loadLastLocalSettingsMutationAt() {
 function saveLastLocalSettingsMutationAt(timestampMs) {
   const safeTimestamp = Number(timestampMs);
   if (!Number.isFinite(safeTimestamp) || safeTimestamp <= 0) {
-    localStorage.removeItem(SETTINGS_UPDATED_AT_KEY);
+    safeRemoveItem(SETTINGS_UPDATED_AT_KEY);
     return;
   }
 
@@ -710,7 +718,7 @@ function saveGuestModePreference(enabled) {
     return;
   }
 
-  localStorage.removeItem(GUEST_MODE_KEY);
+  safeRemoveItem(GUEST_MODE_KEY);
 }
 
 function setAuthMessage(message, isError = false) {

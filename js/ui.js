@@ -311,20 +311,29 @@ function renderFavourites() {
 }
 
 async function loadScriptureOfTheDay() {
-  const todayKey = getDateKey(new Date());
-  const cached = loadDailyScriptureCache();
-
-  if (cached && cached.dateKey === todayKey && cached.verse?.text && cached.verse?.reference) {
-    renderDailyScripture(cached.verse);
+  if (!dailyVerseText || !dailyVerseRef) {
     return;
   }
 
-  const verse = await pickNewDailyScripture();
-  saveDailyScriptureCache({
-    dateKey: todayKey,
-    verse
-  });
-  renderDailyScripture(verse);
+  const todayKey = getDateKey(new Date());
+  const cached = loadDailyScriptureCache();
+
+  try {
+    if (cached && cached.dateKey === todayKey && cached.verse && cached.verse.text && cached.verse.reference) {
+      renderDailyScripture(cached.verse);
+      return;
+    }
+
+    const verse = await pickNewDailyScripture();
+    saveDailyScriptureCache({
+      dateKey: todayKey,
+      verse
+    });
+    renderDailyScripture(verse);
+  } catch (error) {
+    const fallback = pickDailyFallbackVerse(loadDailyScriptureHistory());
+    renderDailyScripture(fallback);
+  }
 }
 
 function loadDailyScriptureCache() {
@@ -399,6 +408,9 @@ function pickDailyFallbackVerse(history) {
 }
 
 function renderDailyScripture(verse) {
+  if (!dailyVerseText || !dailyVerseRef || !verse) {
+    return;
+  }
   dailyVerseText.textContent = `"${verse.text}"`;
   dailyVerseRef.textContent = verse.reference;
 }
@@ -806,7 +818,7 @@ async function fetchVerseByReference(reference) {
   }
 
   const data = await response.json();
-  if (!data?.text) {
+  if (!data || !data.text) {
     throw new Error("Verse API response shape was unexpected");
   }
 
@@ -875,7 +887,9 @@ async function fetchCommonsFileTitles() {
   }
 
   const data = await response.json();
-  const members = data?.query?.categorymembers || [];
+  const members = data && data.query && Array.isArray(data.query.categorymembers)
+    ? data.query.categorymembers
+    : [];
   if (!members.length) {
     throw new Error("No files returned by Commons alarm category");
   }
@@ -899,10 +913,11 @@ async function fetchCommonsFileUrl(title) {
   }
 
   const data = await response.json();
-  const pages = data?.query?.pages ? Object.values(data.query.pages) : [];
-  const imageInfo = pages[0]?.imageinfo?.[0];
+  const pages = data && data.query && data.query.pages ? Object.values(data.query.pages) : [];
+  const firstPage = pages.length > 0 ? pages[0] : null;
+  const imageInfo = firstPage && Array.isArray(firstPage.imageinfo) ? firstPage.imageinfo[0] : null;
 
-  if (!imageInfo?.url) {
+  if (!imageInfo || !imageInfo.url) {
     throw new Error("Commons file missing URL");
   }
 
