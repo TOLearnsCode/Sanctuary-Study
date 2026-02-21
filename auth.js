@@ -303,7 +303,7 @@ function setAuthLoading(isLoading, text = "Processing request...") {
 
 function loadProfilesMap() {
   try {
-    const raw = localStorage.getItem(USER_PROFILES_KEY);
+    const raw = safeGetItem(USER_PROFILES_KEY);
     if (!raw) {
       return {};
     }

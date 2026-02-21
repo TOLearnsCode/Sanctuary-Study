@@ -270,7 +270,7 @@ function init() {
     });
   }
 
-  const savedTheme = localStorage.getItem(THEME_PREF_KEY);
+  const savedTheme = safeGetItem(THEME_PREF_KEY);
   const initialTheme = resolveThemePreference(savedTheme, settings.theme, defaultSettings.theme);
   setTheme(initialTheme, { fromRemote: true });
   settings.theme = initialTheme;
@@ -433,7 +433,7 @@ function requestServiceWorkerRefresh() {
 }
 
 function loadLastSuccessfulSyncAt() {
-  const raw = String(localStorage.getItem(LAST_SUCCESSFUL_SYNC_AT_KEY) || "").trim();
+  const raw = String(safeGetItem(LAST_SUCCESSFUL_SYNC_AT_KEY) || "").trim();
   if (!raw) {
     return "";
   }
@@ -457,7 +457,7 @@ function saveLastSuccessfulSyncAt(isoString) {
 }
 
 function loadLastReminderSentDayKey() {
-  const raw = String(localStorage.getItem(REMINDER_LAST_SENT_KEY) || "").trim();
+  const raw = String(safeGetItem(REMINDER_LAST_SENT_KEY) || "").trim();
   return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : "";
 }
 
@@ -471,7 +471,7 @@ function saveLastReminderSentDayKey(dayKey) {
 }
 
 function loadLastLocalSettingsMutationAt() {
-  const numeric = Number(localStorage.getItem(SETTINGS_UPDATED_AT_KEY));
+  const numeric = Number(safeGetItem(SETTINGS_UPDATED_AT_KEY));
   return Number.isFinite(numeric) && numeric > 0 ? numeric : 0;
 }
 
@@ -678,7 +678,7 @@ function canUseAnalyticsFeatures() {
 }
 
 function loadGuestModePreference() {
-  return localStorage.getItem(GUEST_MODE_KEY) === "true";
+  return safeGetItem(GUEST_MODE_KEY) === "true";
 }
 
 function saveGuestModePreference(enabled) {
@@ -911,6 +911,7 @@ function requestAuthSignOut() {
 
   currentUser = null;
   resetCloudSyncState();
+  cancelPendingAnalyticsRender();
   showAuthScreen("You are signed out. Sign in again or continue as guest.");
   updateAuthUi();
   renderSyncStatus();

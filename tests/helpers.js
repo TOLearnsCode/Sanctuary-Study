@@ -112,6 +112,7 @@ function buildSandbox(overrides = {}) {
     location: { hostname: "localhost", href: "http://localhost/" },
     matchMedia: () => ({ matches: false, addEventListener() {} }),
     requestAnimationFrame: () => 0,
+    cancelAnimationFrame: () => {},
     Audio: function() {
       return {
         play() { return Promise.resolve(); },
@@ -119,6 +120,7 @@ function buildSandbox(overrides = {}) {
         load() {},
         addEventListener() {},
         removeEventListener() {},
+        removeAttribute() {},
         src: "",
         volume: 1,
         loop: false,

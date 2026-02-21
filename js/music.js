@@ -166,7 +166,7 @@ function saveMusicDockPosition() {
 }
 
 function loadMusicDockPosition() {
-  const raw = localStorage.getItem(MUSIC_DOCK_POSITION_KEY);
+  const raw = safeGetItem(MUSIC_DOCK_POSITION_KEY);
   if (!raw) {
     return null;
   }

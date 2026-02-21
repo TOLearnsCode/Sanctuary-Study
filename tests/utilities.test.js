@@ -131,4 +131,46 @@ describe("Utility functions (app.js)", () => {
       expect(isNaN(date.getTime())).toBe(true);
     });
   });
+
+  describe("safeGetItem", () => {
+    it("returns the stored value for a known key", () => {
+      ctx.localStorage.setItem("test-key", "hello");
+      expect(ctx.safeGetItem("test-key")).toBe("hello");
+      ctx.localStorage.removeItem("test-key");
+    });
+
+    it("returns null for a missing key", () => {
+      expect(ctx.safeGetItem("nonexistent-key")).toBeNull();
+    });
+
+    it("returns null when localStorage.getItem throws", () => {
+      const original = ctx.localStorage.getItem;
+      ctx.localStorage.getItem = () => { throw new Error("SecurityError"); };
+      expect(ctx.safeGetItem("any-key")).toBeNull();
+      ctx.localStorage.getItem = original;
+    });
+  });
+
+  describe("cancelPendingAnalyticsRender", () => {
+    it("clears the pending rAF id", () => {
+      ctx.renderAnalyticsPending = 42;
+      ctx.cancelPendingAnalyticsRender();
+      expect(ctx.renderAnalyticsPending).toBeNull();
+    });
+
+    it("is safe to call when nothing is pending", () => {
+      ctx.renderAnalyticsPending = null;
+      expect(() => ctx.cancelPendingAnalyticsRender()).not.toThrow();
+      expect(ctx.renderAnalyticsPending).toBeNull();
+    });
+  });
+
+  describe("getActiveSessionTag", () => {
+    it("caps custom tag length at 50 characters", () => {
+      ctx.sessionTagSelect = { value: "Custom" };
+      ctx.customTagInput = { value: "a".repeat(100) };
+      const tag = ctx.getActiveSessionTag();
+      expect(tag.length).toBe(50);
+    });
+  });
 });

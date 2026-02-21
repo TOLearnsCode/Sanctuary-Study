@@ -36,7 +36,7 @@ SESSION NOTES MODULE
 Stores free-form notes and checklist items for study sessions.
 */
 function loadSessionNotesState() {
-  const raw = localStorage.getItem(SESSION_NOTES_KEY);
+  const raw = safeGetItem(SESSION_NOTES_KEY);
   if (!raw) {
     return { text: "", todos: [] };
   }
@@ -178,7 +178,7 @@ FAVOURITES MODULE
 Simple helpers to keep localStorage logic clear.
 */
 function loadFavourites() {
-  const raw = localStorage.getItem(FAVOURITES_KEY);
+  const raw = safeGetItem(FAVOURITES_KEY);
   if (!raw) {
     return [];
   }
@@ -328,7 +328,7 @@ async function loadScriptureOfTheDay() {
 }
 
 function loadDailyScriptureCache() {
-  const raw = localStorage.getItem(DAILY_SCRIPTURE_CACHE_KEY);
+  const raw = safeGetItem(DAILY_SCRIPTURE_CACHE_KEY);
   if (!raw) {
     return null;
   }
@@ -346,7 +346,7 @@ function saveDailyScriptureCache(data) {
 }
 
 function loadDailyScriptureHistory() {
-  const raw = localStorage.getItem(DAILY_SCRIPTURE_HISTORY_KEY);
+  const raw = safeGetItem(DAILY_SCRIPTURE_HISTORY_KEY);
   if (!raw) {
     return [];
   }
@@ -558,8 +558,8 @@ function sanitizeMusicPresetId(value) {
 }
 
 function loadSettings() {
-  const legacyThemePref = localStorage.getItem(THEME_PREF_KEY);
-  const raw = localStorage.getItem(SETTINGS_KEY);
+  const legacyThemePref = safeGetItem(THEME_PREF_KEY);
+  const raw = safeGetItem(SETTINGS_KEY);
   if (!raw) {
     return {
       ...defaultSettings,
@@ -911,7 +911,20 @@ function tryPlayAudioUrl(url) {
   return new Promise((resolve) => {
     const audio = new Audio(url);
     audio.volume = 0.35;
-    audio.play().then(() => resolve(true)).catch(() => resolve(false));
+
+    var cleanup = function () {
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+    };
+
+    audio.addEventListener("ended", cleanup, { once: true });
+    audio.addEventListener("error", cleanup, { once: true });
+
+    audio.play().then(() => resolve(true)).catch(() => {
+      cleanup();
+      resolve(false);
+    });
   });
 }
 
@@ -991,6 +1004,20 @@ function safeSetItem(key, value) {
   } catch (error) {
     console.warn("localStorage write failed (storage may be full):", key, error);
     return false;
+  }
+}
+
+
+/**
+ * Safe localStorage.getItem wrapper that catches errors (e.g. Safari
+ * private mode, SecurityError). Returns null when storage is unavailable.
+ */
+function safeGetItem(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch (error) {
+    console.warn("localStorage read failed:", key, error);
+    return null;
   }
 }
 

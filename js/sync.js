@@ -362,7 +362,7 @@ function applyUserDocSnapshot(data) {
 
     const resolvedRemoteTheme = resolveThemePreference(
       preferences.theme,
-      localStorage.getItem(THEME_PREF_KEY),
+      safeGetItem(THEME_PREF_KEY),
       settings.theme,
       defaultSettings.theme
     );
@@ -530,7 +530,7 @@ async function hydrateAnalyticsFromCloud(uid) {
   setSyncIndicatorState("syncing");
   cloudSyncHydrating = true;
   try {
-    const lastUid = String(localStorage.getItem(LAST_SYNCED_UID_KEY) || "").trim();
+    const lastUid = String(safeGetItem(LAST_SYNCED_UID_KEY) || "").trim();
     const allowLocalMerge = !lastUid || lastUid === uid;
     const localPayload = buildLocalAnalyticsPayload(allowLocalMerge);
 

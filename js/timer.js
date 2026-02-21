@@ -297,7 +297,7 @@ function setTimerPreset(studyMinutes, breakMinutes) {
 function getActiveSessionTag() {
   const selected = sessionTagSelect.value;
   if (selected === "Custom") {
-    const custom = String(customTagInput.value || "").trim();
+    const custom = String(customTagInput.value || "").trim().slice(0, 50);
     return custom || "Custom";
   }
 
@@ -330,7 +330,7 @@ async function beginStudyExperience() {
     prepareFocusModeBeforeSessionStart();
     const focus = await buildFocusForTheme(selectedStudyTheme);
     setCurrentFocus(focus);
-    if (musicDock.classList.contains("hidden")) {
+    if (musicDock && musicDock.classList.contains("hidden")) {
       startBackgroundMusicFromSavedPreference(false);
     }
 

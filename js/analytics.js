@@ -15,6 +15,13 @@ function scheduleRenderAnalytics() {
   });
 }
 
+function cancelPendingAnalyticsRender() {
+  if (renderAnalyticsPending) {
+    cancelAnimationFrame(renderAnalyticsPending);
+    renderAnalyticsPending = null;
+  }
+}
+
 
 function getAllAchievementDefinitions() {
   return [...STREAK_ACHIEVEMENTS, ...RARE_ACHIEVEMENTS];
@@ -781,7 +788,7 @@ function unlockStreakAchievements(currentStreak, announceExactMatch) {
 }
 
 function loadUnlockedAchievements() {
-  const raw = localStorage.getItem(ACHIEVEMENTS_KEY);
+  const raw = safeGetItem(ACHIEVEMENTS_KEY);
   if (!raw) {
     return {};
   }
@@ -891,7 +898,7 @@ function formatDate(date) {
 }
 
 function loadStudyLog() {
-  const raw = localStorage.getItem(STUDY_LOG_KEY);
+  const raw = safeGetItem(STUDY_LOG_KEY);
   if (!raw) {
     return {};
   }
@@ -912,7 +919,7 @@ function saveStudyLog(log, options = {}) {
 }
 
 function loadTagLog() {
-  const raw = localStorage.getItem(TAG_LOG_KEY);
+  const raw = safeGetItem(TAG_LOG_KEY);
   if (!raw) {
     return {};
   }
@@ -933,7 +940,7 @@ function saveTagLog(tagLog, options = {}) {
 }
 
 function loadSessionHistory() {
-  const raw = localStorage.getItem(SESSION_HISTORY_KEY);
+  const raw = safeGetItem(SESSION_HISTORY_KEY);
   if (!raw) {
     return [];
   }

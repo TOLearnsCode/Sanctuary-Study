@@ -110,7 +110,8 @@ export default [
         saveSettings: "readonly",
         loadStudyLog: "readonly",
         loadTagLog: "readonly",
-        loadSessionHistory: "readonly"
+        loadSessionHistory: "readonly",
+        safeGetItem: "readonly"
       }
     },
     rules: {
