@@ -986,6 +986,7 @@ function wireEvents() {
   });
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
+      catchUpTimerIfNeeded();
       loadScriptureOfTheDay();
       void refreshAnalyticsFromCloud("visibility");
       maybeSendStudyReminder();

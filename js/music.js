@@ -581,7 +581,7 @@ function playQueuedYouTubeRequest() {
     }
 
     const watchUrl = buildYouTubeWatchUrl(request.videoId);
-    musicDockLabel.textContent = `${request.autoplay ? "Now playing" : "Ready"}: ${shortenUrl(watchUrl)}`;
+    musicDockLabel.textContent = `${request.autoplay ? "Now playing" : "Ready"}: ${watchUrl ? shortenUrl(watchUrl) : "YouTube video"}`;
   } catch (error) {
     pendingYouTubeRequest = request;
     musicDockLabel.textContent = "Could not start this YouTube video. Try Open on YouTube.";
@@ -708,6 +708,9 @@ function extractYouTubeVideoId(url) {
 }
 
 function buildYouTubeWatchUrl(videoId) {
+  if (!videoId || !/^[a-zA-Z0-9_-]{1,20}$/.test(videoId)) {
+    return null;
+  }
   return `https://www.youtube.com/watch?v=${videoId}`;
 }
 

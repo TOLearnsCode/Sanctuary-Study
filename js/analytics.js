@@ -810,11 +810,12 @@ function countStudyDays(log) {
 }
 
 function calculateStreak(log) {
+  var MAX_STREAK_LOOKBACK = 3650;
   let streak = 0;
   const cursor = new Date();
   cursor.setHours(0, 0, 0, 0);
 
-  while (true) {
+  while (streak < MAX_STREAK_LOOKBACK) {
     const key = getDateKey(cursor);
     if (Number(log[key] || 0) > 0) {
       streak += 1;

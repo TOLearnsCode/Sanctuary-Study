@@ -468,7 +468,7 @@ function onSettingsSubmit(event) {
     focusCommitMinutes: clampFocusCommitMinutes(focusCommitMinutesSetting.value),
     blockedSites: sanitizeBlockedSites(blockedSitesSetting.value),
     alarmMode: sanitizeAlarmMode(alarmModeSetting.value),
-    customAlarmUrl: String(customAlarmUrlSetting.value || "").trim(),
+    customAlarmUrl: sanitizeAudioUrl(customAlarmUrlSetting.value),
     youtubeMusicUrl: String(youtubeMusicUrlSetting.value || "").trim(),
     musicPresetId: sanitizeMusicPresetId(lofiPresetSelect.value)
   };
@@ -587,7 +587,7 @@ function loadSettings() {
       focusCommitMinutes: clampFocusCommitMinutes(parsed.focusCommitMinutes),
       blockedSites: sanitizeBlockedSites(parsed.blockedSites),
       alarmMode: sanitizeAlarmMode(parsed.alarmMode),
-      customAlarmUrl: String(parsed.customAlarmUrl || "").trim(),
+      customAlarmUrl: sanitizeAudioUrl(parsed.customAlarmUrl),
       youtubeMusicUrl: parsedUrl,
       musicPresetId: parsedPreset || (parsedUrl ? "" : defaultSettings.musicPresetId)
     };
@@ -904,11 +904,37 @@ async function playAlarmSound() {
 }
 
 function tryPlayAudioUrl(url) {
+  if (!isSafeAudioUrl(url)) {
+    return Promise.resolve(false);
+  }
+
   return new Promise((resolve) => {
     const audio = new Audio(url);
     audio.volume = 0.35;
     audio.play().then(() => resolve(true)).catch(() => resolve(false));
   });
+}
+
+function isSafeAudioUrl(url) {
+  if (!url || typeof url !== "string") {
+    return false;
+  }
+
+  try {
+    var parsed = new URL(url);
+    var protocol = parsed.protocol.toLowerCase();
+    return protocol === "https:" || protocol === "http:" || protocol === "data:";
+  } catch (error) {
+    return false;
+  }
+}
+
+function sanitizeAudioUrl(value) {
+  var trimmed = String(value || "").trim();
+  if (!trimmed) {
+    return "";
+  }
+  return isSafeAudioUrl(trimmed) ? trimmed : "";
 }
 
 function playToneSequence(frequencies, gapSeconds, noteDuration, volume) {

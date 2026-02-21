@@ -310,7 +310,7 @@ function buildUserDocPayload(reason = "update") {
     focusCommitMinutes: clampFocusCommitMinutes(settings.focusCommitMinutes),
     blockedSites: sanitizeBlockedSites(settings.blockedSites),
     alarmMode: sanitizeAlarmMode(settings.alarmMode),
-    customAlarmUrl: String(settings.customAlarmUrl || "").trim(),
+    customAlarmUrl: sanitizeAudioUrl(settings.customAlarmUrl),
     youtubeMusicUrl: String(settings.youtubeMusicUrl || "").trim(),
     musicPresetId: sanitizeMusicPresetId(settings.musicPresetId)
   };
@@ -381,7 +381,7 @@ function applyUserDocSnapshot(data) {
       focusCommitMinutes: clampFocusCommitMinutes(preferences.focusCommitMinutes),
       blockedSites: sanitizeBlockedSites(preferences.blockedSites),
       alarmMode: sanitizeAlarmMode(preferences.alarmMode),
-      customAlarmUrl: String(preferences.customAlarmUrl || "").trim(),
+      customAlarmUrl: sanitizeAudioUrl(preferences.customAlarmUrl),
       youtubeMusicUrl: parsedMusicUrl,
       musicPresetId: parsedPresetId || (parsedMusicUrl ? "" : defaultSettings.musicPresetId)
     };

@@ -705,17 +705,16 @@ async function onSignUpClick() {
   authRequestInProgress = true;
 
   try {
-    console.log("Signing up user...");
     const credential = await withTimeout(
       signUpWithEmailPassword(input.email, input.password),
       AUTH_REQUEST_TIMEOUT_MS
     );
-    console.log("User created:", credential.user.uid, credential.user.email);
+    console.log("User created.");
 
     // Send verification first so the email dispatch starts as early as possible.
     const verificationResult = await sendVerificationEmailIfPossible(credential.user, { skipCooldown: true });
     if (verificationResult.ok) {
-      console.log("Verification email sent:", credential.user.email);
+      console.log("Verification email sent.");
     } else {
       console.error("Verification email send failed:", verificationResult);
     }
@@ -782,7 +781,7 @@ async function resendVerificationEmail() {
     throw new Error(getVerificationSendMessage(verificationResult));
   }
 
-  console.log("Verification email resent:", user.email || "(unknown email)");
+  console.log("Verification email resent.");
   return verificationResult;
 }
 
@@ -1026,14 +1025,13 @@ function initializeAuthBridge() {
     try {
       const userDocRef = doc(db, "users", user.uid);
       const analyticsDocRef = doc(db, "users", user.uid, "private", "appData");
+
+      // Attempt Firestore cleanup first but do not block account deletion on failure.
       const deleteResults = await Promise.allSettled([
         deleteDoc(analyticsDocRef),
         deleteDoc(userDocRef)
       ]);
-      const hasDeleteFailure = deleteResults.some((result) => result.status === "rejected");
-      if (hasDeleteFailure) {
-        throw { code: "app/data-delete-failed" };
-      }
+      const hasDataDeleteFailure = deleteResults.some((result) => result.status === "rejected");
 
       await deleteUser(user);
       removeStoredProfile(user.uid);
@@ -1041,7 +1039,10 @@ function initializeAuthBridge() {
       clearLocalAppData();
       emitAuthChanged({ mode: "signed_out" });
       window.dispatchEvent(new CustomEvent("sanctuary:delete-account-result", {
-        detail: { ok: true }
+        detail: {
+          ok: true,
+          dataCleanupIncomplete: hasDataDeleteFailure
+        }
       }));
     } catch (error) {
       window.dispatchEvent(new CustomEvent("sanctuary:delete-account-result", {

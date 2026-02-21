@@ -433,6 +433,33 @@ function startTimer() {
   }, 1000);
 }
 
+function catchUpTimerIfNeeded() {
+  if (!timerState.running || !timerState.lastTickTime) {
+    return;
+  }
+
+  var now = Date.now();
+  var elapsedSeconds = Math.round((now - timerState.lastTickTime) / 1000);
+  if (elapsedSeconds <= 0) {
+    return;
+  }
+
+  timerState.lastTickTime = now;
+  timerState.remainingSeconds = Math.max(0, timerState.remainingSeconds - elapsedSeconds);
+  if (timerState.phase === "study" && focusCommitRemainingSeconds > 0) {
+    focusCommitRemainingSeconds = Math.max(0, focusCommitRemainingSeconds - elapsedSeconds);
+    if (focusCommitRemainingSeconds === 0) {
+      showToastMessage("Lock-in commitment completed. You can now leave strict focus.");
+    }
+    updateFocusLockStatus();
+  }
+  updateTimerDisplay();
+
+  if (timerState.remainingSeconds <= 0) {
+    onBlockComplete();
+  }
+}
+
 function pauseTimer() {
   stopTimerInterval();
   timerState.running = false;
@@ -540,6 +567,8 @@ function onBlockComplete() {
   timerState.running = false;
   syncFocusModeAfterTimerStateChange();
 
+  var completedPhase = timerState.phase;
+
   if (timerState.phase === "study") {
     const blockMinutes = timerState.activeBlockSeconds / 60;
     const activeTag = getActiveSessionTag();
@@ -569,6 +598,7 @@ function onBlockComplete() {
     timerState.phase = "break";
     setUpBlock("break");
   } else {
+    playAlarmSound();
     timerState.phase = "study";
     setUpBlock("study");
   }
@@ -578,7 +608,12 @@ function onBlockComplete() {
   updateTimerButtons();
   updateSessionStatus();
   syncFocusModeAfterTimerStateChange();
-  startTimer();
+
+  if (completedPhase === "break") {
+    showToastMessage("Break complete. Press Start when you are ready for the next study block.");
+  } else {
+    startTimer();
+  }
 }
 
 function showMotivationToast(message) {
