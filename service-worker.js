@@ -1,4 +1,4 @@
-const ASSET_VERSION = "20260221-ios-fix2";
+const ASSET_VERSION = "20260221-mobile-ui2";
 const CACHE_NAME = `sanctuary-study-core-${ASSET_VERSION}`;
 const withVersion = (path) => `${path}?v=${ASSET_VERSION}`;
 const CORE_ASSETS = [

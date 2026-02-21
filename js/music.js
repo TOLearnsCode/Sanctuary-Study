@@ -529,6 +529,10 @@ function syncMusicPlayPauseButton() {
   musicDockPlayPauseBtn.setAttribute("aria-label", label);
   musicDockPlayPauseBtn.title = label;
   updateDockButtonIcon(musicDockPlayPauseBtn, isPlaying ? "pause" : "play");
+
+  if (typeof window.updateMusicPopupUi === "function") {
+    window.updateMusicPopupUi();
+  }
 }
 
 function updateDockButtonIcon(button, activeIconName) {

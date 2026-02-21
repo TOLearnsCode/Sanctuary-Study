@@ -16,6 +16,8 @@ const sections = {
 
 const homeSection = document.getElementById("homeSection");
 const navButtons = Array.from(document.querySelectorAll(".nav-btn"));
+const mobileNavToggle = document.getElementById("mobileNavToggle");
+const mobileNavPanel = document.getElementById("mobileNavPanel");
 const logoHomeBtn = document.getElementById("logoHomeBtn");
 const homeNavBtn = document.getElementById("homeNavBtn");
 const themeToggleBtn = document.getElementById("theme-toggle");
@@ -185,6 +187,13 @@ const musicFrameWrap = document.getElementById("musicFrameWrap");
 const musicFrame = document.getElementById("musicFrame");
 const audioPlayerWrap = document.getElementById("audioPlayerWrap");
 const bgAudio = document.getElementById("bg-audio");
+const musicFabBtn = document.getElementById("musicFabBtn");
+const musicPopupBackdrop = document.getElementById("musicPopupBackdrop");
+const musicPopupCard = document.getElementById("musicPopupCard");
+const musicPopupCloseBtn = document.getElementById("musicPopupCloseBtn");
+const musicPopupPlayPauseBtn = document.getElementById("musicPopupPlayPauseBtn");
+const musicPopupVolume = document.getElementById("musicPopupVolume");
+const musicPopupStatus = document.getElementById("musicPopupStatus");
 
 let settings = loadSettings();
 let alarmSoundUrl = null;
@@ -309,6 +318,7 @@ function init() {
     initializeMusicDockDragging();
     initializeMusicDock();
     syncMusicPlayPauseButton();
+    updateMusicPopupUi();
   } catch (error) {
     console.warn("Music dock initialization failed:", error);
   }
@@ -748,6 +758,7 @@ function showAuthScreen(message = "") {
   navButtons.forEach((button) => {
     button.classList.remove("active");
   });
+  setMobileNavOpen(false);
   setAuthMessage(message, false);
   updateMiniTimerWidget();
   updateAuthUi();
@@ -755,13 +766,14 @@ function showAuthScreen(message = "") {
 }
 
 function updateAuthUi() {
-  const analyticsButton = navButtons.find((button) => button.dataset.section === "analytics");
   const analyticsLocked = !canUseAnalyticsFeatures();
-  if (analyticsButton) {
-    analyticsButton.classList.toggle("disabled", analyticsLocked);
-    analyticsButton.disabled = analyticsLocked;
-    analyticsButton.setAttribute("aria-disabled", String(analyticsLocked));
-  }
+  navButtons
+    .filter((button) => button.dataset.section === "analytics")
+    .forEach((button) => {
+      button.classList.toggle("disabled", analyticsLocked);
+      button.disabled = analyticsLocked;
+      button.setAttribute("aria-disabled", String(analyticsLocked));
+    });
 
   const isSignedIn = authMode === "user";
   authActionBtn.classList.toggle("hidden", isSignedIn);
@@ -994,11 +1006,134 @@ function listen(el, event, handler) {
   }
 }
 
+function setMobileNavOpen(open) {
+  if (!mobileNavToggle || !mobileNavPanel) {
+    return;
+  }
+
+  const shouldOpen = Boolean(open);
+  mobileNavPanel.classList.toggle("hidden", !shouldOpen);
+  mobileNavToggle.setAttribute("aria-expanded", String(shouldOpen));
+  mobileNavToggle.setAttribute("aria-label", shouldOpen ? "Close navigation menu" : "Open navigation menu");
+}
+
+function isMusicPlayingNow() {
+  const isAudioPlaying = Boolean(bgAudio && bgAudio.src && !bgAudio.paused);
+  let isYouTubePlaying = false;
+
+  if (youtubePlayer && window.YT && youtubePlayer.getPlayerState) {
+    try {
+      isYouTubePlaying = youtubePlayer.getPlayerState() === window.YT.PlayerState.PLAYING;
+    } catch (error) {
+      isYouTubePlaying = false;
+    }
+  }
+
+  return isAudioPlaying || isYouTubePlaying;
+}
+
+function getMusicPopupStatusText() {
+  if (isMusicPlayingNow()) {
+    return "Now playing.";
+  }
+
+  if (activeAudioSourceType === "audio" && bgAudio && bgAudio.src) {
+    return "Audio is ready. Press Play to continue.";
+  }
+
+  if (activeAudioSourceType === "youtube" && (youtubePlayer || pendingYouTubeRequest)) {
+    return "YouTube source is ready. Press Play to continue.";
+  }
+
+  return "Select and load music in Settings, then press Play.";
+}
+
+function updateMusicPopupUi() {
+  if (!musicPopupPlayPauseBtn || !musicPopupStatus) {
+    return;
+  }
+
+  const isPlaying = isMusicPlayingNow();
+  musicPopupPlayPauseBtn.textContent = isPlaying ? "Pause" : "Play";
+  musicPopupStatus.textContent = getMusicPopupStatusText();
+
+  if (musicPopupVolume && bgAudio) {
+    musicPopupVolume.value = String(Math.round((Number(bgAudio.volume) || 0) * 100));
+  }
+}
+
+if (typeof window !== "undefined") {
+  window.updateMusicPopupUi = updateMusicPopupUi;
+}
+
+function setMusicPopupOpen(open) {
+  if (!musicPopupBackdrop || !musicFabBtn) {
+    return;
+  }
+
+  const shouldOpen = Boolean(open);
+  musicPopupBackdrop.classList.toggle("hidden", !shouldOpen);
+  musicPopupBackdrop.setAttribute("aria-hidden", String(!shouldOpen));
+  musicFabBtn.setAttribute("aria-expanded", String(shouldOpen));
+  document.body.classList.toggle("music-popup-open", shouldOpen);
+
+  if (shouldOpen) {
+    updateMusicPopupUi();
+  }
+}
+
+function toggleMusicPopup() {
+  if (!musicPopupBackdrop) {
+    return;
+  }
+  const shouldOpen = musicPopupBackdrop.classList.contains("hidden");
+  setMusicPopupOpen(shouldOpen);
+}
+
+function handleMusicPopupPlayPause() {
+  if (isMusicPlayingNow()) {
+    toggleDockMusicPlayback();
+    window.setTimeout(updateMusicPopupUi, 80);
+    return;
+  }
+
+  playBackgroundMusicFromUserGesture();
+  window.setTimeout(updateMusicPopupUi, 120);
+}
+
 function wireEvents() {
   navButtons.forEach((button) => {
     button.addEventListener("click", () => {
       switchSection(button.dataset.section);
+      setMobileNavOpen(false);
     });
+  });
+
+  listen(mobileNavToggle, "click", () => {
+    if (!mobileNavPanel || !mobileNavToggle) {
+      return;
+    }
+    const shouldOpen = mobileNavPanel.classList.contains("hidden");
+    setMobileNavOpen(shouldOpen);
+  });
+  listen(mobileNavPanel, "click", (event) => {
+    const navButton = event.target.closest(".nav-btn");
+    if (navButton) {
+      setMobileNavOpen(false);
+    }
+  });
+  document.addEventListener("click", (event) => {
+    if (!mobileNavPanel || !mobileNavToggle) {
+      return;
+    }
+    if (mobileNavPanel.classList.contains("hidden")) {
+      return;
+    }
+    const clickedInsidePanel = mobileNavPanel.contains(event.target);
+    const clickedToggle = mobileNavToggle.contains(event.target);
+    if (!clickedInsidePanel && !clickedToggle) {
+      setMobileNavOpen(false);
+    }
   });
 
   listen(homeNavBtn, "click", () => {
@@ -1047,6 +1182,10 @@ function wireEvents() {
     saveSettings(settings);
   });
   window.addEventListener("resize", () => {
+    if (window.innerWidth > 767) {
+      setMobileNavOpen(false);
+    }
+
     if (analyticsResizeTimeoutId) {
       window.clearTimeout(analyticsResizeTimeoutId);
     }
@@ -1190,9 +1329,11 @@ function wireEvents() {
   // Only this explicit user gesture starts music playback.
   listen(playMusicBtn, "click", () => {
     playBackgroundMusicFromUserGesture();
+    updateMusicPopupUi();
   });
   listen(stopMusicBtn, "click", () => {
     stopBackgroundMusic();
+    updateMusicPopupUi();
   });
   listen(lofiPresetSelect, "change", () => {
     if (lofiPresetSelect.value) {
@@ -1220,6 +1361,7 @@ function wireEvents() {
   });
   listen(musicDockCloseBtn, "click", () => {
     stopBackgroundMusic();
+    updateMusicPopupUi();
   });
   listen(musicOpenExternalBtn, "click", () => {
     const opened = openBackgroundMusicExternally();
@@ -1230,16 +1372,44 @@ function wireEvents() {
   listen(bgAudio, "error", () => {
     showToastMessage("This audio source could not be played. Try another preset or a downloaded file.");
     musicDockLabel.textContent = "Audio source failed to load.";
+    updateMusicPopupUi();
   });
   listen(bgAudio, "ended", () => {
     playNextDownloadedTrack();
+    updateMusicPopupUi();
   });
   listen(bgAudio, "play", () => {
     activeAudioSourceType = "audio";
     syncMusicPlayPauseButton();
+    updateMusicPopupUi();
   });
   listen(bgAudio, "pause", () => {
     syncMusicPlayPauseButton();
+    updateMusicPopupUi();
+  });
+
+  listen(musicFabBtn, "click", () => {
+    toggleMusicPopup();
+  });
+  listen(musicPopupCloseBtn, "click", () => {
+    setMusicPopupOpen(false);
+  });
+  listen(musicPopupBackdrop, "click", (event) => {
+    if (event.target === musicPopupBackdrop) {
+      setMusicPopupOpen(false);
+    }
+  });
+  listen(musicPopupPlayPauseBtn, "click", () => {
+    handleMusicPopupPlayPause();
+  });
+  listen(musicPopupVolume, "input", () => {
+    if (!bgAudio) {
+      return;
+    }
+    const volumePercent = Number(musicPopupVolume.value);
+    const clamped = Math.min(100, Math.max(0, Number.isFinite(volumePercent) ? volumePercent : 30));
+    bgAudio.volume = clamped / 100;
+    updateMusicPopupUi();
   });
 
   listen(favouritesList, "click", (event) => {
@@ -1316,6 +1486,16 @@ function wireEvents() {
     });
   }
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && musicPopupBackdrop && !musicPopupBackdrop.classList.contains("hidden")) {
+      setMusicPopupOpen(false);
+      return;
+    }
+
+    if (event.key === "Escape" && mobileNavPanel && !mobileNavPanel.classList.contains("hidden")) {
+      setMobileNavOpen(false);
+      return;
+    }
+
     if (event.key === "Escape" && !cancelSessionModal.classList.contains("hidden")) {
       closeCancelSessionModal();
       return;
@@ -1355,6 +1535,7 @@ function switchSection(sectionName, options = {}) {
   authSection.classList.add("hidden");
   homeSection.classList.add("hidden");
   currentView = sectionName;
+  setMobileNavOpen(false);
 
   Object.entries(sections).forEach(([key, section]) => {
     section.classList.toggle("hidden", key !== sectionName);
@@ -1405,6 +1586,7 @@ function showHomeView(options = {}) {
   navButtons.forEach((button) => {
     button.classList.remove("active");
   });
+  setMobileNavOpen(false);
 
   updateHomeTypeEffect(options.forceStopTypeEffect === true);
   // Re-check daily scripture whenever home opens; cached result prevents extra work.
