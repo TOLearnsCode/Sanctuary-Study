@@ -1,5 +1,5 @@
-const CACHE_NAME = "sanctuary-study-core-v7";
-const ASSET_VERSION = "20260221-theme-refresh1";
+const ASSET_VERSION = "20260221-mobile-fix1";
+const CACHE_NAME = `sanctuary-study-core-${ASSET_VERSION}`;
 const withVersion = (path) => `${path}?v=${ASSET_VERSION}`;
 const CORE_ASSETS = [
   "/",
@@ -102,10 +102,16 @@ self.addEventListener("fetch", (event) => {
           if (cachedResponse) {
             return cachedResponse;
           }
+          if (isAppShellRequest) {
+            const fallbackByPath = await caches.match(requestUrl.pathname);
+            if (fallbackByPath) {
+              return fallbackByPath;
+            }
+          }
           if (event.request.mode === "navigate") {
             return caches.match("/index.html");
           }
-          return caches.match("/");
+          return Response.error();
         })
     );
     return;
@@ -133,7 +139,7 @@ self.addEventListener("fetch", (event) => {
           if (event.request.mode === "navigate") {
             return caches.match("/index.html");
           }
-          return caches.match("/");
+          return Response.error();
         });
     })
   );

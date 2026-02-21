@@ -223,6 +223,10 @@ function maybePromptFocusCommitExit(action) {
 }
 
 function populateLofiPresetSelect() {
+  if (!lofiPresetSelect) {
+    return;
+  }
+
   lofiPresetSelect.innerHTML = "<option value=\"\">None</option>";
 
   BUILTIN_MUSIC_PRESETS.forEach((preset) => {

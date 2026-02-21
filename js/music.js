@@ -1,6 +1,24 @@
 // Music, YouTube API, audio playback, and dock management for Sanctuary Study.
 // Depends on globals from js/constants.js and app.js.
 
+function hasMusicDockUi() {
+  return Boolean(
+    musicDock
+    && musicDockHead
+    && musicDockMinBtn
+    && musicDockPlayPauseBtn
+    && musicDockLabel
+    && musicOpenExternalBtn
+    && musicFrameWrap
+    && audioPlayerWrap
+    && musicFrame
+  );
+}
+
+function hasMusicSettingsInputs() {
+  return Boolean(localMusicFileInput && lofiPresetSelect && youtubeMusicUrlSetting);
+}
+
 function initializeYouTubeApiBridge() {
   const readyNow = window.YT && typeof window.YT.Player === "function";
   if (readyNow) {
@@ -51,6 +69,10 @@ function ensureYouTubeIframeApiLoaded() {
 }
 
 function initializeMusicDockDragging() {
+  if (!hasMusicDockUi()) {
+    return;
+  }
+
   const savedPosition = loadMusicDockPosition();
   if (savedPosition) {
     setMusicDockPosition(savedPosition.left, savedPosition.top);
@@ -67,6 +89,10 @@ function initializeMusicDockDragging() {
 }
 
 function onMusicDockPointerDown(event) {
+  if (!hasMusicDockUi()) {
+    return;
+  }
+
   if (event.button !== 0) {
     return;
   }
@@ -93,6 +119,10 @@ function onMusicDockPointerDown(event) {
 }
 
 function onMusicDockPointerMove(event) {
+  if (!musicDock) {
+    return;
+  }
+
   if (!dockDragState || event.pointerId !== dockDragState.pointerId) {
     return;
   }
@@ -107,6 +137,11 @@ function onMusicDockPointerMove(event) {
 }
 
 function onMusicDockPointerUp(event) {
+  if (!musicDock || !musicDockHead) {
+    dockDragState = null;
+    return;
+  }
+
   if (!dockDragState || event.pointerId !== dockDragState.pointerId) {
     return;
   }
@@ -126,6 +161,10 @@ function onMusicDockPointerUp(event) {
 }
 
 function setMusicDockPosition(left, top) {
+  if (!musicDock) {
+    return;
+  }
+
   const clampedLeft = Math.max(8, left);
   const clampedTop = Math.max(8, top);
 
@@ -136,6 +175,10 @@ function setMusicDockPosition(left, top) {
 }
 
 function clampMusicDockToViewport() {
+  if (!musicDock) {
+    return;
+  }
+
   if (window.innerWidth <= 430) {
     musicDock.style.left = "";
     musicDock.style.top = "";
@@ -155,6 +198,10 @@ function clampMusicDockToViewport() {
 }
 
 function saveMusicDockPosition() {
+  if (!musicDock) {
+    return;
+  }
+
   if (!musicDock.style.left || !musicDock.style.top) {
     return;
   }
@@ -183,6 +230,10 @@ function loadMusicDockPosition() {
 }
 
 function initializeMusicDock() {
+  if (!hasMusicDockUi()) {
+    return;
+  }
+
   setMusicDockMinimized(false);
   musicFrameWrap.classList.add("hidden");
   audioPlayerWrap.classList.add("hidden");
@@ -214,6 +265,10 @@ function initializeMusicDock() {
 }
 
 function setMusicDockMinimized(minimized) {
+  if (!musicDock || !musicDockMinBtn) {
+    return;
+  }
+
   musicDockMinimized = minimized;
   musicDock.classList.toggle("minimized", minimized);
   const label = minimized ? "Expand music player" : "Minimize music player";
@@ -226,6 +281,11 @@ function setMusicDockMinimized(minimized) {
 }
 
 function loadBackgroundMusicFromSettings() {
+  if (!hasMusicSettingsInputs()) {
+    showToastMessage("Music controls are unavailable right now.");
+    return;
+  }
+
   const localFile = localMusicFileInput.files && localMusicFileInput.files[0];
   const selectedPreset = getLofiPresetById(lofiPresetSelect.value);
   const enteredUrl = String(youtubeMusicUrlSetting.value || "").trim();
@@ -283,6 +343,10 @@ function loadBackgroundMusicFromSettings() {
 }
 
 function startBackgroundMusicFromSavedPreference(autoplay) {
+  if (!hasMusicDockUi()) {
+    return false;
+  }
+
   const preset = getLofiPresetById(settings.musicPresetId);
   if (preset) {
     if (preset.mode === "playlist") {
@@ -328,7 +392,7 @@ function createObjectUrlForLocalMusic(file) {
 }
 
 function startAudioFromUrl(url, label, options = {}) {
-  if (!url) {
+  if (!url || !bgAudio || !hasMusicDockUi()) {
     return false;
   }
 
@@ -367,6 +431,11 @@ function startAudioFromUrl(url, label, options = {}) {
 }
 
 function playBackgroundMusicFromUserGesture() {
+  if (!bgAudio) {
+    showToastMessage("Audio player is unavailable.");
+    return;
+  }
+
   // Browser policy-safe: play() is invoked only after a real click.
   // If nothing is loaded yet, prepare from saved settings first.
   if (!bgAudio.src && !youtubePlayer && !pendingYouTubeRequest) {
@@ -405,6 +474,10 @@ function playBackgroundMusicFromUserGesture() {
 }
 
 function toggleDockMusicPlayback() {
+  if (!bgAudio) {
+    return;
+  }
+
   if (activeAudioSourceType === "audio" && bgAudio.src) {
     if (bgAudio.paused) {
       playBackgroundMusicFromUserGesture();
@@ -437,6 +510,10 @@ function toggleDockMusicPlayback() {
 }
 
 function syncMusicPlayPauseButton() {
+  if (!musicDockPlayPauseBtn || !bgAudio) {
+    return;
+  }
+
   const isAudioPlaying = Boolean(bgAudio.src) && !bgAudio.paused;
   let isYouTubePlaying = false;
   if (youtubePlayer && window.YT && youtubePlayer.getPlayerState) {
@@ -455,6 +532,10 @@ function syncMusicPlayPauseButton() {
 }
 
 function updateDockButtonIcon(button, activeIconName) {
+  if (!button) {
+    return;
+  }
+
   const iconNodes = button.querySelectorAll("[data-icon]");
   iconNodes.forEach((iconNode) => {
     const shouldShow = iconNode.dataset.icon === activeIconName;
@@ -502,6 +583,10 @@ function playNextDownloadedTrack() {
 }
 
 function queueYouTubePlayRequest(videoId, autoplay) {
+  if (!hasMusicDockUi()) {
+    return;
+  }
+
   pendingYouTubeRequest = { videoId, autoplay };
   ensureYouTubeIframeApiLoaded();
 
@@ -525,6 +610,10 @@ function queueYouTubePlayRequest(videoId, autoplay) {
 }
 
 function createYouTubePlayer(videoId, autoplay) {
+  if (!musicFrame) {
+    return;
+  }
+
   if (!window.YT || typeof window.YT.Player !== "function") {
     return;
   }
@@ -606,13 +695,19 @@ function onYouTubePlayerError(event) {
   const blockedByEmbedPolicy = blockedCodes.has(event.data);
 
   if (blockedByEmbedPolicy) {
-    musicFrameWrap.classList.add("hidden");
-    musicDockLabel.textContent = "This video blocks embedding. Use Open on YouTube.";
+    if (musicFrameWrap) {
+      musicFrameWrap.classList.add("hidden");
+    }
+    if (musicDockLabel) {
+      musicDockLabel.textContent = "This video blocks embedding. Use Open on YouTube.";
+    }
     showToastMessage("YouTube blocked this embed for your browser. Use Open on YouTube.");
     return;
   }
 
-  musicDockLabel.textContent = "YouTube player error. Try another link.";
+  if (musicDockLabel) {
+    musicDockLabel.textContent = "YouTube player error. Try another link.";
+  }
   showToastMessage("YouTube player error. Try a different URL.");
 }
 
@@ -621,7 +716,9 @@ function destroyYouTubePlayer() {
   youtubeCurrentVideoId = null;
 
   if (!youtubePlayer) {
-    musicFrame.innerHTML = "";
+    if (musicFrame) {
+      musicFrame.innerHTML = "";
+    }
     return;
   }
 
@@ -633,10 +730,17 @@ function destroyYouTubePlayer() {
   }
 
   youtubePlayer = null;
-  musicFrame.innerHTML = "";
+  if (musicFrame) {
+    musicFrame.innerHTML = "";
+  }
 }
 
 function stopAudioPlayback() {
+  if (!bgAudio) {
+    activeAudioSourceType = null;
+    return;
+  }
+
   try {
     bgAudio.pause();
   } catch (error) {
@@ -645,7 +749,9 @@ function stopAudioPlayback() {
 
   bgAudio.removeAttribute("src");
   bgAudio.load();
-  audioPlayerWrap.classList.add("hidden");
+  if (audioPlayerWrap) {
+    audioPlayerWrap.classList.add("hidden");
+  }
 
   if (currentObjectAudioUrl) {
     URL.revokeObjectURL(currentObjectAudioUrl);
@@ -659,9 +765,15 @@ function stopBackgroundMusic() {
   downloadedPlaylistCursor = -1;
   destroyYouTubePlayer();
   stopAudioPlayback();
-  musicFrameWrap.classList.add("hidden");
-  musicDock.classList.add("hidden");
-  musicDockLabel.textContent = "";
+  if (musicFrameWrap) {
+    musicFrameWrap.classList.add("hidden");
+  }
+  if (musicDock) {
+    musicDock.classList.add("hidden");
+  }
+  if (musicDockLabel) {
+    musicDockLabel.textContent = "";
+  }
   setMusicDockMinimized(false);
   syncMusicPlayPauseButton();
 
@@ -723,6 +835,10 @@ function getYouTubeWatchUrl(url) {
 }
 
 function setExternalMusicButtonState(url) {
+  if (!musicOpenExternalBtn) {
+    return;
+  }
+
   if (!url) {
     musicOpenExternalBtn.classList.add("hidden");
     musicOpenExternalBtn.dataset.url = "";
@@ -740,7 +856,8 @@ function openBackgroundMusicExternally(providedUrl, silent = false, options = {}
   const fallbackUrl = preset
     ? (preset.url || downloadedPlaylistQueue[downloadedPlaylistCursor]?.url || DOWNLOADED_LOFI_TRACKS[0]?.url || "")
     : settings.youtubeMusicUrl;
-  const url = providedUrl || musicOpenExternalBtn.dataset.url || fallbackUrl;
+  const fallbackButtonUrl = musicOpenExternalBtn ? musicOpenExternalBtn.dataset.url : "";
+  const url = providedUrl || fallbackButtonUrl || fallbackUrl;
   if (!url) {
     if (!silent) {
       showToastMessage("Set a valid music source first.");
@@ -771,8 +888,12 @@ function openBackgroundMusicExternally(providedUrl, silent = false, options = {}
 
   if (opened) {
     musicPopupWindow = opened;
-    musicDock.classList.remove("hidden");
-    musicDockLabel.textContent = `Playing externally: ${shortenUrl(url)}`;
+    if (musicDock) {
+      musicDock.classList.remove("hidden");
+    }
+    if (musicDockLabel) {
+      musicDockLabel.textContent = `Playing externally: ${shortenUrl(url)}`;
+    }
     return true;
   }
 

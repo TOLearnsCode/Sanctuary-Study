@@ -15,12 +15,19 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./style.css?v=20260221-theme-refresh1" />
+  <link rel="stylesheet" href="./style.css?v=20260221-mobile-fix1" />
 </head>
 <body data-theme="dark">
   <script>
     (() => {
       const themes = ["dark", "light", "dawn", "ocean", "sage"];
+      const safeLocalStorageGet = (key) => {
+        try {
+          return localStorage.getItem(key);
+        } catch (error) {
+          return "";
+        }
+      };
       const normalizeTheme = (value) => {
         const raw = String(value || "").trim().toLowerCase();
         if (!raw) {
@@ -39,11 +46,11 @@
         return themes.includes(resolved) ? resolved : "";
       };
 
-      let initialTheme = normalizeTheme(localStorage.getItem("theme"));
+      let initialTheme = normalizeTheme(safeLocalStorageGet("theme"));
 
       if (!initialTheme) {
         try {
-          const parsed = JSON.parse(localStorage.getItem("sanctuaryStudySettingsV1") || "{}");
+          const parsed = JSON.parse(safeLocalStorageGet("sanctuaryStudySettingsV1") || "{}");
           initialTheme = normalizeTheme(parsed.theme);
         } catch (error) {
           initialTheme = "";
@@ -847,13 +854,13 @@
     </div>
   </div>
 
-  <script src="./js/constants.js?v=20260221-theme-refresh1"></script>
-  <script src="./js/sync.js?v=20260221-theme-refresh1"></script>
-  <script src="./js/analytics.js?v=20260221-theme-refresh1"></script>
-  <script src="./js/ui.js?v=20260221-theme-refresh1"></script>
-  <script src="./js/timer.js?v=20260221-theme-refresh1"></script>
-  <script src="./js/music.js?v=20260221-theme-refresh1"></script>
-  <script type="module" src="./auth.js?v=20260221-theme-refresh1"></script>
-  <script src="./app.js?v=20260221-theme-refresh1"></script>
+  <script src="./js/constants.js?v=20260221-mobile-fix1"></script>
+  <script src="./js/sync.js?v=20260221-mobile-fix1"></script>
+  <script src="./js/analytics.js?v=20260221-mobile-fix1"></script>
+  <script src="./js/ui.js?v=20260221-mobile-fix1"></script>
+  <script src="./js/timer.js?v=20260221-mobile-fix1"></script>
+  <script src="./js/music.js?v=20260221-mobile-fix1"></script>
+  <script type="module" src="./auth.js?v=20260221-mobile-fix1"></script>
+  <script src="./app.js?v=20260221-mobile-fix1"></script>
 </body>
 </html>

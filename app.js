@@ -174,7 +174,7 @@ const miniTimerTime = document.getElementById("miniTimerTime");
 const miniTimerGoBtn = document.getElementById("miniTimerGoBtn");
 
 const musicDock = document.getElementById("musicDock");
-const musicDockHead = musicDock.querySelector(".music-dock-head");
+const musicDockHead = musicDock ? musicDock.querySelector(".music-dock-head") : null;
 const musicDockCloseBtn = document.getElementById("musicDockCloseBtn");
 const musicDockMinBtn = document.getElementById("musicDockMinBtn");
 const musicDockPlayPauseBtn = document.getElementById("musicDockPlayPauseBtn");
@@ -275,10 +275,17 @@ function init() {
   setTheme(initialTheme, { fromRemote: true });
   settings.theme = initialTheme;
   safeSetItem(THEME_PREF_KEY, initialTheme);
-  populateLofiPresetSelect();
-  renderMusicAttributionList();
-  fillSettingsForm();
+
   wireEvents();
+
+  try {
+    populateLofiPresetSelect();
+    renderMusicAttributionList();
+    fillSettingsForm();
+  } catch (error) {
+    console.warn("Settings UI initialization failed:", error);
+  }
+
   activateSettingsQuickNav("settingsGeneralAnchor");
   setStudyTheme(selectedStudyTheme);
   setCurrentFocus(currentFocus);
@@ -291,16 +298,32 @@ function init() {
   updateSessionStatus();
   renderAnalytics();
   renderFavourites();
-  preloadCommonsAlarmIfNeeded();
+  try {
+    preloadCommonsAlarmIfNeeded();
+  } catch (error) {
+    console.warn("Alarm preload failed:", error);
+  }
   updateMiniTimerWidget();
-  initializeYouTubeApiBridge();
-  initializeMusicDockDragging();
-  initializeMusicDock();
-  syncMusicPlayPauseButton();
-  renderSessionNotes();
+  try {
+    initializeYouTubeApiBridge();
+    initializeMusicDockDragging();
+    initializeMusicDock();
+    syncMusicPlayPauseButton();
+  } catch (error) {
+    console.warn("Music dock initialization failed:", error);
+  }
+  try {
+    renderSessionNotes();
+  } catch (error) {
+    console.warn("Session notes initialization failed:", error);
+  }
   renderSyncStatus();
-  initializeReminderScheduler();
-  loadScriptureOfTheDay();
+  try {
+    initializeReminderScheduler();
+    loadScriptureOfTheDay();
+  } catch (error) {
+    console.warn("Reminder/scripture initialization failed:", error);
+  }
   initializeAuthenticationFlow();
   registerServiceWorkerWithUpdatePrompt();
 }
@@ -320,7 +343,7 @@ function registerServiceWorkerWithUpdatePrompt() {
 
   (async () => {
     try {
-      const registration = await navigator.serviceWorker.register("./service-worker.js");
+      const registration = await navigator.serviceWorker.register("/service-worker.js");
 
       const checkForUpdates = async () => {
         try {

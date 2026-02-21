@@ -444,28 +444,28 @@ function getThemeSettingValue() {
 
 function fillSettingsForm() {
   const weeklyTargets = sanitizeWeeklyPlanTargets(settings.weeklyPlanTargets);
-  studyMinutesSetting.value = settings.studyMinutes;
-  breakMinutesSetting.value = settings.breakMinutes;
-  dailyGoalMinutesSetting.value = settings.dailyGoalMinutes;
-  weeklyPlanMonSetting.value = weeklyTargets.mon;
-  weeklyPlanTueSetting.value = weeklyTargets.tue;
-  weeklyPlanWedSetting.value = weeklyTargets.wed;
-  weeklyPlanThuSetting.value = weeklyTargets.thu;
-  weeklyPlanFriSetting.value = weeklyTargets.fri;
-  weeklyPlanSatSetting.value = weeklyTargets.sat;
-  weeklyPlanSunSetting.value = weeklyTargets.sun;
-  remindersEnabledSetting.checked = Boolean(settings.remindersEnabled);
-  reminderTimeSetting.value = sanitizeTimeInput(settings.reminderTime, defaultSettings.reminderTime);
-  quietHoursStartSetting.value = sanitizeTimeInput(settings.quietHoursStart, defaultSettings.quietHoursStart);
-  quietHoursEndSetting.value = sanitizeTimeInput(settings.quietHoursEnd, defaultSettings.quietHoursEnd);
-  focusCommitMinutesSetting.value = clampFocusCommitMinutes(settings.focusCommitMinutes);
-  blockedSitesSetting.value = formatBlockedSitesForTextarea(settings.blockedSites);
+  if (studyMinutesSetting) studyMinutesSetting.value = settings.studyMinutes;
+  if (breakMinutesSetting) breakMinutesSetting.value = settings.breakMinutes;
+  if (dailyGoalMinutesSetting) dailyGoalMinutesSetting.value = settings.dailyGoalMinutes;
+  if (weeklyPlanMonSetting) weeklyPlanMonSetting.value = weeklyTargets.mon;
+  if (weeklyPlanTueSetting) weeklyPlanTueSetting.value = weeklyTargets.tue;
+  if (weeklyPlanWedSetting) weeklyPlanWedSetting.value = weeklyTargets.wed;
+  if (weeklyPlanThuSetting) weeklyPlanThuSetting.value = weeklyTargets.thu;
+  if (weeklyPlanFriSetting) weeklyPlanFriSetting.value = weeklyTargets.fri;
+  if (weeklyPlanSatSetting) weeklyPlanSatSetting.value = weeklyTargets.sat;
+  if (weeklyPlanSunSetting) weeklyPlanSunSetting.value = weeklyTargets.sun;
+  if (remindersEnabledSetting) remindersEnabledSetting.checked = Boolean(settings.remindersEnabled);
+  if (reminderTimeSetting) reminderTimeSetting.value = sanitizeTimeInput(settings.reminderTime, defaultSettings.reminderTime);
+  if (quietHoursStartSetting) quietHoursStartSetting.value = sanitizeTimeInput(settings.quietHoursStart, defaultSettings.quietHoursStart);
+  if (quietHoursEndSetting) quietHoursEndSetting.value = sanitizeTimeInput(settings.quietHoursEnd, defaultSettings.quietHoursEnd);
+  if (focusCommitMinutesSetting) focusCommitMinutesSetting.value = clampFocusCommitMinutes(settings.focusCommitMinutes);
+  if (blockedSitesSetting) blockedSitesSetting.value = formatBlockedSitesForTextarea(settings.blockedSites);
   setThemeSettingValue(settings.theme);
-  focusModeSetting.value = settings.focusMode;
-  alarmModeSetting.value = settings.alarmMode;
-  customAlarmUrlSetting.value = settings.customAlarmUrl;
-  youtubeMusicUrlSetting.value = settings.youtubeMusicUrl;
-  lofiPresetSelect.value = settings.musicPresetId || "";
+  if (focusModeSetting) focusModeSetting.value = settings.focusMode;
+  if (alarmModeSetting) alarmModeSetting.value = settings.alarmMode;
+  if (customAlarmUrlSetting) customAlarmUrlSetting.value = settings.customAlarmUrl;
+  if (youtubeMusicUrlSetting) youtubeMusicUrlSetting.value = settings.youtubeMusicUrl;
+  if (lofiPresetSelect) lofiPresetSelect.value = settings.musicPresetId || "";
   updateCustomAlarmVisibility();
 }
 
@@ -477,11 +477,18 @@ function onAlarmModeFieldChange() {
 }
 
 function updateCustomAlarmVisibility() {
+  if (!customAlarmRow || !alarmModeSetting) {
+    return;
+  }
   customAlarmRow.classList.toggle("hidden", alarmModeSetting.value !== "custom");
 }
 
 function onSettingsSubmit(event) {
   event.preventDefault();
+  if (!studyMinutesSetting || !breakMinutesSetting || !dailyGoalMinutesSetting || !focusModeSetting || !alarmModeSetting) {
+    showSettingsError("Settings controls are still loading. Refresh and try again.");
+    return;
+  }
 
   const weeklyTargets = sanitizeWeeklyPlanTargets({
     mon: weeklyPlanMonSetting.value,
@@ -556,6 +563,9 @@ function showSettingsError(message) {
 }
 
 function showSettingsStatus(message, isSuccess) {
+  if (!settingsMessage) {
+    return;
+  }
   settingsMessage.textContent = String(message || "");
   settingsMessage.classList.toggle("success", Boolean(isSuccess));
   settingsMessage.classList.toggle("error", !isSuccess);
@@ -719,11 +729,16 @@ function setTheme(theme, options = {}) {
 
 function updateThemeToggleUi(theme) {
   const label = COLOR_THEME_LABELS[theme] || "Midnight";
-  themeToggleText.textContent = `Theme: ${label}`;
+  if (themeToggleText) {
+    themeToggleText.textContent = `Theme: ${label}`;
+  }
   if (themeToggleBtn) {
     const tooltip = `Cycle color theme (current: ${label})`;
     themeToggleBtn.setAttribute("aria-label", tooltip);
     themeToggleBtn.title = tooltip;
+  }
+  if (!themeToggleIcon) {
+    return;
   }
 
   if (theme === "dark") {
