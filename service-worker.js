@@ -1,5 +1,5 @@
-const CACHE_NAME = "sanctuary-study-core-v5";
-const ASSET_VERSION = "20260220-themefix1";
+const CACHE_NAME = "sanctuary-study-core-v6";
+const ASSET_VERSION = "20260220-modular1";
 const withVersion = (path) => `${path}?v=${ASSET_VERSION}`;
 const CORE_ASSETS = [
   "/",
@@ -8,12 +8,18 @@ const CORE_ASSETS = [
   "/terms.html",
   withVersion("/style.css"),
   withVersion("/legal.css"),
+  withVersion("/js/constants.js"),
+  withVersion("/js/sync.js"),
+  withVersion("/js/music.js"),
   withVersion("/app.js"),
   withVersion("/legal.js"),
   withVersion("/auth.js"),
   withVersion("/firebase.js"),
   "/style.css",
   "/legal.css",
+  "/js/constants.js",
+  "/js/sync.js",
+  "/js/music.js",
   "/app.js",
   "/legal.js",
   "/auth.js",
@@ -30,6 +36,9 @@ const APP_SHELL_PATHS = new Set([
   "/terms.html",
   "/style.css",
   "/legal.css",
+  "/js/constants.js",
+  "/js/sync.js",
+  "/js/music.js",
   "/app.js",
   "/legal.js",
   "/auth.js",
