@@ -701,14 +701,11 @@ function showAuthScreen(message = "") {
 
   stopTimerInterval();
   timerState.running = false;
+  completeFocusPausedByTabSwitch = false;
   syncFocusModeAfterTimerStateChange();
-  clearInterval(popupIntervalId);
-  popupIntervalId = null;
-  versePopup.classList.add("hidden");
+  dismissVersePopup();
   closeSessionReviewPrompt();
   clearFocusCommitState();
-  document.body.classList.remove("popup-open");
-  popupOverlay.classList.add("hidden");
   updateTimerButtons();
   updateSessionStatus();
 

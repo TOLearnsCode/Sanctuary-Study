@@ -993,6 +993,12 @@ function initializeAuthBridge() {
       return;
     }
 
+    // Do not emit signed_out while a signup/signin flow is still running.
+    // The auth function itself handles post-flow messaging and UI updates.
+    if (authRequestInProgress) {
+      return;
+    }
+
     emitAuthChanged({ mode: "signed_out" });
   });
 

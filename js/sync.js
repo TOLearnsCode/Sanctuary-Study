@@ -1,6 +1,15 @@
 // Cloud sync and Firestore operations for Sanctuary Study.
 // Depends on globals from js/constants.js and app.js.
 
+// Serializes all Firestore analytics read/write operations so that
+// concurrent hydrate and push calls cannot interleave and drop data.
+var analyticsSyncChain = Promise.resolve();
+
+function enqueueAnalyticsSync(fn) {
+  analyticsSyncChain = analyticsSyncChain.then(fn, fn);
+  return analyticsSyncChain;
+}
+
 function resetCloudSyncState() {
   if (cloudSyncTimerId) {
     window.clearTimeout(cloudSyncTimerId);
@@ -503,10 +512,15 @@ async function hydrateAnalyticsFromCloud(uid) {
     return false;
   }
 
-  const ready = await ensureCloudSyncClient();
-  if (!ready) {
-    return false;
-  }
+  return enqueueAnalyticsSync(async function () {
+    if (cloudSyncHydrating) {
+      return false;
+    }
+
+    const ready = await ensureCloudSyncClient();
+    if (!ready) {
+      return false;
+    }
 
   const docRef = getCloudAnalyticsDocRef(uid);
   if (!docRef) {
@@ -574,6 +588,7 @@ async function hydrateAnalyticsFromCloud(uid) {
   } finally {
     cloudSyncHydrating = false;
   }
+  });
 }
 
 async function pushAnalyticsToCloud(reason = "manual") {
@@ -586,43 +601,50 @@ async function pushAnalyticsToCloud(reason = "manual") {
     return false;
   }
 
-  const ready = await ensureCloudSyncClient();
-  if (!ready) {
-    return false;
-  }
-
-  const docRef = getCloudAnalyticsDocRef(currentUser.uid);
-  if (!docRef) {
-    return false;
-  }
-
-  setSyncIndicatorState("syncing");
-  cloudSyncInFlight = true;
-  try {
-    await cloudSyncApi.setDoc(docRef, {
-      studyLog: sanitizeStudyLog(loadStudyLog()),
-      tagLog: sanitizeTagLog(loadTagLog()),
-      achievements: sanitizeAchievementMap(loadUnlockedAchievements()),
-      sessionHistory: sanitizeSessionHistory(loadSessionHistory()),
-      updatedAt: new Date().toISOString(),
-      schemaVersion: 1,
-      source: reason
-    }, { merge: true });
-
-    safeSetItem(LAST_SYNCED_UID_KEY, currentUser.uid);
-    markSuccessfulSync(new Date().toISOString());
-    return true;
-  } catch (error) {
-    console.warn("Could not save analytics to cloud.", error);
-    setSyncIndicatorState("error");
-    return false;
-  } finally {
-    cloudSyncInFlight = false;
-    if (cloudSyncQueued) {
-      cloudSyncQueued = false;
-      scheduleCloudAnalyticsSync("queued");
+  return enqueueAnalyticsSync(async function () {
+    if (cloudSyncHydrating || cloudSyncInFlight) {
+      cloudSyncQueued = true;
+      return false;
     }
-  }
+
+    const ready = await ensureCloudSyncClient();
+    if (!ready) {
+      return false;
+    }
+
+    const docRef = getCloudAnalyticsDocRef(currentUser.uid);
+    if (!docRef) {
+      return false;
+    }
+
+    setSyncIndicatorState("syncing");
+    cloudSyncInFlight = true;
+    try {
+      await cloudSyncApi.setDoc(docRef, {
+        studyLog: sanitizeStudyLog(loadStudyLog()),
+        tagLog: sanitizeTagLog(loadTagLog()),
+        achievements: sanitizeAchievementMap(loadUnlockedAchievements()),
+        sessionHistory: sanitizeSessionHistory(loadSessionHistory()),
+        updatedAt: new Date().toISOString(),
+        schemaVersion: 1,
+        source: reason
+      }, { merge: true });
+
+      safeSetItem(LAST_SYNCED_UID_KEY, currentUser.uid);
+      markSuccessfulSync(new Date().toISOString());
+      return true;
+    } catch (error) {
+      console.warn("Could not save analytics to cloud.", error);
+      setSyncIndicatorState("error");
+      return false;
+    } finally {
+      cloudSyncInFlight = false;
+      if (cloudSyncQueued) {
+        cloudSyncQueued = false;
+        scheduleCloudAnalyticsSync("queued");
+      }
+    }
+  });
 }
 
 function scheduleCloudAnalyticsSync(reason = "change") {

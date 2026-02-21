@@ -2,6 +2,8 @@
 // Manages study/break timer, focus commit lock-in, session flow,
 // verse popup, mini-timer widget, and toast notifications.
 
+var popupRejectCallback = null;
+
 
 function clampFocusCommitMinutes(value) {
   const numeric = Number(value);
@@ -485,6 +487,20 @@ function confirmCancelSession() {
   cancelCurrentSession();
 }
 
+function dismissVersePopup() {
+  clearInterval(popupIntervalId);
+  popupIntervalId = null;
+  versePopup.classList.add("hidden");
+  document.body.classList.remove("popup-open");
+  popupOverlay.classList.add("hidden");
+
+  if (popupRejectCallback) {
+    var callback = popupRejectCallback;
+    popupRejectCallback = null;
+    callback(new Error("Session cancelled during verse popup."));
+  }
+}
+
 function cancelCurrentSession(options = {}) {
   if (!options.bypassFocusLock && maybePromptFocusCommitExit({ type: "cancel-session" })) {
     return;
@@ -492,6 +508,7 @@ function cancelCurrentSession(options = {}) {
 
   stopTimerInterval();
   timerState.running = false;
+  completeFocusPausedByTabSwitch = false;
   syncFocusModeAfterTimerStateChange();
 
   if (document.fullscreenElement && document.exitFullscreen) {
@@ -500,11 +517,7 @@ function cancelCurrentSession(options = {}) {
     });
   }
 
-  clearInterval(popupIntervalId);
-  popupIntervalId = null;
-  versePopup.classList.add("hidden");
-  document.body.classList.remove("popup-open");
-  popupOverlay.classList.add("hidden");
+  dismissVersePopup();
 
   timerState.phase = "study";
   setUpBlock("study");
@@ -788,13 +801,15 @@ function updateTimerButtons() {
 
 function showVersePopupForSeconds(focus, seconds) {
   clearInterval(popupIntervalId);
+  popupRejectCallback = null;
   popupVerseText.textContent = `"${focus.text}"`;
   popupVerseRef.textContent = focus.reference;
   versePopup.classList.remove("hidden");
   document.body.classList.add("popup-open");
   popupOverlay.classList.remove("hidden");
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    popupRejectCallback = reject;
     let remaining = seconds;
     popupCountdown.textContent = `Starting in ${remaining}s`;
 
@@ -804,6 +819,7 @@ function showVersePopupForSeconds(focus, seconds) {
       if (remaining <= 0) {
         clearInterval(popupIntervalId);
         popupIntervalId = null;
+        popupRejectCallback = null;
         versePopup.classList.add("hidden");
         document.body.classList.remove("popup-open");
         popupOverlay.classList.add("hidden");
