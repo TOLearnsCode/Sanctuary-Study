@@ -64,7 +64,7 @@ function loadSessionNotesState() {
 }
 
 function saveSessionNotesState(state) {
-  localStorage.setItem(SESSION_NOTES_KEY, JSON.stringify(state));
+  safeSetItem(SESSION_NOTES_KEY, JSON.stringify(state));
 }
 
 function renderSessionNotes() {
@@ -192,7 +192,7 @@ function loadFavourites() {
 }
 
 function saveFavourites(items) {
-  localStorage.setItem(FAVOURITES_KEY, JSON.stringify(items));
+  safeSetItem(FAVOURITES_KEY, JSON.stringify(items));
 }
 
 function buildFavouriteKey(verseText, reference) {
@@ -342,7 +342,7 @@ function loadDailyScriptureCache() {
 }
 
 function saveDailyScriptureCache(data) {
-  localStorage.setItem(DAILY_SCRIPTURE_CACHE_KEY, JSON.stringify(data));
+  safeSetItem(DAILY_SCRIPTURE_CACHE_KEY, JSON.stringify(data));
 }
 
 function loadDailyScriptureHistory() {
@@ -360,7 +360,7 @@ function loadDailyScriptureHistory() {
 }
 
 function saveDailyScriptureHistory(history) {
-  localStorage.setItem(DAILY_SCRIPTURE_HISTORY_KEY, JSON.stringify(history.slice(0, SCRIPTURE_HISTORY_LIMIT)));
+  safeSetItem(DAILY_SCRIPTURE_HISTORY_KEY, JSON.stringify(history.slice(0, SCRIPTURE_HISTORY_LIMIT)));
 }
 
 async function pickNewDailyScripture() {
@@ -504,7 +504,7 @@ function onSettingsSubmit(event) {
   initializeMusicDock();
   initializeReminderScheduler();
   maybeSendStudyReminder();
-  renderAnalytics();
+  scheduleRenderAnalytics();
   showSettingsSuccess("Settings saved.");
 }
 
@@ -613,7 +613,7 @@ function saveSettings(nextSettings, options = {}) {
     }
   }
 
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(nextSettings));
+  safeSetItem(SETTINGS_KEY, JSON.stringify(nextSettings));
   if (!options.skipUserDocSync) {
     scheduleUserDocSync("preferences");
   }
@@ -673,7 +673,7 @@ function setTheme(theme, options = {}) {
   if (!options.fromRemote) {
     lastLocalThemeMutationAt = Date.now();
   }
-  localStorage.setItem(THEME_PREF_KEY, resolvedTheme);
+  safeSetItem(THEME_PREF_KEY, resolvedTheme);
   if (themeSetting) {
     themeSetting.value = resolvedTheme;
   }
@@ -951,6 +951,21 @@ function playToneSequence(frequencies, gapSeconds, noteDuration, volume) {
   }
 
   play();
+}
+
+
+/**
+ * Safe localStorage.setItem wrapper that catches QuotaExceededError.
+ * Returns true on success, false if the write failed (storage full).
+ */
+function safeSetItem(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (error) {
+    console.warn("localStorage write failed (storage may be full):", key, error);
+    return false;
+  }
 }
 
 

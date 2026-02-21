@@ -402,7 +402,7 @@ function applyUserDocSnapshot(data) {
       updateSessionStatus();
     }
 
-    renderAnalytics();
+    scheduleRenderAnalytics();
   } finally {
     userDocApplyingRemote = false;
   }
@@ -527,7 +527,7 @@ async function hydrateAnalyticsFromCloud(uid) {
         updatedAt: new Date().toISOString(),
         schemaVersion: 1
       }, { merge: true });
-      localStorage.setItem(LAST_SYNCED_UID_KEY, uid);
+      safeSetItem(LAST_SYNCED_UID_KEY, uid);
       markSuccessfulSync(new Date().toISOString());
       return true;
     }
@@ -547,7 +547,7 @@ async function hydrateAnalyticsFromCloud(uid) {
     saveTagLog(mergedTagLog, { skipCloudSync: true });
     saveUnlockedAchievements(mergedAchievements, { skipCloudSync: true });
     saveSessionHistory(mergedSessionHistory, { skipCloudSync: true });
-    localStorage.setItem(LAST_SYNCED_UID_KEY, uid);
+    safeSetItem(LAST_SYNCED_UID_KEY, uid);
 
     const needsWriteBack = JSON.stringify(mergedStudyLog) !== JSON.stringify(remoteStudyLog)
       || JSON.stringify(mergedTagLog) !== JSON.stringify(remoteTagLog)
@@ -609,7 +609,7 @@ async function pushAnalyticsToCloud(reason = "manual") {
       source: reason
     }, { merge: true });
 
-    localStorage.setItem(LAST_SYNCED_UID_KEY, currentUser.uid);
+    safeSetItem(LAST_SYNCED_UID_KEY, currentUser.uid);
     markSuccessfulSync(new Date().toISOString());
     return true;
   } catch (error) {
@@ -657,7 +657,7 @@ async function refreshAnalyticsFromCloud(_reason = "view", force = false) {
 
   lastCloudHydrateAt = Date.now();
   syncAchievementsWithCurrentStreak();
-  renderAnalytics();
+  scheduleRenderAnalytics();
   renderFavourites();
 
   return true;

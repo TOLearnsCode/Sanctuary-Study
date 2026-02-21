@@ -2,6 +2,19 @@
 // Provides study log management, streak calculation, graph rendering,
 // achievement tracking, weekly plan progress, and session review.
 
+var renderAnalyticsPending = null;
+
+function scheduleRenderAnalytics() {
+  if (renderAnalyticsPending) {
+    return;
+  }
+
+  renderAnalyticsPending = requestAnimationFrame(function () {
+    renderAnalyticsPending = null;
+    renderAnalytics();
+  });
+}
+
 
 function getAllAchievementDefinitions() {
   return [...STREAK_ACHIEVEMENTS, ...RARE_ACHIEVEMENTS];
@@ -782,7 +795,7 @@ function loadUnlockedAchievements() {
 }
 
 function saveUnlockedAchievements(unlocked, options = {}) {
-  localStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(unlocked));
+  safeSetItem(ACHIEVEMENTS_KEY, JSON.stringify(unlocked));
   if (!options.skipCloudSync) {
     scheduleCloudAnalyticsSync("achievements");
   }
@@ -832,7 +845,7 @@ function calculateBestStreak(log) {
     const currentDate = parseDateKey(activeDates[i]);
     const dayDiff = (currentDate - previousDate) / (1000 * 60 * 60 * 24);
 
-    if (dayDiff === 1) {
+    if (Math.round(dayDiff) === 1) {
       current += 1;
       best = Math.max(best, current);
     } else {
@@ -891,7 +904,7 @@ function loadStudyLog() {
 }
 
 function saveStudyLog(log, options = {}) {
-  localStorage.setItem(STUDY_LOG_KEY, JSON.stringify(log));
+  safeSetItem(STUDY_LOG_KEY, JSON.stringify(log));
   if (!options.skipCloudSync) {
     scheduleCloudAnalyticsSync("study-log");
   }
@@ -912,7 +925,7 @@ function loadTagLog() {
 }
 
 function saveTagLog(tagLog, options = {}) {
-  localStorage.setItem(TAG_LOG_KEY, JSON.stringify(tagLog));
+  safeSetItem(TAG_LOG_KEY, JSON.stringify(tagLog));
   if (!options.skipCloudSync) {
     scheduleCloudAnalyticsSync("tag-log");
   }
@@ -932,7 +945,7 @@ function loadSessionHistory() {
 }
 
 function saveSessionHistory(entries, options = {}) {
-  localStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify(sanitizeSessionHistory(entries)));
+  safeSetItem(SESSION_HISTORY_KEY, JSON.stringify(sanitizeSessionHistory(entries)));
   if (!options.skipCloudSync) {
     scheduleCloudAnalyticsSync("session-history");
   }

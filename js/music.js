@@ -159,7 +159,7 @@ function saveMusicDockPosition() {
     return;
   }
 
-  localStorage.setItem(MUSIC_DOCK_POSITION_KEY, JSON.stringify({
+  safeSetItem(MUSIC_DOCK_POSITION_KEY, JSON.stringify({
     left: Number.parseFloat(musicDock.style.left),
     top: Number.parseFloat(musicDock.style.top)
   }));

@@ -415,7 +415,7 @@ function startTimer() {
       return;
     }
 
-    timerState.remainingSeconds -= elapsedSeconds;
+    timerState.remainingSeconds = Math.max(0, timerState.remainingSeconds - elapsedSeconds);
     if (timerState.phase === "study" && focusCommitRemainingSeconds > 0) {
       focusCommitRemainingSeconds = Math.max(0, focusCommitRemainingSeconds - elapsedSeconds);
       if (focusCommitRemainingSeconds === 0) {
@@ -536,7 +536,7 @@ function onBlockComplete() {
       const context = recordCompletedStudyBlock(blockMinutes, activeTag);
       const unlockedAchievement = unlockStreakAchievements(context.currentStreak, true);
       const unlockedRareAchievement = unlockRareAchievements(context, true);
-      renderAnalytics();
+      scheduleRenderAnalytics();
       showMotivationToast(getMotivationalMessage(context));
       const newAchievements = [unlockedAchievement, unlockedRareAchievement].filter(Boolean);
       if (newAchievements.length > 0) {

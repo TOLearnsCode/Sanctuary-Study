@@ -208,8 +208,9 @@ export function loadWithSync() {
 }
 
 /**
- * Load constants + music.js for testing music/YouTube functions.
+ * Load constants + ui.js + music.js for testing music/YouTube functions.
+ * ui.js is included because music.js uses safeSetItem defined there.
  */
 export function loadWithMusic() {
-  return loadSourceFiles(["js/constants.js", "js/music.js"]);
+  return loadSourceFiles(["js/constants.js", "js/ui.js", "js/music.js"]);
 }

@@ -274,7 +274,7 @@ function init() {
   const initialTheme = resolveThemePreference(savedTheme, settings.theme, defaultSettings.theme);
   setTheme(initialTheme, { fromRemote: true });
   settings.theme = initialTheme;
-  localStorage.setItem(THEME_PREF_KEY, initialTheme);
+  safeSetItem(THEME_PREF_KEY, initialTheme);
   populateLofiPresetSelect();
   renderMusicAttributionList();
   fillSettingsForm();
@@ -453,7 +453,7 @@ function saveLastSuccessfulSyncAt(isoString) {
     return;
   }
 
-  localStorage.setItem(LAST_SUCCESSFUL_SYNC_AT_KEY, safeIso);
+  safeSetItem(LAST_SUCCESSFUL_SYNC_AT_KEY, safeIso);
 }
 
 function loadLastReminderSentDayKey() {
@@ -467,7 +467,7 @@ function saveLastReminderSentDayKey(dayKey) {
     localStorage.removeItem(REMINDER_LAST_SENT_KEY);
     return;
   }
-  localStorage.setItem(REMINDER_LAST_SENT_KEY, safeDayKey);
+  safeSetItem(REMINDER_LAST_SENT_KEY, safeDayKey);
 }
 
 function loadLastLocalSettingsMutationAt() {
@@ -482,7 +482,7 @@ function saveLastLocalSettingsMutationAt(timestampMs) {
     return;
   }
 
-  localStorage.setItem(SETTINGS_UPDATED_AT_KEY, String(Math.round(safeTimestamp)));
+  safeSetItem(SETTINGS_UPDATED_AT_KEY, String(Math.round(safeTimestamp)));
 }
 
 function parseTimestampToMs(value) {
@@ -683,7 +683,7 @@ function loadGuestModePreference() {
 
 function saveGuestModePreference(enabled) {
   if (enabled) {
-    localStorage.setItem(GUEST_MODE_KEY, "true");
+    safeSetItem(GUEST_MODE_KEY, "true");
     return;
   }
 
@@ -806,7 +806,7 @@ function initializeAuthenticationFlow() {
       currentUser = null;
       resetCloudSyncState();
       showAuthScreen(`Verify ${label} before signing in. Check inbox/spam. You can use "Resend verification email" if needed.`);
-      renderAnalytics();
+      scheduleRenderAnalytics();
       updateAuthUi();
       renderSyncStatus();
       return;
@@ -827,7 +827,7 @@ function initializeAuthenticationFlow() {
       setAuthMessage("");
       showHomeView({ forceStopTypeEffect: true });
       syncAchievementsWithCurrentStreak();
-      renderAnalytics();
+      scheduleRenderAnalytics();
       updateAuthUi();
       renderSyncStatus();
       void startUserDocRealtimeSync(currentUser.uid);
@@ -837,7 +837,7 @@ function initializeAuthenticationFlow() {
         }
         lastCloudHydrateAt = Date.now();
         syncAchievementsWithCurrentStreak();
-        renderAnalytics();
+        scheduleRenderAnalytics();
         renderFavourites();
         scheduleCloudAnalyticsSync("post-hydrate");
         renderSyncStatus();
@@ -853,14 +853,14 @@ function initializeAuthenticationFlow() {
         authSection.classList.add("hidden");
         setAuthMessage("");
         showHomeView({ forceStopTypeEffect: true });
-        renderAnalytics();
+        scheduleRenderAnalytics();
         updateAuthUi();
         renderSyncStatus();
         return;
       }
 
       showAuthScreen("Sign in with email and password, or continue as guest.");
-      renderAnalytics();
+      scheduleRenderAnalytics();
       updateAuthUi();
       renderSyncStatus();
     }
@@ -878,7 +878,7 @@ function initializeAuthenticationFlow() {
     authSection.classList.add("hidden");
     setAuthMessage("");
     showHomeView({ forceStopTypeEffect: true });
-    renderAnalytics();
+    scheduleRenderAnalytics();
     updateAuthUi();
     renderSyncStatus();
     return;
@@ -899,7 +899,7 @@ function enterGuestMode() {
   authSection.classList.add("hidden");
   setAuthMessage("");
   showHomeView({ forceStopTypeEffect: true });
-  renderAnalytics();
+  scheduleRenderAnalytics();
   updateAuthUi();
   renderSyncStatus();
   showToastMessage("Guest mode active. Sign in any time to unlock analytics and achievements.");
@@ -959,6 +959,12 @@ function expandSettingsPanelForTarget(targetId = "") {
   }
 }
 
+function listen(el, event, handler) {
+  if (el) {
+    el.addEventListener(event, handler);
+  }
+}
+
 function wireEvents() {
   navButtons.forEach((button) => {
     button.addEventListener("click", () => {
@@ -966,16 +972,16 @@ function wireEvents() {
     });
   });
 
-  homeNavBtn.addEventListener("click", () => {
+  listen(homeNavBtn, "click", () => {
     showHomeView({ forceStopTypeEffect: true });
   });
-  logoHomeBtn.addEventListener("click", () => {
+  listen(logoHomeBtn, "click", () => {
     showHomeView({ forceStopTypeEffect: true });
   });
-  authActionBtn.addEventListener("click", () => {
+  listen(authActionBtn, "click", () => {
     handleAuthActionClick();
   });
-  themeToggleBtn.addEventListener("click", () => {
+  listen(themeToggleBtn, "click", () => {
     const next = getNextThemeId(document.body.dataset.theme);
     setTheme(next);
     settings.theme = next;
@@ -1023,7 +1029,7 @@ function wireEvents() {
     }, 160);
   });
 
-  authGuestBtn.addEventListener("click", () => {
+  listen(authGuestBtn, "click", () => {
     enterGuestMode();
   });
   if (settingsSignOutBtn) {
@@ -1062,13 +1068,13 @@ function wireEvents() {
     showSettingsError(message);
   });
 
-  homeBeginBtn.addEventListener("click", beginStudyExperience);
-  homeSettingsBtn.addEventListener("click", () => switchSection("settings"));
-  homeSaveVerseBtn.addEventListener("click", saveCurrentFocusToFavourites);
+  listen(homeBeginBtn, "click", () => beginStudyExperience().catch(console.error));
+  listen(homeSettingsBtn, "click", () => switchSection("settings"));
+  listen(homeSaveVerseBtn, "click", saveCurrentFocusToFavourites);
 
-  prepBeginBtn.addEventListener("click", beginStudyExperience);
-  prepSettingsBtn.addEventListener("click", () => switchSection("settings"));
-  studySaveVerseBtn.addEventListener("click", saveCurrentFocusToFavourites);
+  listen(prepBeginBtn, "click", () => beginStudyExperience().catch(console.error));
+  listen(prepSettingsBtn, "click", () => switchSection("settings"));
+  listen(studySaveVerseBtn, "click", saveCurrentFocusToFavourites);
 
   themePills.forEach((pill) => {
     pill.addEventListener("click", () => {
@@ -1082,25 +1088,25 @@ function wireEvents() {
     });
   });
 
-  applyCustomPresetBtn.addEventListener("click", () => {
+  listen(applyCustomPresetBtn, "click", () => {
     applyCustomPreset();
   });
 
-  sessionTagSelect.addEventListener("change", () => {
+  listen(sessionTagSelect, "change", () => {
     customTagRow.classList.toggle("hidden", sessionTagSelect.value !== "Custom");
     updateSessionTagBadge();
   });
 
-  customTagInput.addEventListener("input", () => {
+  listen(customTagInput, "input", () => {
     updateSessionTagBadge();
   });
 
-  startBtn.addEventListener("click", startTimer);
-  pauseBtn.addEventListener("click", pauseTimer);
-  resetBtn.addEventListener("click", resetTimer);
-  cancelSessionBtn.addEventListener("click", openCancelSessionModal);
+  listen(startBtn, "click", startTimer);
+  listen(pauseBtn, "click", pauseTimer);
+  listen(resetBtn, "click", resetTimer);
+  listen(cancelSessionBtn, "click", openCancelSessionModal);
 
-  settingsForm.addEventListener("submit", onSettingsSubmit);
+  listen(settingsForm, "submit", onSettingsSubmit);
   settingsQuickButtons.forEach((button) => {
     button.addEventListener("click", () => {
       const targetId = String(button.dataset.settingsTarget || "");
@@ -1121,37 +1127,37 @@ function wireEvents() {
       });
     });
   });
-  themeSetting.addEventListener("change", () => {
+  listen(themeSetting, "change", () => {
     setTheme(themeSetting.value);
     settings.theme = sanitizeThemeId(document.body.dataset.theme);
     saveSettings(settings);
   });
-  focusModeSetting.addEventListener("change", () => {
+  listen(focusModeSetting, "change", () => {
     if (focusModeSetting.value === "complete") {
       showToastMessage("Complete focus is strict: timer pauses if you leave the tab. Lock-in commitment can be set below.");
     }
   });
-  alarmModeSetting.addEventListener("change", onAlarmModeFieldChange);
+  listen(alarmModeSetting, "change", onAlarmModeFieldChange);
   if (enableReminderPermissionBtn) {
     enableReminderPermissionBtn.addEventListener("click", () => {
       requestStudyReminderPermission();
     });
   }
-  testAlarmBtn.addEventListener("click", () => {
+  listen(testAlarmBtn, "click", () => {
     playAlarmSound();
   });
   // Prepare only: this does not call play(), so browser autoplay rules are respected.
-  loadMusicBtn.addEventListener("click", () => {
+  listen(loadMusicBtn, "click", () => {
     loadBackgroundMusicFromSettings();
   });
   // Only this explicit user gesture starts music playback.
-  playMusicBtn.addEventListener("click", () => {
+  listen(playMusicBtn, "click", () => {
     playBackgroundMusicFromUserGesture();
   });
-  stopMusicBtn.addEventListener("click", () => {
+  listen(stopMusicBtn, "click", () => {
     stopBackgroundMusic();
   });
-  lofiPresetSelect.addEventListener("change", () => {
+  listen(lofiPresetSelect, "change", () => {
     if (lofiPresetSelect.value) {
       localMusicFileInput.value = "";
       const preset = getLofiPresetById(lofiPresetSelect.value);
@@ -1160,46 +1166,46 @@ function wireEvents() {
       }
     }
   });
-  localMusicFileInput.addEventListener("change", () => {
+  listen(localMusicFileInput, "change", () => {
     if (localMusicFileInput.files && localMusicFileInput.files.length > 0) {
       lofiPresetSelect.value = "";
     }
   });
 
-  miniTimerGoBtn.addEventListener("click", () => {
+  listen(miniTimerGoBtn, "click", () => {
     switchSection("study");
   });
-  musicDockMinBtn.addEventListener("click", () => {
+  listen(musicDockMinBtn, "click", () => {
     setMusicDockMinimized(!musicDockMinimized);
   });
-  musicDockPlayPauseBtn.addEventListener("click", () => {
+  listen(musicDockPlayPauseBtn, "click", () => {
     toggleDockMusicPlayback();
   });
-  musicDockCloseBtn.addEventListener("click", () => {
+  listen(musicDockCloseBtn, "click", () => {
     stopBackgroundMusic();
   });
-  musicOpenExternalBtn.addEventListener("click", () => {
+  listen(musicOpenExternalBtn, "click", () => {
     const opened = openBackgroundMusicExternally();
     if (opened) {
       showToastMessage("Opened music source in a separate window.");
     }
   });
-  bgAudio.addEventListener("error", () => {
+  listen(bgAudio, "error", () => {
     showToastMessage("This audio source could not be played. Try another preset or a downloaded file.");
     musicDockLabel.textContent = "Audio source failed to load.";
   });
-  bgAudio.addEventListener("ended", () => {
+  listen(bgAudio, "ended", () => {
     playNextDownloadedTrack();
   });
-  bgAudio.addEventListener("play", () => {
+  listen(bgAudio, "play", () => {
     activeAudioSourceType = "audio";
     syncMusicPlayPauseButton();
   });
-  bgAudio.addEventListener("pause", () => {
+  listen(bgAudio, "pause", () => {
     syncMusicPlayPauseButton();
   });
 
-  favouritesList.addEventListener("click", (event) => {
+  listen(favouritesList, "click", (event) => {
     const deleteButton = event.target.closest(".delete-favourite-btn");
     if (!deleteButton) {
       return;
@@ -1210,20 +1216,20 @@ function wireEvents() {
     showToastMessage("Removed from Sanctuary.");
   });
 
-  sessionNotesInput.addEventListener("input", () => {
+  listen(sessionNotesInput, "input", () => {
     sessionNotesState.text = sessionNotesInput.value;
     saveSessionNotesState(sessionNotesState);
   });
-  addSessionTodoBtn.addEventListener("click", addSessionTodoItem);
-  sessionTodoInput.addEventListener("keydown", (event) => {
+  listen(addSessionTodoBtn, "click", addSessionTodoItem);
+  listen(sessionTodoInput, "keydown", (event) => {
     if (event.key === "Enter") {
       event.preventDefault();
       addSessionTodoItem();
     }
   });
-  clearSessionNotesBtn.addEventListener("click", clearSessionNotes);
-  sessionTodoList.addEventListener("click", onSessionTodoListClick);
-  sessionTodoList.addEventListener("change", onSessionTodoListChange);
+  listen(clearSessionNotesBtn, "click", clearSessionNotes);
+  listen(sessionTodoList, "click", onSessionTodoListClick);
+  listen(sessionTodoList, "change", onSessionTodoListChange);
   if (reviewFocusedBtn) {
     reviewFocusedBtn.addEventListener("click", () => {
       submitSessionReview("focused");
@@ -1239,8 +1245,8 @@ function wireEvents() {
       closeSessionReviewPrompt();
     });
   }
-  keepSessionBtn.addEventListener("click", closeCancelSessionModal);
-  confirmCancelSessionBtn.addEventListener("click", confirmCancelSession);
+  listen(keepSessionBtn, "click", closeCancelSessionModal);
+  listen(confirmCancelSessionBtn, "click", confirmCancelSession);
   if (keepFocusBtn) {
     keepFocusBtn.addEventListener("click", () => {
       closeFocusExitModal();
@@ -1259,7 +1265,7 @@ function wireEvents() {
       executeFocusExitAction(pendingAction);
     });
   }
-  cancelSessionModal.addEventListener("click", (event) => {
+  listen(cancelSessionModal, "click", (event) => {
     if (event.target === cancelSessionModal) {
       closeCancelSessionModal();
     }
