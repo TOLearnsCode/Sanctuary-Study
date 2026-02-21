@@ -423,8 +423,15 @@ function startAudioFromUrl(url, label, options = {}) {
     bgAudio.src = url;
   }
 
-  bgAudio.loop = loop;
-  bgAudio.volume = 0.3;
+  const effectiveLoop = loop && musicLoopEnabled;
+  bgAudio.loop = effectiveLoop;
+  const popupVolumeControl = document.getElementById("musicPopupVolume");
+  const popupVolumeValue = popupVolumeControl ? Number(popupVolumeControl.value) : NaN;
+  const fallbackVolume = Number(bgAudio.volume);
+  const chosenVolume = Number.isFinite(popupVolumeValue)
+    ? popupVolumeValue / 100
+    : (Number.isFinite(fallbackVolume) ? fallbackVolume : 0.3);
+  bgAudio.volume = Math.min(1, Math.max(0, chosenVolume));
   syncMusicPlayPauseButton();
 
   return true;
@@ -447,7 +454,11 @@ function playBackgroundMusicFromUserGesture() {
   }
 
   if (bgAudio.src) {
-    bgAudio.volume = 0.3;
+    const popupVolumeControl = document.getElementById("musicPopupVolume");
+    const popupVolumeValue = popupVolumeControl ? Number(popupVolumeControl.value) : NaN;
+    if (Number.isFinite(popupVolumeValue)) {
+      bgAudio.volume = Math.min(1, Math.max(0, popupVolumeValue / 100));
+    }
     bgAudio.play().then(() => {
       musicDockLabel.textContent = "Now playing.";
       activeAudioSourceType = "audio";
@@ -552,7 +563,9 @@ function prepareDownloadedShufflePlaylist() {
     return false;
   }
 
-  downloadedPlaylistQueue = shuffleCopy(DOWNLOADED_LOFI_TRACKS);
+  downloadedPlaylistQueue = musicShuffleEnabled
+    ? shuffleCopy(DOWNLOADED_LOFI_TRACKS)
+    : DOWNLOADED_LOFI_TRACKS.slice();
   downloadedPlaylistCursor = 0;
   const track = downloadedPlaylistQueue[downloadedPlaylistCursor];
 
@@ -569,7 +582,21 @@ function playNextDownloadedTrack() {
 
   downloadedPlaylistCursor += 1;
   if (downloadedPlaylistCursor >= downloadedPlaylistQueue.length) {
-    downloadedPlaylistQueue = shuffleCopy(DOWNLOADED_LOFI_TRACKS);
+    if (!musicLoopEnabled) {
+      downloadedPlaylistCursor = downloadedPlaylistQueue.length - 1;
+      if (musicDockLabel) {
+        musicDockLabel.textContent = "Playback ended.";
+      }
+      syncMusicPlayPauseButton();
+      if (typeof window.updateMusicPopupUi === "function") {
+        window.updateMusicPopupUi();
+      }
+      return;
+    }
+
+    downloadedPlaylistQueue = musicShuffleEnabled
+      ? shuffleCopy(DOWNLOADED_LOFI_TRACKS)
+      : DOWNLOADED_LOFI_TRACKS.slice();
     downloadedPlaylistCursor = 0;
   }
 

@@ -527,8 +527,8 @@ function onSettingsSubmit(event) {
     blockedSites: sanitizeBlockedSites(blockedSitesSetting.value),
     alarmMode: sanitizeAlarmMode(alarmModeSetting.value),
     customAlarmUrl: sanitizeAudioUrl(customAlarmUrlSetting.value),
-    youtubeMusicUrl: String(youtubeMusicUrlSetting.value || "").trim(),
-    musicPresetId: sanitizeMusicPresetId(lofiPresetSelect.value)
+    youtubeMusicUrl: String(youtubeMusicUrlSetting ? youtubeMusicUrlSetting.value : "").trim(),
+    musicPresetId: sanitizeMusicPresetId(lofiPresetSelect ? lofiPresetSelect.value : "")
   };
 
   saveSettings(settings);

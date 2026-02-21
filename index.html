@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>Sanctuary Study</title>
   <meta name="description" content="A Christian-themed Pomodoro study app with scripture encouragement, analytics, achievements, and focus modes. Stay productive and spiritually grounded." />
   <meta property="og:title" content="Sanctuary Study" />
@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./style.css?v=20260221-mobile-ui2" />
+  <link rel="stylesheet" href="./style.css?v=20260221-musicpopup4" />
 </head>
 <body data-theme="dark">
   <script>
@@ -68,7 +68,7 @@
   <main class="app-shell">
     <header class="top-bar">
       <div class="top-left-controls">
-        <div id="logoHomeBtn" class="app-logo-btn" role="button" tabindex="0" aria-label="Sanctuary Study home">
+        <button id="logoHomeBtn" class="app-logo-btn" type="button" aria-label="Sanctuary Study home">
           <span class="app-logo-mark" aria-hidden="true">
             <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12 3v18M6 9l6-6 6 6" />
@@ -79,7 +79,7 @@
             <strong>Sanctuary</strong>
             <small>Study</small>
           </span>
-        </div>
+        </button>
 
         <button id="homeNavBtn" class="home-nav-btn" type="button" aria-label="Go to home">
           <span class="icon-wrap" aria-hidden="true">
@@ -508,7 +508,7 @@
               <button type="button" class="settings-quick-btn active" data-settings-target="settingsGeneralAnchor">General</button>
               <button type="button" class="settings-quick-btn" data-settings-target="settingsPlanAnchor">Planning</button>
               <button type="button" class="settings-quick-btn" data-settings-target="settingsFocusAnchor">Focus</button>
-              <button type="button" class="settings-quick-btn" data-settings-target="settingsAudioAnchor">Audio</button>
+              <button type="button" class="settings-quick-btn" data-settings-target="settingsAudioAnchor">Alarm</button>
               <button type="button" class="settings-quick-btn" data-settings-target="accountSettingsCard">Account</button>
             </nav>
           </article>
@@ -695,8 +695,8 @@
             <section class="settings-block">
               <span id="settingsAudioAnchor" class="settings-anchor" aria-hidden="true"></span>
               <div class="settings-block-head">
-                <h3 class="settings-block-title">Audio & Music</h3>
-                <p class="settings-block-note">Configure alarm behavior and background audio sources.</p>
+                <h3 class="settings-block-title">Alarm</h3>
+                <p class="settings-block-note">Configure end-of-block alarm behaviour.</p>
               </div>
               <div class="settings-fields-grid">
                 <label class="settings-field">
@@ -717,44 +717,11 @@
                   Custom alarm URL
                   <input id="customAlarmUrlSetting" type="url" placeholder="https://example.com/alarm.mp3" />
                 </label>
-
-                <label class="settings-field youtube-music-row">
-                  Music URL (YouTube or direct MP3/WAV)
-                  <input id="youtubeMusicUrlSetting" type="url" placeholder="https://www.youtube.com/watch?v=... or https://.../track.mp3" />
-                </label>
-
-                <label class="settings-field">
-                  Built-in lofi preset
-                  <select id="lofiPresetSelect">
-                    <option value="">None</option>
-                  </select>
-                </label>
-
-                <label class="settings-field">
-                  Or choose local audio file
-                  <input id="localMusicFileInput" type="file" accept="audio/*" />
-                </label>
-              </div>
-
-              <div class="settings-subpanel attribution-panel">
-                <details class="attribution-dropdown">
-                  <summary class="settings-subpanel-title">Music Attribution (FreeToUse)</summary>
-                  <div class="attribution-dropdown-body">
-                    <p class="settings-subpanel-note">Tracks below are used under Free To Use terms. Keep these attributions when publishing your content.</p>
-                    <p class="settings-subpanel-note">License reminder: monetized user-generated content is allowed with attribution, while standalone commercial re-use is restricted by the Free License.</p>
-                    <div class="attribution-scroll-wrap">
-                      <ul id="musicAttributionList" class="music-attribution-list"></ul>
-                    </div>
-                  </div>
-                </details>
               </div>
 
               <div class="settings-actions">
                 <button type="submit" class="btn btn-primary">Save Settings</button>
                 <button id="testAlarmBtn" type="button" class="btn btn-glass">Test Alarm</button>
-                <button id="loadMusicBtn" type="button" class="btn btn-glass">Load Music</button>
-                <button id="playMusic" type="button" class="btn btn-glass">Play Background Music</button>
-                <button id="stopMusicBtn" type="button" class="btn btn-glass">Stop Music</button>
               </div>
             </section>
           </form>
@@ -812,17 +779,51 @@
   <div id="musicPopupBackdrop" class="music-popup-backdrop hidden" aria-hidden="true">
     <section id="musicPopupCard" class="music-popup-card" role="dialog" aria-modal="true" aria-labelledby="musicPopupTitle">
       <div class="music-popup-head">
-        <h3 id="musicPopupTitle">Background music</h3>
+        <h3 id="musicPopupTitle">Background Music</h3>
         <button id="musicPopupCloseBtn" class="music-popup-close" type="button" aria-label="Close background music controls">×</button>
       </div>
-      <p id="musicPopupStatus" class="music-popup-status">Select and load music in Settings, then press Play.</p>
-      <div class="music-popup-controls">
+      <p id="musicPopupStatus" class="music-popup-status">Choose a source below, then load and play.</p>
+      <label class="music-popup-field">
+        Built-in lofi preset
+        <select id="lofiPresetSelect">
+          <option value="">None</option>
+        </select>
+      </label>
+      <label class="music-popup-field">
+        Music URL (YouTube or direct MP3/WAV)
+        <input id="youtubeMusicUrlSetting" type="url" placeholder="https://www.youtube.com/watch?v=... or https://.../track.mp3" />
+      </label>
+      <label class="music-popup-field">
+        Or choose local audio file
+        <input id="localMusicFileInput" type="file" accept="audio/*" />
+      </label>
+      <div class="music-popup-toggles">
+        <label class="music-toggle-chip" for="musicPopupShuffleToggle">
+          <input id="musicPopupShuffleToggle" type="checkbox" checked />
+          <span>Shuffle</span>
+        </label>
+        <label class="music-toggle-chip" for="musicPopupLoopToggle">
+          <input id="musicPopupLoopToggle" type="checkbox" checked />
+          <span>Loop</span>
+        </label>
+      </div>
+      <div class="music-popup-controls music-popup-controls-extended">
+        <button id="loadMusicBtn" class="btn btn-glass" type="button">Load</button>
         <button id="musicPopupPlayPauseBtn" class="btn btn-primary" type="button">Play</button>
+        <button id="stopMusicBtn" class="btn btn-glass" type="button">Stop</button>
       </div>
       <label class="music-popup-volume" for="musicPopupVolume">
         Volume
         <input id="musicPopupVolume" type="range" min="0" max="100" value="30" />
       </label>
+      <details class="music-popup-attribution">
+        <summary>Music Attribution (FreeToUse)</summary>
+        <p class="settings-subpanel-note">Tracks below are used under Free To Use terms. Keep these attributions when publishing your content.</p>
+        <p class="settings-subpanel-note">License reminder: monetized user-generated content is allowed with attribution, while standalone commercial re-use is restricted by the Free License.</p>
+        <div class="attribution-scroll-wrap">
+          <ul id="musicAttributionList" class="music-attribution-list"></ul>
+        </div>
+      </details>
     </section>
   </div>
 
@@ -924,13 +925,13 @@
     </div>
   </div>
 
-  <script src="./js/constants.js?v=20260221-mobile-ui2"></script>
-  <script src="./js/sync.js?v=20260221-mobile-ui2"></script>
-  <script src="./js/analytics.js?v=20260221-mobile-ui2"></script>
-  <script src="./js/ui.js?v=20260221-mobile-ui2"></script>
-  <script src="./js/timer.js?v=20260221-mobile-ui2"></script>
-  <script src="./js/music.js?v=20260221-mobile-ui2"></script>
-  <script type="module" src="./auth.js?v=20260221-mobile-ui2"></script>
-  <script src="./app.js?v=20260221-mobile-ui2"></script>
+  <script src="./js/constants.js?v=20260221-musicpopup4"></script>
+  <script src="./js/sync.js?v=20260221-musicpopup4"></script>
+  <script src="./js/analytics.js?v=20260221-musicpopup4"></script>
+  <script src="./js/ui.js?v=20260221-musicpopup4"></script>
+  <script src="./js/timer.js?v=20260221-musicpopup4"></script>
+  <script src="./js/music.js?v=20260221-musicpopup4"></script>
+  <script type="module" src="./auth.js?v=20260221-musicpopup4"></script>
+  <script src="./app.js?v=20260221-musicpopup4"></script>
 </body>
 </html>

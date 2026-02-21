@@ -34,6 +34,10 @@
   color-scheme: dark;
 }
 
+* {
+  touch-action: manipulation;
+}
+
 body[data-theme="dark"],
 body.theme-dark {
   --bg: #0a111a;
@@ -263,12 +267,13 @@ body::after {
   animation: driftB 18s ease-in-out infinite alternate;
 }
 
-body.popup-open .popup-overlay {
+body.popup-open .popup-overlay:not(.hidden) {
   display: block;
   position: fixed;
   inset: 0;
-  z-index: 39;
+  z-index: 1001;
   background: rgba(0, 0, 0, 0.36);
+  pointer-events: auto;
 }
 
 body.music-popup-open {
@@ -277,6 +282,7 @@ body.music-popup-open {
 
 .popup-overlay.hidden {
   display: none;
+  pointer-events: none;
 }
 
 .app-shell {
@@ -328,7 +334,8 @@ table,
   min-width: 0;
   position: sticky;
   top: 10px;
-  z-index: 15;
+  z-index: 1000;
+  pointer-events: auto;
 }
 
 .top-left-controls {
@@ -339,6 +346,7 @@ table,
   flex: 1 1 420px;
   min-width: 0;
   max-width: 100%;
+  pointer-events: auto;
 }
 
 .app-logo-btn {
@@ -441,6 +449,7 @@ table,
   justify-content: flex-end;
   min-width: 0;
   max-width: 100%;
+  pointer-events: auto;
 }
 
 .mobile-nav-toggle {
@@ -457,6 +466,8 @@ table,
   gap: 8px;
   cursor: pointer;
   transition: transform 0.15s ease, background-color 0.2s ease;
+  z-index: 1000;
+  pointer-events: auto;
 }
 
 .mobile-nav-toggle:hover {
@@ -468,12 +479,15 @@ table,
   display: none;
   width: 100%;
   flex: 1 1 100%;
+  position: relative;
+  z-index: 1000;
   border: 1px solid var(--line);
   background: var(--card-strong);
   border-radius: 16px;
   padding: 10px;
   gap: 8px;
   box-shadow: 0 14px 24px rgba(20, 18, 14, 0.24);
+  pointer-events: auto;
 }
 
 .mobile-nav-panel:not(.hidden) {
@@ -2674,9 +2688,10 @@ body.theme-dark .achievement-tier.tier-platinum {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 46;
+  z-index: 999;
   box-shadow: 0 12px 26px var(--brand-shadow);
   transition: transform 0.16s ease, filter 0.2s ease;
+  pointer-events: auto;
 }
 
 .music-fab:hover {
@@ -2687,15 +2702,18 @@ body.theme-dark .achievement-tier.tier-platinum {
 .music-popup-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 45;
+  z-index: 1000;
   background: rgba(0, 0, 0, 0.24);
+  pointer-events: auto;
 }
 
 .music-popup-card {
   position: absolute;
   right: max(16px, env(safe-area-inset-right));
   bottom: calc(max(16px, env(safe-area-inset-bottom)) + 68px);
-  width: min(330px, calc(100vw - 24px));
+  width: min(440px, calc(100vw - 24px));
+  max-height: min(78vh, 760px);
+  overflow: auto;
   border: 1px solid var(--line);
   border-radius: 16px;
   background: var(--card-strong);
@@ -2703,6 +2721,8 @@ body.theme-dark .achievement-tier.tier-platinum {
   padding: 14px;
   display: grid;
   gap: 12px;
+  z-index: 1001;
+  pointer-events: auto;
 }
 
 .music-popup-head {
@@ -2744,6 +2764,12 @@ body.theme-dark .achievement-tier.tier-platinum {
 .music-popup-controls {
   display: flex;
   justify-content: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.music-popup-controls-extended .btn {
+  flex: 1 1 120px;
 }
 
 .music-popup-volume {
@@ -2756,6 +2782,54 @@ body.theme-dark .achievement-tier.tier-platinum {
 .music-popup-volume input[type="range"] {
   width: 100%;
   accent-color: var(--brand);
+}
+
+.music-popup-field {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.music-popup-field input,
+.music-popup-field select {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 10px;
+  font: inherit;
+  color: var(--text);
+  background: var(--glass);
+}
+
+.music-popup-toggles {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.music-toggle-chip {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--glass);
+  color: var(--text);
+  font-size: 0.84rem;
+}
+
+.music-popup-attribution {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px;
+  background: var(--glass);
+}
+
+.music-popup-attribution summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--text);
 }
 
 .music-dock {
@@ -3360,9 +3434,10 @@ body.theme-dark .btn-danger {
   }
 
   .music-popup-card {
-    right: 10px;
+    right: 5vw;
     bottom: 74px;
-    width: min(320px, calc(100vw - 20px));
+    width: 90vw;
+    max-width: 420px;
   }
 
   .app-shell {
@@ -3776,9 +3851,10 @@ body.theme-dark .btn-danger {
   }
 
   .music-popup-card {
-    right: 8px;
+    right: 5vw;
     bottom: 68px;
-    width: calc(100vw - 16px);
+    width: 90vw;
+    max-width: none;
   }
 
   .achievement-toast {

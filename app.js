@@ -138,7 +138,6 @@ const localMusicFileInput = document.getElementById("localMusicFileInput");
 const musicAttributionList = document.getElementById("musicAttributionList");
 const testAlarmBtn = document.getElementById("testAlarmBtn");
 const loadMusicBtn = document.getElementById("loadMusicBtn");
-const playMusicBtn = document.getElementById("playMusic");
 const stopMusicBtn = document.getElementById("stopMusicBtn");
 const settingsMessage = document.getElementById("settingsMessage");
 const accountSettingsCard = document.getElementById("accountSettingsCard");
@@ -194,6 +193,8 @@ const musicPopupCloseBtn = document.getElementById("musicPopupCloseBtn");
 const musicPopupPlayPauseBtn = document.getElementById("musicPopupPlayPauseBtn");
 const musicPopupVolume = document.getElementById("musicPopupVolume");
 const musicPopupStatus = document.getElementById("musicPopupStatus");
+const musicPopupShuffleToggle = document.getElementById("musicPopupShuffleToggle");
+const musicPopupLoopToggle = document.getElementById("musicPopupLoopToggle");
 
 let settings = loadSettings();
 let alarmSoundUrl = null;
@@ -251,6 +252,8 @@ let updateBarElement = null;
 let reloadOnControllerChangeArmed = false;
 let focusCommitRemainingSeconds = 0;
 let focusExitPendingAction = null;
+let musicShuffleEnabled = safeGetItem("sanctuaryMusicShuffleEnabledV1") !== "false";
+let musicLoopEnabled = safeGetItem("sanctuaryMusicLoopEnabledV1") !== "false";
 
 let currentFocus = {
   theme: selectedStudyTheme,
@@ -1045,7 +1048,7 @@ function getMusicPopupStatusText() {
     return "YouTube source is ready. Press Play to continue.";
   }
 
-  return "Select and load music in Settings, then press Play.";
+  return "Choose a source below, then load and play.";
 }
 
 function updateMusicPopupUi() {
@@ -1059,6 +1062,14 @@ function updateMusicPopupUi() {
 
   if (musicPopupVolume && bgAudio) {
     musicPopupVolume.value = String(Math.round((Number(bgAudio.volume) || 0) * 100));
+  }
+
+  if (musicPopupShuffleToggle) {
+    musicPopupShuffleToggle.checked = Boolean(musicShuffleEnabled);
+  }
+
+  if (musicPopupLoopToggle) {
+    musicPopupLoopToggle.checked = Boolean(musicLoopEnabled);
   }
 }
 
@@ -1325,10 +1336,6 @@ function wireEvents() {
   // Prepare only: this does not call play(), so browser autoplay rules are respected.
   listen(loadMusicBtn, "click", () => {
     loadBackgroundMusicFromSettings();
-  });
-  // Only this explicit user gesture starts music playback.
-  listen(playMusicBtn, "click", () => {
-    playBackgroundMusicFromUserGesture();
     updateMusicPopupUi();
   });
   listen(stopMusicBtn, "click", () => {
@@ -1343,11 +1350,32 @@ function wireEvents() {
         youtubeMusicUrlSetting.value = preset.url || "";
       }
     }
+    updateMusicPopupUi();
   });
   listen(localMusicFileInput, "change", () => {
     if (localMusicFileInput.files && localMusicFileInput.files.length > 0) {
       lofiPresetSelect.value = "";
     }
+    updateMusicPopupUi();
+  });
+  listen(youtubeMusicUrlSetting, "input", () => {
+    if (String(youtubeMusicUrlSetting.value || "").trim()) {
+      lofiPresetSelect.value = "";
+    }
+  });
+  listen(musicPopupShuffleToggle, "change", () => {
+    musicShuffleEnabled = Boolean(musicPopupShuffleToggle.checked);
+    safeSetItem("sanctuaryMusicShuffleEnabledV1", musicShuffleEnabled ? "true" : "false");
+    updateMusicPopupUi();
+  });
+  listen(musicPopupLoopToggle, "change", () => {
+    musicLoopEnabled = Boolean(musicPopupLoopToggle.checked);
+    safeSetItem("sanctuaryMusicLoopEnabledV1", musicLoopEnabled ? "true" : "false");
+    if (bgAudio) {
+      const currentlyUsingPlaylist = downloadedPlaylistQueue.length > 0;
+      bgAudio.loop = currentlyUsingPlaylist ? false : musicLoopEnabled;
+    }
+    updateMusicPopupUi();
   });
 
   listen(miniTimerGoBtn, "click", () => {
