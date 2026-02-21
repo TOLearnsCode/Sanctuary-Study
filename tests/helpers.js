@@ -178,20 +178,33 @@ export function loadConstants() {
 }
 
 /**
- * Convenience: load constants + app.js (for utility functions, parseDateKey, etc.).
+ * Convenience: load the full app stack (minus music.js and auth.js).
+ * Load order mirrors index.html: constants → sync → analytics → ui → timer → app.
  * init() is automatically stripped so app.js only declares functions and variables.
  */
 export function loadApp() {
-  return loadSourceFiles(["js/constants.js", "app.js"]);
+  return loadSourceFiles([
+    "js/constants.js",
+    "js/analytics.js",
+    "js/ui.js",
+    "js/timer.js",
+    "app.js"
+  ]);
 }
 
 /**
- * Load constants + sync.js + app.js for testing sync functions.
- * Load order: constants first, then sync (function declarations only),
- * then app.js (provides the globals sync functions call at runtime).
+ * Load the full app stack plus sync.js for testing sync functions.
+ * Load order mirrors index.html: constants → sync → analytics → ui → timer → app.
  */
 export function loadWithSync() {
-  return loadSourceFiles(["js/constants.js", "js/sync.js", "app.js"]);
+  return loadSourceFiles([
+    "js/constants.js",
+    "js/sync.js",
+    "js/analytics.js",
+    "js/ui.js",
+    "js/timer.js",
+    "app.js"
+  ]);
 }
 
 /**
