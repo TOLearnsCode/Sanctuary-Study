@@ -73,6 +73,12 @@ self.addEventListener("fetch", (event) => {
   }
 
   const requestUrl = new URL(event.request.url);
+  const skipCacheHostnames = ["gstatic.com", "googleapis.com", "firebaseio.com"];
+  if (skipCacheHostnames.some((hostname) => requestUrl.hostname.includes(hostname))) {
+    // Do not cache Firebase/Google hosted resources; let browser handle these requests directly.
+    return;
+  }
+
   const isSameOrigin = requestUrl.origin === self.location.origin;
   const isAppShellRequest = isSameOrigin && APP_SHELL_PATHS.has(requestUrl.pathname);
   const isCodeOrDocument = isSameOrigin && (
