@@ -892,6 +892,7 @@ function initializeAuthenticationFlow() {
         firstName: String(profile.firstName || "").trim(),
         lastName: String(profile.lastName || "").trim()
       };
+      try { localStorage.setItem("sanctuary_last_sync_uid", currentUser.uid); } catch (e) {}
       authMode = "user";
       saveGuestModePreference(false);
       authSection.classList.add("hidden");
@@ -924,6 +925,8 @@ function initializeAuthenticationFlow() {
     }
 
     if (mode === "signed_out") {
+      const _lastUid = localStorage.getItem("sanctuary_last_sync_uid");
+      if (_lastUid) { try { localStorage.removeItem("sanctuary_last_sync_uid"); } catch (e) {} }
       currentUser = null;
       resetCloudSyncState();
       if (loadGuestModePreference()) {

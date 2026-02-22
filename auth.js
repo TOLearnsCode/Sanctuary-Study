@@ -1,8 +1,10 @@
 import { auth, db, googleProvider } from "./firebase.js";
 import {
   createUserWithEmailAndPassword,
+  EmailAuthProvider,
   deleteUser,
   onAuthStateChanged,
+  reauthenticateWithCredential,
   sendEmailVerification,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -11,8 +13,10 @@ import {
   validatePassword
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import {
+  collection,
   deleteDoc,
-  doc
+  doc,
+  getDocs
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const USER_PROFILES_KEY = "sanctuaryUserProfilesV1";
@@ -1026,46 +1030,64 @@ function initializeAuthBridge() {
     }
   });
 
+  async function deleteUserFirestoreData(uid) {
+    const subcollections = ["sessions", "streaks", "settings"];
+    for (const subcollectionName of subcollections) {
+      const subRef = collection(db, "users", uid, subcollectionName);
+      const snap = await getDocs(subRef);
+      for (const d of snap.docs) {
+        await deleteDoc(d.ref);
+      }
+    }
+    await deleteDoc(doc(db, "users", uid));
+  }
+
+  function purgeUserLocalData() {
+    try {
+      localStorage.removeItem("sanctuaryStudySettingsV1");
+      localStorage.removeItem("sanctuary_last_sync_uid");
+      localStorage.removeItem("sanctuaryMusicShuffleEnabledV1");
+      localStorage.removeItem("sanctuaryMusicLoopEnabledV1");
+      localStorage.removeItem("sanctuaryMusicDockPositionV1");
+    } catch (error) {
+      // no-op
+    }
+  }
+
   window.addEventListener("sanctuary:request-delete-account", async () => {
     const user = auth.currentUser;
     if (!user) {
       window.dispatchEvent(new CustomEvent("sanctuary:delete-account-result", {
-        detail: {
-          ok: false,
-          message: "No signed-in account found."
-        }
+        detail: { ok: false, message: "No signed-in account found." }
+      }));
+      return;
+    }
+
+    const password = window.prompt(
+      "Re-enter your password to permanently delete your account:"
+    );
+    if (!password || !password.trim()) {
+      window.dispatchEvent(new CustomEvent("sanctuary:delete-account-result", {
+        detail: { ok: false, message: "Account deletion cancelled." }
       }));
       return;
     }
 
     try {
-      const userDocRef = doc(db, "users", user.uid);
-      const analyticsDocRef = doc(db, "users", user.uid, "private", "appData");
-
-      // Attempt Firestore cleanup first but do not block account deletion on failure.
-      const deleteResults = await Promise.allSettled([
-        deleteDoc(analyticsDocRef),
-        deleteDoc(userDocRef)
-      ]);
-      const hasDataDeleteFailure = deleteResults.some((result) => result.status === "rejected");
-
+      const credential = EmailAuthProvider.credential(user.email, password);
+      await reauthenticateWithCredential(user, credential);
+      await deleteUserFirestoreData(user.uid);
       await deleteUser(user);
       removeStoredProfile(user.uid);
       clearVerificationRequiredEmail();
       clearLocalAppData();
       emitAuthChanged({ mode: "signed_out" });
       window.dispatchEvent(new CustomEvent("sanctuary:delete-account-result", {
-        detail: {
-          ok: true,
-          dataCleanupIncomplete: hasDataDeleteFailure
-        }
+        detail: { ok: true }
       }));
     } catch (error) {
       window.dispatchEvent(new CustomEvent("sanctuary:delete-account-result", {
-        detail: {
-          ok: false,
-          message: getFriendlyAuthError(error)
-        }
+        detail: { ok: false, message: getFriendlyAuthError(error) }
       }));
     }
   });
