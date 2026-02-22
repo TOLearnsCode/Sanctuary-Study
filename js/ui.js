@@ -532,7 +532,7 @@ function onSettingsSubmit(event) {
     blockedSites: sanitizeBlockedSites(blockedSitesSetting.value),
     alarmMode: sanitizeAlarmMode(alarmModeSetting.value),
     customAlarmUrl: sanitizeAudioUrl(customAlarmUrlSetting.value),
-    youtubeMusicUrl: String(youtubeMusicUrlSetting ? youtubeMusicUrlSetting.value : "").trim(),
+    youtubeMusicUrl: sanitizeAudioUrl(youtubeMusicUrlSetting ? youtubeMusicUrlSetting.value : ""),
     musicPresetId: sanitizeMusicPresetId(lofiPresetSelect ? lofiPresetSelect.value : "")
   };
 
@@ -639,7 +639,7 @@ function loadSettings() {
 
   try {
     const parsed = JSON.parse(raw);
-    const parsedUrl = String(parsed.youtubeMusicUrl || "").trim();
+    const parsedUrl = sanitizeAudioUrl(parsed.youtubeMusicUrl);
     const parsedPreset = sanitizeMusicPresetId(parsed.musicPresetId);
 
     return {
@@ -1009,9 +1009,12 @@ function isSafeAudioUrl(url) {
   }
 
   try {
-    var parsed = new URL(url);
+    var originFallback = typeof window !== "undefined" && window.location && window.location.origin
+      ? window.location.origin
+      : "https://localhost";
+    var parsed = new URL(url, originFallback);
     var protocol = parsed.protocol.toLowerCase();
-    return protocol === "https:" || protocol === "http:" || protocol === "data:";
+    return protocol === "https:" || protocol === "http:";
   } catch (error) {
     return false;
   }

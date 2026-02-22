@@ -1043,12 +1043,27 @@ function refreshNavButtons() {
   navButtons = Array.from(document.querySelectorAll(".nav-btn[data-section]"));
 }
 
-function createMobileNavShortcut(label, action, iconMarkup) {
+function createMobileNavShortcut(label, action, iconSource) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "nav-btn mobile-nav-btn";
   button.dataset.mobileAction = action;
-  button.innerHTML = `${iconMarkup}<span>${label}</span>`;
+
+  let iconNode = null;
+  if (iconSource && typeof iconSource.cloneNode === "function") {
+    iconNode = iconSource.cloneNode(true);
+  } else {
+    const fallbackIcon = document.createElement("span");
+    fallbackIcon.className = "icon-wrap";
+    fallbackIcon.setAttribute("aria-hidden", "true");
+    fallbackIcon.textContent = "•";
+    iconNode = fallbackIcon;
+  }
+
+  const labelNode = document.createElement("span");
+  labelNode.textContent = String(label || "").trim() || "Menu";
+  button.appendChild(iconNode);
+  button.appendChild(labelNode);
   return button;
 }
 
@@ -1061,12 +1076,33 @@ function buildMobileNavigationFromDesktop() {
     ? Array.from(desktopTopNav.querySelectorAll(".nav-btn[data-section]"))
     : [];
   const fragment = document.createDocumentFragment();
-  const homeIconMarkup = homeNavBtn && homeNavBtn.querySelector(".icon-wrap")
-    ? homeNavBtn.querySelector(".icon-wrap").outerHTML
-    : `<span class="icon-wrap" aria-hidden="true"><svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 10 9-7 9 7" /><path d="M5 10v10h14V10" /></svg></span>`;
-  const achievementsIconMarkup = `<span class="icon-wrap" aria-hidden="true"><svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3h8v4a4 4 0 0 1-8 0z" /><path d="M6 7H4a2 2 0 0 0 2 2h2M18 7h2a2 2 0 0 1-2 2h-2" /><path d="M12 11v5" /><path d="M9 21h6" /></svg></span>`;
+  const homeIconNode = homeNavBtn ? homeNavBtn.querySelector(".icon-wrap") : null;
+  const achievementsIconNode = document.createElement("span");
+  achievementsIconNode.className = "icon-wrap";
+  achievementsIconNode.setAttribute("aria-hidden", "true");
+  const svgNamespace = "http://www.w3.org/2000/svg";
+  const iconSvg = document.createElementNS(svgNamespace, "svg");
+  iconSvg.setAttribute("viewBox", "0 0 24 24");
+  iconSvg.setAttribute("class", "icon-svg");
+  iconSvg.setAttribute("fill", "none");
+  iconSvg.setAttribute("stroke", "currentColor");
+  iconSvg.setAttribute("stroke-width", "2");
 
-  fragment.appendChild(createMobileNavShortcut("Home", "home", homeIconMarkup));
+  const trophyPaths = [
+    "M8 3h8v4a4 4 0 0 1-8 0z",
+    "M6 7H4a2 2 0 0 0 2 2h2M18 7h2a2 2 0 0 1-2 2h-2",
+    "M12 11v5",
+    "M9 21h6"
+  ];
+
+  trophyPaths.forEach((pathValue) => {
+    const path = document.createElementNS(svgNamespace, "path");
+    path.setAttribute("d", pathValue);
+    iconSvg.appendChild(path);
+  });
+  achievementsIconNode.appendChild(iconSvg);
+
+  fragment.appendChild(createMobileNavShortcut("Home", "home", homeIconNode));
 
   desktopSectionButtons.forEach((desktopButton) => {
     const clone = desktopButton.cloneNode(true);
@@ -1077,7 +1113,7 @@ function buildMobileNavigationFromDesktop() {
     fragment.appendChild(clone);
 
     if (desktopButton.dataset.section === "analytics") {
-      fragment.appendChild(createMobileNavShortcut("Achievements", "achievements", achievementsIconMarkup));
+      fragment.appendChild(createMobileNavShortcut("Achievements", "achievements", achievementsIconNode));
     }
   });
 
@@ -1283,9 +1319,14 @@ function playAudioFromUrlTab() {
     showToastMessage("Paste an audio URL first.");
     return;
   }
+  const safeEnteredUrl = sanitizeAudioUrl(enteredUrl);
+  if (!safeEnteredUrl) {
+    showToastMessage("Only valid http/https audio URLs are allowed.");
+    return;
+  }
 
   selectedBuiltInTrackId = "";
-  activeUrlSource = enteredUrl;
+  activeUrlSource = safeEnteredUrl;
   activeUploadFileName = "";
   if (localMusicFileInput) {
     localMusicFileInput.value = "";
@@ -1295,13 +1336,13 @@ function playAudioFromUrlTab() {
   }
 
   settings.musicPresetId = "";
-  settings.youtubeMusicUrl = enteredUrl;
+  settings.youtubeMusicUrl = safeEnteredUrl;
   saveSettings(settings);
 
-  const videoId = extractYouTubeVideoId(enteredUrl);
+  const videoId = extractYouTubeVideoId(safeEnteredUrl);
   const prepared = videoId
     ? startBackgroundMusicFromSavedPreference(false)
-    : startAudioFromUrl(enteredUrl, shortenUrl(enteredUrl), { loop: true });
+    : startAudioFromUrl(safeEnteredUrl, shortenUrl(safeEnteredUrl), { loop: true });
 
   if (!prepared) {
     showToastMessage("This URL could not be loaded. Try another direct audio link.");

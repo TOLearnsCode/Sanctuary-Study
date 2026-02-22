@@ -246,8 +246,16 @@ function initializeMusicDock() {
     return;
   }
 
-  if (settings.youtubeMusicUrl) {
-    const savedUrl = String(settings.youtubeMusicUrl).trim();
+  const savedUrl = sanitizeAudioUrl(settings.youtubeMusicUrl);
+  if (savedUrl !== String(settings.youtubeMusicUrl || "").trim()) {
+    settings.youtubeMusicUrl = savedUrl;
+    if (!savedUrl) {
+      settings.musicPresetId = "";
+    }
+    saveSettings(settings);
+  }
+
+  if (savedUrl) {
     const watchUrl = getYouTubeWatchUrl(savedUrl);
     musicDock.classList.remove("hidden");
     setExternalMusicButtonState(watchUrl || savedUrl);
@@ -289,6 +297,7 @@ function loadBackgroundMusicFromSettings() {
   const localFile = localMusicFileInput.files && localMusicFileInput.files[0];
   const selectedPreset = getLofiPresetById(lofiPresetSelect.value);
   const enteredUrl = String(youtubeMusicUrlSetting.value || "").trim();
+  const safeEnteredUrl = sanitizeAudioUrl(enteredUrl);
 
   if (localFile) {
     const localBlobUrl = createObjectUrlForLocalMusic(localFile);
@@ -309,14 +318,15 @@ function loadBackgroundMusicFromSettings() {
   }
 
   if (selectedPreset) {
+    const safePresetUrl = sanitizeAudioUrl(selectedPreset.url || "");
     settings.musicPresetId = selectedPreset.id;
-    settings.youtubeMusicUrl = selectedPreset.url || "";
-    youtubeMusicUrlSetting.value = selectedPreset.url || "";
+    settings.youtubeMusicUrl = safePresetUrl;
+    youtubeMusicUrlSetting.value = safePresetUrl;
     saveSettings(settings);
 
     const started = selectedPreset.mode === "playlist"
       ? prepareDownloadedShufflePlaylist()
-      : startAudioFromUrl(selectedPreset.url, `${selectedPreset.title} • ${selectedPreset.artist}`, { loop: true });
+      : startAudioFromUrl(safePresetUrl, `${selectedPreset.title} • ${selectedPreset.artist}`, { loop: true });
 
     if (!started) {
       showToastMessage("Preset failed to load. Try another preset or local file.");
@@ -334,9 +344,13 @@ function loadBackgroundMusicFromSettings() {
     showToastMessage("Add a YouTube URL, choose a preset, or select a local file.");
     return;
   }
+  if (!safeEnteredUrl) {
+    showToastMessage("Only valid http/https audio URLs are allowed.");
+    return;
+  }
 
   settings.musicPresetId = "";
-  settings.youtubeMusicUrl = enteredUrl;
+  settings.youtubeMusicUrl = safeEnteredUrl;
   saveSettings(settings);
 
   const started = startBackgroundMusicFromSavedPreference(false);
@@ -368,7 +382,12 @@ function startBackgroundMusicFromSavedPreference(autoplay) {
     return startAudioFromUrl(preset.url, `${preset.title} • ${preset.artist}`, { loop: true });
   }
 
-  const url = String(settings.youtubeMusicUrl || "").trim();
+  const rawUrl = String(settings.youtubeMusicUrl || "").trim();
+  const url = sanitizeAudioUrl(rawUrl);
+  if (rawUrl && rawUrl !== url) {
+    settings.youtubeMusicUrl = url;
+    saveSettings(settings);
+  }
   if (!url) {
     setExternalMusicButtonState(null);
     return false;
@@ -404,7 +423,12 @@ function createObjectUrlForLocalMusic(file) {
 }
 
 function startAudioFromUrl(url, label, options = {}) {
-  if (!url || !bgAudio || !hasMusicDockUi()) {
+  const normalizedUrl = String(url || "").trim();
+  if (!normalizedUrl || !bgAudio || !hasMusicDockUi()) {
+    return false;
+  }
+  const isBlobUrl = normalizedUrl.startsWith("blob:");
+  if (!isBlobUrl && !isSafeAudioUrl(normalizedUrl)) {
     return false;
   }
 
@@ -424,15 +448,15 @@ function startAudioFromUrl(url, label, options = {}) {
     downloadedPlaylistCursor = -1;
   }
 
-  if (String(url).startsWith("blob:")) {
+  if (isBlobUrl) {
     setExternalMusicButtonState(null);
   } else {
-    setExternalMusicButtonState(url);
+    setExternalMusicButtonState(normalizedUrl);
   }
-  musicDockLabel.textContent = `Ready: ${label || shortenUrl(url)}`;
+  musicDockLabel.textContent = `Ready: ${label || shortenUrl(normalizedUrl)}`;
 
-  if (bgAudio.src !== url) {
-    bgAudio.src = url;
+  if (bgAudio.src !== normalizedUrl) {
+    bgAudio.src = normalizedUrl;
   }
 
   const effectiveLoop = loop && musicLoopEnabled;
@@ -847,7 +871,10 @@ function stopBackgroundMusic() {
 
 function extractYouTubeVideoId(url) {
   try {
-    const parsed = new URL(url);
+    const originFallback = typeof window !== "undefined" && window.location && window.location.origin
+      ? window.location.origin
+      : "https://localhost";
+    const parsed = new URL(url, originFallback);
     const host = parsed.hostname.replace("www.", "");
 
     if (host === "youtu.be") {
@@ -896,14 +923,15 @@ function setExternalMusicButtonState(url) {
     return;
   }
 
-  if (!url) {
+  const safeUrl = sanitizeAudioUrl(url);
+  if (!safeUrl) {
     musicOpenExternalBtn.classList.add("hidden");
     musicOpenExternalBtn.dataset.url = "";
     return;
   }
 
-  musicOpenExternalBtn.dataset.url = url;
-  musicOpenExternalBtn.textContent = extractYouTubeVideoId(url) ? "Open on YouTube" : "Open Source Link";
+  musicOpenExternalBtn.dataset.url = safeUrl;
+  musicOpenExternalBtn.textContent = extractYouTubeVideoId(safeUrl) ? "Open on YouTube" : "Open Source Link";
   musicOpenExternalBtn.classList.remove("hidden");
 }
 
@@ -916,10 +944,11 @@ function openBackgroundMusicExternally(providedUrl, silent = false, options = {}
     ? (preset.url || (queuedTrack ? queuedTrack.url : "") || (defaultTrack ? defaultTrack.url : "") || "")
     : settings.youtubeMusicUrl;
   const fallbackButtonUrl = musicOpenExternalBtn ? musicOpenExternalBtn.dataset.url : "";
-  const url = providedUrl || fallbackButtonUrl || fallbackUrl;
+  const rawUrl = providedUrl || fallbackButtonUrl || fallbackUrl;
+  const url = sanitizeAudioUrl(rawUrl);
   if (!url) {
     if (!silent) {
-      showToastMessage("Set a valid music source first.");
+      showToastMessage("Set a valid http/https music source first.");
     }
     return false;
   }
@@ -932,20 +961,29 @@ function openBackgroundMusicExternally(providedUrl, silent = false, options = {}
   let opened = null;
 
   try {
-    opened = window.open(url, "sanctuaryMusicWindow", "width=520,height=420,menubar=no,toolbar=no");
+    opened = window.open(
+      url,
+      "sanctuaryMusicWindow",
+      "width=520,height=420,menubar=no,toolbar=no,noopener,noreferrer"
+    );
   } catch (error) {
     opened = null;
   }
 
   if (!opened) {
     try {
-      opened = window.open(url, "_blank");
+      opened = window.open(url, "_blank", "noopener,noreferrer");
     } catch (error) {
       opened = null;
     }
   }
 
   if (opened) {
+    try {
+      opened.opener = null;
+    } catch (error) {
+      // Ignore cross-origin window opener restrictions.
+    }
     musicPopupWindow = opened;
     if (musicDock) {
       musicDock.classList.remove("hidden");

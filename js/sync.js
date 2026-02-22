@@ -314,7 +314,7 @@ function buildUserDocPayload(reason = "update") {
     blockedSites: sanitizeBlockedSites(settings.blockedSites),
     alarmMode: sanitizeAlarmMode(settings.alarmMode),
     customAlarmUrl: sanitizeAudioUrl(settings.customAlarmUrl),
-    youtubeMusicUrl: String(settings.youtubeMusicUrl || "").trim(),
+    youtubeMusicUrl: sanitizeAudioUrl(settings.youtubeMusicUrl),
     musicPresetId: sanitizeMusicPresetId(settings.musicPresetId)
   };
 
@@ -348,7 +348,7 @@ function applyUserDocSnapshot(data) {
       return;
     }
 
-    const parsedMusicUrl = String(preferences.youtubeMusicUrl || "").trim();
+    const parsedMusicUrl = sanitizeAudioUrl(preferences.youtubeMusicUrl);
     const parsedPresetId = sanitizeMusicPresetId(preferences.musicPresetId);
     const remotePreferencesUpdatedAtMs = parseTimestampToMs(data.preferencesUpdatedAt || data.updatedAt);
     const localSettingsRecentlyChanged = lastLocalSettingsMutationAt > 0
