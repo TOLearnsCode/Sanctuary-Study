@@ -303,7 +303,7 @@ function setAuthLoading(isLoading, text = "Processing request...") {
 
 function loadProfilesMap() {
   try {
-    const raw = safeGetItem(USER_PROFILES_KEY);
+    const raw = localStorage.getItem(USER_PROFILES_KEY);
     if (!raw) {
       return {};
     }
@@ -885,6 +885,9 @@ async function onResendVerificationClick() {
 
 function initializeAuthPageBindings() {
   if (!authSignInBtn || !authSignUpBtn || !authForm || !authSubmitBtn) {
+    console.warn("[Sanctuary] Auth bindings skipped — missing DOM elements:", {
+      authSignInBtn, authSignUpBtn, authForm, authSubmitBtn
+    });
     return;
   }
 
@@ -945,6 +948,12 @@ function initializeAuthPageBindings() {
   if (authResendVerificationBtn) {
     authResendVerificationBtn.addEventListener("click", () => {
       onResendVerificationClick();
+    });
+  }
+
+  if (authGuestBtn) {
+    authGuestBtn.addEventListener("click", () => {
+      emitAuthChanged({ mode: "guest" });
     });
   }
 }
