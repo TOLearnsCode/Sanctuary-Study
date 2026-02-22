@@ -202,7 +202,7 @@
       </p>
 
       <form id="authForm" class="auth-form" autocomplete="on">
-        <div class="auth-form-row">
+        <div class="auth-form-row hidden" id="authNameRow">
           <label>
             First name
             <input id="authFirstNameInput" type="text" autocomplete="given-name" placeholder="First name" />
@@ -216,7 +216,7 @@
           Email
           <input id="authEmailInput" type="email" autocomplete="email" placeholder="you@example.com" />
         </label>
-        <label>
+        <label class="hidden" id="authDobLabel">
           Date of birth
           <input id="authDobInput" type="date" autocomplete="bday" />
         </label>

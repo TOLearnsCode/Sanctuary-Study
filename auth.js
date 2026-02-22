@@ -39,8 +39,8 @@ const authLoadingText = document.getElementById("authLoadingText");
 const authMessage = document.getElementById("authMessage");
 const authInlineNote = document.querySelector(".auth-inline-note");
 
-const authNameRow = authFirstNameInput ? authFirstNameInput.closest(".auth-form-row") : null;
-const authDobLabel = authDobInput ? authDobInput.closest("label") : null;
+const authNameRow = document.getElementById("authNameRow");
+const authDobLabel = document.getElementById("authDobLabel");
 
 let authFormMode = "signin"; // "signin" | "signup"
 let verificationRequiredEmail = "";
