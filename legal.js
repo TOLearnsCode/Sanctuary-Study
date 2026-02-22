@@ -1,12 +1,25 @@
-const LEGAL_THEME_KEY = "theme";
+const LEGACY_THEME_KEY = "theme";
+const LEGAL_THEME_KEY = "selectedTheme";
 const LEGAL_SETTINGS_KEY = "sanctuaryStudySettingsV1";
-const LEGAL_THEMES = ["dark", "light", "dawn", "ocean", "sage"];
+const LEGAL_THEMES = [
+  "dark",
+  "obsidian",
+  "forest-night",
+  "deep-purple",
+  "crimson-dark",
+  "slate",
+  "sunset-dark",
+  "light"
+];
 const LEGAL_THEME_LABELS = {
-  dark: "Midnight",
-  light: "Pearl",
-  dawn: "Ember",
-  ocean: "Azure",
-  sage: "Forest"
+  dark: "Midnight Blue",
+  obsidian: "Obsidian",
+  "forest-night": "Forest Night",
+  "deep-purple": "Deep Purple",
+  "crimson-dark": "Crimson Dark",
+  slate: "Slate",
+  "sunset-dark": "Sunset Dark",
+  light: "Pearl"
 };
 
 function sanitizeTheme(theme) {
@@ -17,10 +30,25 @@ function sanitizeTheme(theme) {
 
   const aliasMap = {
     "theme-dark": "dark",
+    "theme-obsidian": "obsidian",
+    "theme-forest-night": "forest-night",
+    "theme-deep-purple": "deep-purple",
+    "theme-crimson-dark": "crimson-dark",
+    "theme-slate": "slate",
+    "theme-sunset-dark": "sunset-dark",
     "theme-light": "light",
-    "theme-dawn": "dawn",
-    "theme-ocean": "ocean",
-    "theme-sage": "sage",
+    "theme-dawn": "sunset-dark",
+    "theme-ocean": "slate",
+    "theme-sage": "forest-night",
+    "midnight-blue": "dark",
+    midnight: "dark",
+    forest_night: "forest-night",
+    deep_purple: "deep-purple",
+    crimson_dark: "crimson-dark",
+    sunset_dark: "sunset-dark",
+    dawn: "sunset-dark",
+    ocean: "slate",
+    sage: "forest-night",
     "mode-dark": "dark",
     "mode-light": "light"
   };
@@ -47,8 +75,10 @@ function applyTheme(theme, options = {}) {
     document.body.classList.remove(`theme-${themeId}`);
   });
   document.body.classList.add(`theme-${resolved}`);
+  document.body.classList.toggle("theme-dark", resolved !== "light");
   if (shouldPersist) {
     localStorage.setItem(LEGAL_THEME_KEY, resolved);
+    localStorage.setItem(LEGACY_THEME_KEY, resolved);
   }
   if (shouldSyncSettings) {
     syncThemeToAppSettings(resolved);
@@ -96,7 +126,7 @@ function syncThemeToAppSettings(theme) {
 }
 
 function initializeLegalThemeSync() {
-  const savedTheme = localStorage.getItem(LEGAL_THEME_KEY);
+  const savedTheme = localStorage.getItem(LEGAL_THEME_KEY) || localStorage.getItem(LEGACY_THEME_KEY);
   applyTheme(savedTheme || "dark", { persist: false, syncSettings: false });
 
   const toggleBtn = document.getElementById("legalThemeToggle");
@@ -108,7 +138,7 @@ function initializeLegalThemeSync() {
   }
 
   window.addEventListener("storage", (event) => {
-    if (event.key !== LEGAL_THEME_KEY) {
+    if (event.key !== LEGAL_THEME_KEY && event.key !== LEGACY_THEME_KEY) {
       return;
     }
     applyTheme(event.newValue || "dark", { persist: false, syncSettings: false });

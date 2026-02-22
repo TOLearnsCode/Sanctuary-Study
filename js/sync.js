@@ -314,6 +314,7 @@ function buildUserDocPayload(reason = "update") {
     blockedSites: sanitizeBlockedSites(settings.blockedSites),
     alarmMode: sanitizeAlarmMode(settings.alarmMode),
     customAlarmUrl: sanitizeAudioUrl(settings.customAlarmUrl),
+    musicVolume: clampMusicVolume(settings.musicVolume),
     youtubeMusicUrl: sanitizeAudioUrl(settings.youtubeMusicUrl),
     musicPresetId: sanitizeMusicPresetId(settings.musicPresetId)
   };
@@ -366,6 +367,7 @@ function applyUserDocSnapshot(data) {
     const resolvedRemoteTheme = resolveThemePreference(
       preferences.theme,
       safeGetItem(THEME_PREF_KEY),
+      safeGetItem(LEGACY_THEME_PREF_KEY),
       settings.theme,
       defaultSettings.theme
     );
@@ -385,6 +387,7 @@ function applyUserDocSnapshot(data) {
       blockedSites: sanitizeBlockedSites(preferences.blockedSites),
       alarmMode: sanitizeAlarmMode(preferences.alarmMode),
       customAlarmUrl: sanitizeAudioUrl(preferences.customAlarmUrl),
+      musicVolume: clampMusicVolume(preferences.musicVolume),
       youtubeMusicUrl: parsedMusicUrl,
       musicPresetId: parsedPresetId || (parsedMusicUrl ? "" : defaultSettings.musicPresetId)
     };

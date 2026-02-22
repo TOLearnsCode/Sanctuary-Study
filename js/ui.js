@@ -321,6 +321,7 @@ async function loadScriptureOfTheDay() {
   }
 
   const todayKey = getDateKey(new Date());
+  renderDailyQuote(todayKey);
   const cached = loadDailyScriptureCache();
 
   try {
@@ -420,6 +421,33 @@ function renderDailyScripture(verse) {
   dailyVerseRef.textContent = verse.reference;
 }
 
+function renderDailyQuote(dateKey) {
+  if (!dailyQuoteText || !dailyQuoteAuthor || !Array.isArray(DAILY_ENCOURAGEMENT_QUOTES) || !DAILY_ENCOURAGEMENT_QUOTES.length) {
+    return;
+  }
+
+  const key = String(dateKey || getDateKey(new Date()));
+  const quote = pickDailyQuoteByDateKey(key);
+  dailyQuoteText.textContent = `"${quote.text}"`;
+  dailyQuoteAuthor.textContent = `— ${quote.author}`;
+}
+
+function pickDailyQuoteByDateKey(dateKey) {
+  const safeKey = String(dateKey || getDateKey(new Date()));
+  const hash = hashStringToInt(safeKey);
+  const index = Math.abs(hash) % DAILY_ENCOURAGEMENT_QUOTES.length;
+  return DAILY_ENCOURAGEMENT_QUOTES[index];
+}
+
+function hashStringToInt(input) {
+  let hash = 0;
+  for (let i = 0; i < input.length; i += 1) {
+    hash = ((hash << 5) - hash) + input.charCodeAt(i);
+    hash |= 0;
+  }
+  return hash;
+}
+
 function getThemeSettingRadios() {
   if (!themeSetting || typeof themeSetting.querySelectorAll !== "function") {
     return [];
@@ -481,15 +509,26 @@ function fillSettingsForm() {
   if (focusModeSetting) focusModeSetting.value = settings.focusMode;
   if (alarmModeSetting) alarmModeSetting.value = settings.alarmMode;
   if (customAlarmUrlSetting) customAlarmUrlSetting.value = settings.customAlarmUrl;
+  if (bgAudio) bgAudio.volume = clampMusicVolume(settings.musicVolume) / 100;
+  if (musicPopupVolume) musicPopupVolume.value = String(clampMusicVolume(settings.musicVolume));
   if (youtubeMusicUrlSetting) youtubeMusicUrlSetting.value = settings.youtubeMusicUrl;
   if (lofiPresetSelect) lofiPresetSelect.value = settings.musicPresetId || "";
   updateCustomAlarmVisibility();
 }
 
-function onAlarmModeFieldChange() {
+function onAlarmModeFieldChange(options = {}) {
+  const shouldPreview = options.preview !== false;
   updateCustomAlarmVisibility();
+  if (!alarmModeSetting) {
+    return;
+  }
+
   if (alarmModeSetting.value === "commons") {
     preloadCommonsAlarmIfNeeded();
+  }
+
+  if (shouldPreview) {
+    playAlarmPreviewForMode(alarmModeSetting.value);
   }
 }
 
@@ -532,6 +571,7 @@ function onSettingsSubmit(event) {
     blockedSites: sanitizeBlockedSites(blockedSitesSetting.value),
     alarmMode: sanitizeAlarmMode(alarmModeSetting.value),
     customAlarmUrl: sanitizeAudioUrl(customAlarmUrlSetting.value),
+    musicVolume: clampMusicVolume(bgAudio ? (bgAudio.volume * 100) : settings.musicVolume),
     youtubeMusicUrl: sanitizeAudioUrl(youtubeMusicUrlSetting ? youtubeMusicUrlSetting.value : ""),
     musicPresetId: sanitizeMusicPresetId(lofiPresetSelect ? lofiPresetSelect.value : "")
   };
@@ -627,12 +667,14 @@ function sanitizeMusicPresetId(value) {
 }
 
 function loadSettings() {
-  const legacyThemePref = safeGetItem(THEME_PREF_KEY);
+  const selectedThemePref = safeGetItem(THEME_PREF_KEY);
+  const legacyThemePref = safeGetItem(LEGACY_THEME_PREF_KEY);
+  const themePref = resolveThemePreference(selectedThemePref, legacyThemePref);
   const raw = safeGetItem(SETTINGS_KEY);
   if (!raw) {
     return {
       ...defaultSettings,
-      theme: resolveThemePreference(legacyThemePref, defaultSettings.theme),
+      theme: resolveThemePreference(themePref, defaultSettings.theme),
       weeklyPlanTargets: { ...defaultSettings.weeklyPlanTargets }
     };
   }
@@ -651,19 +693,20 @@ function loadSettings() {
       reminderTime: sanitizeTimeInput(parsed.reminderTime, defaultSettings.reminderTime),
       quietHoursStart: sanitizeTimeInput(parsed.quietHoursStart, defaultSettings.quietHoursStart),
       quietHoursEnd: sanitizeTimeInput(parsed.quietHoursEnd, defaultSettings.quietHoursEnd),
-      theme: resolveThemePreference(parsed.theme, legacyThemePref, defaultSettings.theme),
+      theme: resolveThemePreference(parsed.theme, themePref, defaultSettings.theme),
       focusMode: sanitizeFocusMode(parsed.focusMode),
       focusCommitMinutes: clampFocusCommitMinutes(parsed.focusCommitMinutes),
       blockedSites: sanitizeBlockedSites(parsed.blockedSites),
       alarmMode: sanitizeAlarmMode(parsed.alarmMode),
       customAlarmUrl: sanitizeAudioUrl(parsed.customAlarmUrl),
+      musicVolume: clampMusicVolume(parsed.musicVolume),
       youtubeMusicUrl: parsedUrl,
       musicPresetId: parsedPreset || (parsedUrl ? "" : defaultSettings.musicPresetId)
     };
   } catch (error) {
     return {
       ...defaultSettings,
-      theme: resolveThemePreference(legacyThemePref, defaultSettings.theme),
+      theme: resolveThemePreference(themePref, defaultSettings.theme),
       weeklyPlanTargets: { ...defaultSettings.weeklyPlanTargets }
     };
   }
@@ -696,10 +739,25 @@ function normalizeThemeId(value) {
 
   const aliasMap = {
     "theme-dark": "dark",
+    "theme-obsidian": "obsidian",
+    "theme-forest-night": "forest-night",
+    "theme-deep-purple": "deep-purple",
+    "theme-crimson-dark": "crimson-dark",
+    "theme-slate": "slate",
+    "theme-sunset-dark": "sunset-dark",
     "theme-light": "light",
-    "theme-dawn": "dawn",
-    "theme-ocean": "ocean",
-    "theme-sage": "sage",
+    "midnight-blue": "dark",
+    midnight: "dark",
+    forest_night: "forest-night",
+    deep_purple: "deep-purple",
+    crimson_dark: "crimson-dark",
+    sunset_dark: "sunset-dark",
+    "theme-dawn": "sunset-dark",
+    "theme-ocean": "slate",
+    "theme-sage": "forest-night",
+    dawn: "sunset-dark",
+    ocean: "slate",
+    sage: "forest-night",
     "mode-dark": "dark",
     "mode-light": "light"
   };
@@ -739,16 +797,18 @@ function setTheme(theme, options = {}) {
     document.body.classList.remove(`theme-${themeId}`);
   });
   document.body.classList.add(`theme-${resolvedTheme}`);
+  document.body.classList.toggle("theme-dark", resolvedTheme !== "light");
   if (!options.fromRemote) {
     lastLocalThemeMutationAt = Date.now();
   }
   safeSetItem(THEME_PREF_KEY, resolvedTheme);
+  safeSetItem(LEGACY_THEME_PREF_KEY, resolvedTheme);
   setThemeSettingValue(resolvedTheme);
   updateThemeToggleUi(resolvedTheme);
 }
 
 function updateThemeToggleUi(theme) {
-  const label = COLOR_THEME_LABELS[theme] || "Midnight";
+  const label = COLOR_THEME_LABELS[theme] || "Midnight Blue";
   if (themeToggleText) {
     themeToggleText.textContent = `Theme: ${label}`;
   }
@@ -761,7 +821,7 @@ function updateThemeToggleUi(theme) {
     return;
   }
 
-  if (theme === "dark") {
+  if (theme !== "light") {
     themeToggleIcon.innerHTML = `
       <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
@@ -770,20 +830,10 @@ function updateThemeToggleUi(theme) {
     return;
   }
 
-  if (theme === "light") {
-    themeToggleIcon.innerHTML = `
-      <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.36 6.36-1.42-1.42M7.05 7.05 5.64 5.64m12.72 0-1.42 1.41M7.05 16.95l-1.41 1.41" />
-        <circle cx="12" cy="12" r="4" />
-      </svg>
-    `;
-    return;
-  }
-
   themeToggleIcon.innerHTML = `
     <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
-      <circle cx="13" cy="12" r="3.2" />
-      <path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H9l2 2h4.5A2.5 2.5 0 0 1 18 9.5v5A2.5 2.5 0 0 1 15.5 17h-10A2.5 2.5 0 0 1 3 14.5z" />
+      <path d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.36 6.36-1.42-1.42M7.05 7.05 5.64 5.64m12.72 0-1.42 1.41M7.05 16.95l-1.41 1.41" />
+      <circle cx="12" cy="12" r="4" />
     </svg>
   `;
 }
@@ -794,6 +844,14 @@ function clampMinutes(value, min, max) {
     return min;
   }
   return Math.min(max, Math.max(min, Math.round(numeric)));
+}
+
+function clampMusicVolume(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return 30;
+  }
+  return Math.min(100, Math.max(0, Math.round(numeric)));
 }
 
 async function buildFocusForTheme(theme) {
@@ -976,6 +1034,81 @@ async function playAlarmSound() {
   }
 
   playToneSequence([740, 660], 0.28, 0.22, 0.1);
+}
+
+let alarmPreviewTimeoutId = null;
+
+function stopAlarmPreview() {
+  if (alarmPreviewTimeoutId) {
+    window.clearTimeout(alarmPreviewTimeoutId);
+    alarmPreviewTimeoutId = null;
+  }
+
+  if (!alarmPreviewPlayer) {
+    return;
+  }
+
+  try {
+    alarmPreviewPlayer.pause();
+    alarmPreviewPlayer.currentTime = 0;
+  } catch (error) {
+    // Ignore preview teardown issues.
+  }
+}
+
+async function playAlarmPreviewForMode(modeInput) {
+  const mode = sanitizeAlarmMode(modeInput);
+  stopAlarmPreview();
+
+  if (mode === "soft") {
+    playToneSequence([740, 660], 0.16, 0.12, 0.1);
+    return;
+  }
+
+  if (mode === "bell") {
+    playToneSequence([880, 660], 0.16, 0.12, 0.11);
+    return;
+  }
+
+  let previewUrl = "";
+  if (LOCAL_ALARM_URLS[mode]) {
+    previewUrl = LOCAL_ALARM_URLS[mode];
+  } else if (mode === "custom") {
+    previewUrl = sanitizeAudioUrl(customAlarmUrlSetting ? customAlarmUrlSetting.value : "");
+    if (!previewUrl) {
+      showToastMessage("Add a valid custom alarm URL to preview.");
+      return;
+    }
+  } else if (mode === "commons") {
+    if (!alarmSoundUrl) {
+      try {
+        await preloadCommonsAlarmIfNeeded();
+      } catch (error) {
+        // Fallback tone below.
+      }
+    }
+    previewUrl = sanitizeAudioUrl(alarmSoundUrl);
+    if (!previewUrl) {
+      playToneSequence([740, 660], 0.16, 0.12, 0.1);
+      return;
+    }
+  }
+
+  if (!previewUrl || !alarmPreviewPlayer) {
+    return;
+  }
+
+  try {
+    alarmPreviewPlayer.src = previewUrl;
+    alarmPreviewPlayer.volume = 0.45;
+    alarmPreviewPlayer.currentTime = 0;
+    await alarmPreviewPlayer.play();
+    alarmPreviewTimeoutId = window.setTimeout(() => {
+      stopAlarmPreview();
+    }, 2800);
+  } catch (error) {
+    stopAlarmPreview();
+  }
 }
 
 function tryPlayAudioUrl(url) {

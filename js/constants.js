@@ -22,7 +22,8 @@ const SESSION_HISTORY_KEY = "sanctuarySessionHistoryV1";
 const ACHIEVEMENTS_KEY = "sanctuaryAchievementsV1";
 const ACHIEVEMENT_PROGRESS_KEY = "sanctuaryAchievementProgressV1";
 const GUEST_MODE_KEY = "sanctuaryGuestModeV1";
-const THEME_PREF_KEY = "theme";
+const LEGACY_THEME_PREF_KEY = "theme";
+const THEME_PREF_KEY = "selectedTheme";
 const SETTINGS_UPDATED_AT_KEY = "sanctuarySettingsUpdatedAtV1";
 const LAST_SYNCED_UID_KEY = "sanctuaryLastAnalyticsUidV1";
 const LAST_SUCCESSFUL_SYNC_AT_KEY = "sanctuaryLastSuccessfulSyncAtV1";
@@ -31,13 +32,25 @@ const CLOUD_SYNC_DOC_NAME = "appData";
 const CLOUD_SYNC_DEBOUNCE_MS = 900;
 const USER_DOC_SYNC_DEBOUNCE_MS = 750;
 const USER_DOC_SCHEMA_VERSION = 1;
-const AVAILABLE_COLOR_THEMES = ["dark", "light", "dawn", "ocean", "sage"];
+const AVAILABLE_COLOR_THEMES = [
+  "dark",
+  "obsidian",
+  "forest-night",
+  "deep-purple",
+  "crimson-dark",
+  "slate",
+  "sunset-dark",
+  "light"
+];
 const COLOR_THEME_LABELS = {
-  dark: "Midnight",
-  light: "Pearl",
-  dawn: "Ember",
-  ocean: "Azure",
-  sage: "Forest"
+  dark: "Midnight Blue",
+  obsidian: "Obsidian",
+  "forest-night": "Forest Night",
+  "deep-purple": "Deep Purple",
+  "crimson-dark": "Crimson Dark",
+  slate: "Slate",
+  "sunset-dark": "Sunset Dark",
+  light: "Pearl"
 };
 
 const GRAPH_DAYS = 60;
@@ -239,6 +252,34 @@ const DAILY_SCRIPTURE_FALLBACK_VERSES = [
   { reference: "Proverbs 3:5-6", text: "Trust in the Lord with all your heart and He will make your paths straight." },
   { reference: "Matthew 11:28", text: "Come to me, all you who are weary and burdened, and I will give you rest." },
   { reference: "Philippians 4:6-7", text: "Do not be anxious about anything, but in every situation, pray with thanksgiving." }
+];
+
+// Daily quote beneath Scripture for Today (deterministic by date key).
+const DAILY_ENCOURAGEMENT_QUOTES = [
+  { text: "Relying on God has to begin all over again every day as if nothing had yet been done.", author: "C.S. Lewis" },
+  { text: "God is most glorified in us when we are most satisfied in Him.", author: "John Piper" },
+  { text: "By perseverance the snail reached the ark.", author: "Charles Spurgeon" },
+  { text: "Faith never knows where it is being led, but it loves and knows the One who is leading.", author: "Oswald Chambers" },
+  { text: "Do the next thing; then the next. Faithfulness grows in small obedience.", author: "Elisabeth Elliot" },
+  { text: "The future starts today, not tomorrow.", author: "Pope John Paul II" },
+  { text: "You have power over your mind, not outside events. Realize this, and you will find strength.", author: "Marcus Aurelius" },
+  { text: "It is not that I am so smart. But I stay with the questions much longer.", author: "Albert Einstein" },
+  { text: "Nothing will work unless you do.", author: "Maya Angelou" },
+  { text: "Discipline is choosing between what you want now and what you want most.", author: "Abraham Lincoln (attributed)" },
+  { text: "Success is the sum of small efforts repeated day in and day out.", author: "Robert Collier" },
+  { text: "Small disciplines repeated with consistency every day lead to great achievements.", author: "John C. Maxwell" },
+  { text: "Start where you are. Use what you have. Do what you can.", author: "Arthur Ashe" },
+  { text: "Well done is better than well said.", author: "Benjamin Franklin" },
+  { text: "You do not have to see the whole staircase, just take the first step.", author: "Martin Luther King Jr." },
+  { text: "Grace does not remove effort; it redirects it. Keep showing up.", author: "Sanctuary Paraphrase" },
+  { text: "Your labor in the Lord is not in vain. Keep building steadily today.", author: "Biblical Paraphrase (1 Corinthians 15:58)" },
+  { text: "Do not grow weary in doing good; the harvest comes in due time.", author: "Biblical Paraphrase (Galatians 6:9)" },
+  { text: "Commit your work to the Lord, and your plans will be established.", author: "Biblical Paraphrase (Proverbs 16:3)" },
+  { text: "Ask for wisdom and keep working faithfully; clarity grows with obedience.", author: "Biblical Paraphrase (James 1:5)" },
+  { text: "God is not in a hurry. Walk steadily and do today’s work with peace.", author: "Eugene Peterson (paraphrased)" },
+  { text: "Prayer is not preparation for the work; prayer is the work.", author: "Oswald Chambers" },
+  { text: "Courage is fear that has said its prayers.", author: "Dorothy Bernard" },
+  { text: "What you do every day matters more than what you do once in a while.", author: "Gretchen Rubin" }
 ];
 
 const THEME_FALLBACK_VERSES = {
@@ -492,6 +533,7 @@ const defaultSettings = {
   blockedSites: [],
   alarmMode: "mixkit_chime",
   customAlarmUrl: "",
+  musicVolume: 30,
   youtubeMusicUrl: "",
   musicPresetId: "downloaded_shuffle"
 };

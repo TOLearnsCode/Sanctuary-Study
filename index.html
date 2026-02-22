@@ -15,12 +15,21 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./style.css?v=20260222-security1" />
+  <link rel="stylesheet" href="./style.css?v=20260222-themesync1" />
 </head>
 <body data-theme="dark">
   <script>
     (() => {
-      const themes = ["dark", "light", "dawn", "ocean", "sage"];
+      const themes = [
+        "dark",
+        "obsidian",
+        "forest-night",
+        "deep-purple",
+        "crimson-dark",
+        "slate",
+        "sunset-dark",
+        "light"
+      ];
       const safeLocalStorageGet = (key) => {
         try {
           return localStorage.getItem(key);
@@ -35,10 +44,25 @@
         }
         const aliasMap = {
           "theme-dark": "dark",
+          "theme-obsidian": "obsidian",
+          "theme-forest-night": "forest-night",
+          "theme-deep-purple": "deep-purple",
+          "theme-crimson-dark": "crimson-dark",
+          "theme-slate": "slate",
+          "theme-sunset-dark": "sunset-dark",
           "theme-light": "light",
-          "theme-dawn": "dawn",
-          "theme-ocean": "ocean",
-          "theme-sage": "sage",
+          "midnight-blue": "dark",
+          midnight: "dark",
+          forest_night: "forest-night",
+          deep_purple: "deep-purple",
+          crimson_dark: "crimson-dark",
+          sunset_dark: "sunset-dark",
+          "theme-dawn": "sunset-dark",
+          "theme-ocean": "slate",
+          "theme-sage": "forest-night",
+          dawn: "sunset-dark",
+          ocean: "slate",
+          sage: "forest-night",
           "mode-dark": "dark",
           "mode-light": "light"
         };
@@ -46,7 +70,8 @@
         return themes.includes(resolved) ? resolved : "";
       };
 
-      let initialTheme = normalizeTheme(safeLocalStorageGet("theme"));
+      let initialTheme = normalizeTheme(safeLocalStorageGet("selectedTheme"))
+        || normalizeTheme(safeLocalStorageGet("theme"));
 
       if (!initialTheme) {
         try {
@@ -63,6 +88,7 @@
         document.body.classList.remove(`theme-${themeId}`);
       });
       document.body.classList.add(`theme-${theme}`);
+      document.body.classList.toggle("theme-dark", theme !== "light");
     })();
   </script>
   <main class="app-shell">
@@ -98,7 +124,7 @@
               <circle cx="12" cy="12" r="4" />
             </svg>
           </span>
-          <span id="themeToggleText">Theme: Midnight</span>
+          <span id="themeToggleText">Theme: Midnight Blue</span>
         </button>
 
         <button id="authActionBtn" class="home-nav-btn" type="button" aria-label="Sign in or sign out">
@@ -272,6 +298,8 @@
         <p class="quote-label">Scripture for Today</p>
         <blockquote id="dailyVerseText" class="scripture-text"></blockquote>
         <p id="dailyVerseRef" class="scripture-ref"></p>
+        <blockquote id="dailyQuoteText" class="daily-quote-text"></blockquote>
+        <p id="dailyQuoteAuthor" class="daily-quote-author"></p>
       </article>
     </section>
 
@@ -595,8 +623,49 @@
                       <input type="radio" name="themeSetting" value="dark" />
                       <span class="theme-option-swatch" aria-hidden="true"></span>
                       <span class="theme-option-copy">
-                        <strong>Midnight</strong>
-                        <small>Deep and calm</small>
+                        <strong>Midnight Blue</strong>
+                      </span>
+                    </label>
+                    <label class="theme-option-card theme-option-obsidian">
+                      <input type="radio" name="themeSetting" value="obsidian" />
+                      <span class="theme-option-swatch" aria-hidden="true"></span>
+                      <span class="theme-option-copy">
+                        <strong>Obsidian</strong>
+                      </span>
+                    </label>
+                    <label class="theme-option-card theme-option-forest-night">
+                      <input type="radio" name="themeSetting" value="forest-night" />
+                      <span class="theme-option-swatch" aria-hidden="true"></span>
+                      <span class="theme-option-copy">
+                        <strong>Forest Night</strong>
+                      </span>
+                    </label>
+                    <label class="theme-option-card theme-option-deep-purple">
+                      <input type="radio" name="themeSetting" value="deep-purple" />
+                      <span class="theme-option-swatch" aria-hidden="true"></span>
+                      <span class="theme-option-copy">
+                        <strong>Deep Purple</strong>
+                      </span>
+                    </label>
+                    <label class="theme-option-card theme-option-crimson-dark">
+                      <input type="radio" name="themeSetting" value="crimson-dark" />
+                      <span class="theme-option-swatch" aria-hidden="true"></span>
+                      <span class="theme-option-copy">
+                        <strong>Crimson Dark</strong>
+                      </span>
+                    </label>
+                    <label class="theme-option-card theme-option-slate">
+                      <input type="radio" name="themeSetting" value="slate" />
+                      <span class="theme-option-swatch" aria-hidden="true"></span>
+                      <span class="theme-option-copy">
+                        <strong>Slate</strong>
+                      </span>
+                    </label>
+                    <label class="theme-option-card theme-option-sunset-dark">
+                      <input type="radio" name="themeSetting" value="sunset-dark" />
+                      <span class="theme-option-swatch" aria-hidden="true"></span>
+                      <span class="theme-option-copy">
+                        <strong>Sunset Dark</strong>
                       </span>
                     </label>
                     <label class="theme-option-card theme-option-pearl">
@@ -604,31 +673,6 @@
                       <span class="theme-option-swatch" aria-hidden="true"></span>
                       <span class="theme-option-copy">
                         <strong>Pearl</strong>
-                        <small>Clean and bright</small>
-                      </span>
-                    </label>
-                    <label class="theme-option-card theme-option-ember">
-                      <input type="radio" name="themeSetting" value="dawn" />
-                      <span class="theme-option-swatch" aria-hidden="true"></span>
-                      <span class="theme-option-copy">
-                        <strong>Ember</strong>
-                        <small>Warm and focused</small>
-                      </span>
-                    </label>
-                    <label class="theme-option-card theme-option-azure">
-                      <input type="radio" name="themeSetting" value="ocean" />
-                      <span class="theme-option-swatch" aria-hidden="true"></span>
-                      <span class="theme-option-copy">
-                        <strong>Azure</strong>
-                        <small>Cool and clear</small>
-                      </span>
-                    </label>
-                    <label class="theme-option-card theme-option-forest">
-                      <input type="radio" name="themeSetting" value="sage" />
-                      <span class="theme-option-swatch" aria-hidden="true"></span>
-                      <span class="theme-option-copy">
-                        <strong>Forest</strong>
-                        <small>Natural and steady</small>
                       </span>
                     </label>
                   </div>
@@ -667,7 +711,10 @@
               </div>
               <div class="settings-fields-grid">
                 <label class="settings-field">
-                  Alarm sound
+                  <span class="settings-field-head">
+                    <span>Alarm sound</span>
+                    <span class="alarm-preview-hint">🔊 Preview</span>
+                  </span>
                   <select id="alarmModeSetting">
                     <option value="mixkit_chime">Mixkit Quick Chime</option>
                     <option value="mixkit_facility">Mixkit Facility Alarm</option>
@@ -690,6 +737,7 @@
                 <button type="submit" class="btn btn-primary">Save Settings</button>
                 <button id="testAlarmBtn" type="button" class="btn btn-glass">Test Alarm</button>
               </div>
+              <audio id="alarmPreviewPlayer" preload="none"></audio>
             </section>
           </form>
 
@@ -912,13 +960,13 @@
     </div>
   </div>
 
-  <script src="./js/constants.js?v=20260222-security1"></script>
-  <script src="./js/sync.js?v=20260222-security1"></script>
-  <script src="./js/analytics.js?v=20260222-security1"></script>
-  <script src="./js/ui.js?v=20260222-security1"></script>
-  <script src="./js/timer.js?v=20260222-security1"></script>
-  <script src="./js/music.js?v=20260222-security1"></script>
-  <script type="module" src="./auth.js?v=20260222-security1"></script>
-  <script src="./app.js?v=20260222-security1"></script>
+  <script src="./js/constants.js?v=20260222-themesync1"></script>
+  <script src="./js/sync.js?v=20260222-themesync1"></script>
+  <script src="./js/analytics.js?v=20260222-themesync1"></script>
+  <script src="./js/ui.js?v=20260222-themesync1"></script>
+  <script src="./js/timer.js?v=20260222-themesync1"></script>
+  <script src="./js/music.js?v=20260222-themesync1"></script>
+  <script type="module" src="./auth.js?v=20260222-themesync1"></script>
+  <script src="./app.js?v=20260222-themesync1"></script>
 </body>
 </html>

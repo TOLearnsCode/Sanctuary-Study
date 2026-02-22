@@ -50,6 +50,8 @@ const homeEncouragementText = document.getElementById("homeEncouragementText");
 const homeSaveVerseBtn = document.getElementById("homeSaveVerseBtn");
 const dailyVerseText = document.getElementById("dailyVerseText");
 const dailyVerseRef = document.getElementById("dailyVerseRef");
+const dailyQuoteText = document.getElementById("dailyQuoteText");
+const dailyQuoteAuthor = document.getElementById("dailyQuoteAuthor");
 const themePills = Array.from(document.querySelectorAll(".theme-pill"));
 
 const studyPrep = document.getElementById("studyPrep");
@@ -134,6 +136,7 @@ const focusModeSetting = document.getElementById("focusModeSetting");
 const alarmModeSetting = document.getElementById("alarmModeSetting");
 const customAlarmRow = document.getElementById("customAlarmRow");
 const customAlarmUrlSetting = document.getElementById("customAlarmUrlSetting");
+const alarmPreviewPlayer = document.getElementById("alarmPreviewPlayer");
 const youtubeMusicUrlSetting = document.getElementById("youtubeMusicUrlSetting");
 const lofiPresetSelect = document.getElementById("lofiPresetSelect");
 const localMusicFileInput = document.getElementById("localMusicFileInput");
@@ -296,11 +299,13 @@ function init() {
     });
   }
 
-  const savedTheme = safeGetItem(THEME_PREF_KEY);
-  const initialTheme = resolveThemePreference(savedTheme, settings.theme, defaultSettings.theme);
+  const selectedTheme = safeGetItem(THEME_PREF_KEY);
+  const legacyTheme = safeGetItem(LEGACY_THEME_PREF_KEY);
+  const initialTheme = resolveThemePreference(selectedTheme, legacyTheme, settings.theme, defaultSettings.theme);
   setTheme(initialTheme, { fromRemote: true });
   settings.theme = initialTheme;
   safeSetItem(THEME_PREF_KEY, initialTheme);
+  safeSetItem(LEGACY_THEME_PREF_KEY, initialTheme);
 
   buildMobileNavigationFromDesktop();
   refreshNavButtons();
@@ -1560,11 +1565,17 @@ function wireEvents() {
     renderSyncStatus();
   });
   window.addEventListener("storage", (event) => {
-    if (event.key !== THEME_PREF_KEY) {
+    if (event.key !== THEME_PREF_KEY && event.key !== LEGACY_THEME_PREF_KEY) {
       return;
     }
 
-    const nextTheme = resolveThemePreference(event.newValue, settings.theme, defaultSettings.theme);
+    const nextTheme = resolveThemePreference(
+      safeGetItem(THEME_PREF_KEY),
+      safeGetItem(LEGACY_THEME_PREF_KEY),
+      event.newValue,
+      settings.theme,
+      defaultSettings.theme
+    );
     if (nextTheme === sanitizeThemeId(document.body.dataset.theme)) {
       return;
     }
@@ -1705,7 +1716,13 @@ function wireEvents() {
       showToastMessage("Complete focus is strict: timer pauses if you leave the tab. Lock-in commitment can be set below.");
     }
   });
-  listen(alarmModeSetting, "change", onAlarmModeFieldChange);
+  listen(alarmModeSetting, "change", () => onAlarmModeFieldChange({ preview: true }));
+  listen(alarmModeSetting, "click", () => onAlarmModeFieldChange({ preview: true }));
+  listen(customAlarmUrlSetting, "change", () => {
+    if (alarmModeSetting && alarmModeSetting.value === "custom") {
+      playAlarmPreviewForMode("custom");
+    }
+  });
   if (enableReminderPermissionBtn) {
     enableReminderPermissionBtn.addEventListener("click", () => {
       requestStudyReminderPermission();
@@ -1863,7 +1880,14 @@ function wireEvents() {
     const volumePercent = Number(musicPopupVolume.value);
     const clamped = Math.min(100, Math.max(0, Number.isFinite(volumePercent) ? volumePercent : 30));
     bgAudio.volume = clamped / 100;
+    settings.musicVolume = clamped;
     updateMusicPopupUi();
+  });
+  listen(musicPopupVolume, "change", () => {
+    const volumePercent = Number(musicPopupVolume.value);
+    const clamped = Math.min(100, Math.max(0, Number.isFinite(volumePercent) ? volumePercent : 30));
+    settings.musicVolume = clamped;
+    saveSettings(settings);
   });
 
   listen(favouritesList, "click", (event) => {

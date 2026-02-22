@@ -1,5 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import {
+  enableMultiTabIndexedDbPersistence,
+  getFirestore
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
 import { getAuth, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
@@ -17,6 +20,15 @@ export const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+
+// Enable offline persistence for cross-device sync resilience.
+enableMultiTabIndexedDbPersistence(db).catch((error) => {
+  // Ignore known unsupported/lock cases; app still falls back to localStorage cache.
+  const code = error && typeof error.code === "string" ? error.code : "";
+  if (code !== "failed-precondition" && code !== "unimplemented") {
+    console.warn("Firestore offline persistence unavailable:", error);
+  }
+});
 
 let analyticsInstance = null;
 try {
