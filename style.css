@@ -3093,9 +3093,8 @@ body.theme-dark .achievement-tier.tier-platinum {
   color: var(--text);
 }
 
-.music-dock {
-  display: none !important;
-}
+/* Music dock is hidden by default via the .hidden class in HTML.
+   JS removes .hidden when the dock should be visible. */
 
 .music-dock-head {
   display: flex;
@@ -3825,15 +3824,13 @@ body.theme-dark .btn-danger {
     border-radius: 10px;
   }
 
-  .nav-buttons,
   .top-nav {
     gap: 6px;
     padding: 0;
     flex-wrap: wrap;
   }
 
-  .app-shell,
-  .main {
+  .app-shell {
     max-width: 100%;
     margin-top: 8px;
   }
@@ -3853,7 +3850,6 @@ body.theme-dark .btn-danger {
     font-size: 14px;
   }
 
-  .hero,
   .home-hero {
     gap: 12px;
     min-height: auto;
@@ -4203,8 +4199,6 @@ body.theme-dark .btn-danger {
 
   button,
   .btn,
-  .nav-link,
-  .tab-btn,
   .nav-btn,
   .home-nav-btn,
   .theme-toggle,
@@ -4220,7 +4214,6 @@ body.theme-dark .btn-danger {
     min-height: 44px;
   }
 
-  .music-btn,
   .music-fab {
     width: 42px;
     height: 42px;
@@ -4239,8 +4232,7 @@ body.theme-dark .btn-danger {
     font-size: 1rem;
   }
 
-  .card,
-  .section-card {
+  .card {
     padding: 10px 12px;
   }
 }

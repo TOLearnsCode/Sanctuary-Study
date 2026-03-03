@@ -249,7 +249,7 @@ function applyPreset(presetId) {
     button.classList.toggle("active", button.dataset.preset === presetId);
   });
 
-  customPresetFields.classList.toggle("hidden", presetId !== "custom");
+  if (customPresetFields) customPresetFields.classList.toggle("hidden", presetId !== "custom");
 
   if (presetId === "25-5") {
     setTimerPreset(25, 5);
@@ -273,16 +273,18 @@ function applyPresetByMinutes(studyMinutes, breakMinutes) {
     return;
   }
 
-  customStudyMinutesInput.value = studyMinutes;
-  customBreakMinutesInput.value = breakMinutes;
+  if (customStudyMinutesInput) customStudyMinutesInput.value = studyMinutes;
+  if (customBreakMinutesInput) customBreakMinutesInput.value = breakMinutes;
   applyPreset("custom");
 }
 
 function applyCustomPreset() {
-  const study = clampMinutes(customStudyMinutesInput.value, 1, 240);
-  const rest = clampMinutes(customBreakMinutesInput.value, 1, 120);
-  customStudyMinutesInput.value = study;
-  customBreakMinutesInput.value = rest;
+  var studyVal = customStudyMinutesInput ? customStudyMinutesInput.value : 25;
+  var breakVal = customBreakMinutesInput ? customBreakMinutesInput.value : 5;
+  const study = clampMinutes(studyVal, 1, 240);
+  const rest = clampMinutes(breakVal, 1, 120);
+  if (customStudyMinutesInput) customStudyMinutesInput.value = study;
+  if (customBreakMinutesInput) customBreakMinutesInput.value = rest;
   setTimerPreset(study, rest);
   showToastMessage(`Custom preset applied: ${study}/${rest}`);
 }
@@ -299,18 +301,18 @@ function setTimerPreset(studyMinutes, breakMinutes) {
 }
 
 function getActiveSessionTag() {
-  const selected = sessionTagSelect.value;
+  const selected = sessionTagSelect ? sessionTagSelect.value : "";
   if (selected === "Custom") {
-    const custom = String(customTagInput.value || "").trim().slice(0, 50);
+    const custom = String(customTagInput ? customTagInput.value : "").trim().slice(0, 50);
     return custom || "Custom";
   }
 
-  return selected;
+  return selected || "General";
 }
 
 function updateSessionTagBadge() {
   const activeTag = getActiveSessionTag();
-  sessionTagBadge.textContent = `Tag: ${activeTag}`;
+  if (sessionTagBadge) sessionTagBadge.textContent = `Tag: ${activeTag}`;
 }
 
 async function beginStudyExperience() {
@@ -338,7 +340,7 @@ async function beginStudyExperience() {
       startBackgroundMusicFromSavedPreference(false);
     }
 
-    const startedFromHome = !homeSection.classList.contains("hidden");
+    const startedFromHome = homeSection && !homeSection.classList.contains("hidden");
     if (startedFromHome) {
       await wait(320);
     }
@@ -355,8 +357,8 @@ async function beginStudyExperience() {
 }
 
 function showSessionPanel() {
-  studyPrep.classList.add("hidden");
-  studySession.classList.remove("hidden");
+  if (studyPrep) studyPrep.classList.add("hidden");
+  if (studySession) studySession.classList.remove("hidden");
   updateFocusLockStatus();
   updateMiniTimerWidget();
 }
@@ -369,14 +371,14 @@ function setCurrentFocus(focus) {
     encouragement: focus.encouragement
   };
 
-  homeThemeBadge.textContent = currentFocus.theme;
-  homeVerseText.textContent = `"${currentFocus.text}"`;
-  homeVerseRef.textContent = currentFocus.reference;
-  homeEncouragementText.textContent = currentFocus.encouragement;
+  if (homeThemeBadge) homeThemeBadge.textContent = currentFocus.theme;
+  if (homeVerseText) homeVerseText.textContent = `"${currentFocus.text}"`;
+  if (homeVerseRef) homeVerseRef.textContent = currentFocus.reference;
+  if (homeEncouragementText) homeEncouragementText.textContent = currentFocus.encouragement;
 
-  sessionVerseText.textContent = `"${currentFocus.text}"`;
-  sessionVerseRef.textContent = currentFocus.reference;
-  sessionEncouragementText.textContent = currentFocus.encouragement;
+  if (sessionVerseText) sessionVerseText.textContent = `"${currentFocus.text}"`;
+  if (sessionVerseRef) sessionVerseRef.textContent = currentFocus.reference;
+  if (sessionEncouragementText) sessionEncouragementText.textContent = currentFocus.encouragement;
 }
 
 function resetToStudyBlock() {
@@ -488,7 +490,7 @@ function resetTimer() {
 }
 
 function openCancelSessionModal() {
-  if (studySession.classList.contains("hidden")) {
+  if (!studySession || studySession.classList.contains("hidden")) {
     return;
   }
 
@@ -496,19 +498,21 @@ function openCancelSessionModal() {
     return;
   }
 
-  if (timerState.phase === "study") {
-    cancelSessionMessage.textContent = "This block will not be tracked if you do not finish the full study block. Do you still want to cancel?";
-  } else {
-    cancelSessionMessage.textContent = "Stopping now ends this cycle. Any unfinished study block will not be tracked. Do you still want to cancel?";
+  if (cancelSessionMessage) {
+    if (timerState.phase === "study") {
+      cancelSessionMessage.textContent = "This block will not be tracked if you do not finish the full study block. Do you still want to cancel?";
+    } else {
+      cancelSessionMessage.textContent = "Stopping now ends this cycle. Any unfinished study block will not be tracked. Do you still want to cancel?";
+    }
   }
 
-  cancelSessionModal.classList.remove("hidden");
-  confirmCancelSessionBtn.focus();
+  if (cancelSessionModal) cancelSessionModal.classList.remove("hidden");
+  if (confirmCancelSessionBtn) confirmCancelSessionBtn.focus();
 }
 
 function closeCancelSessionModal() {
-  cancelSessionModal.classList.add("hidden");
-  if (!studySession.classList.contains("hidden")) {
+  if (cancelSessionModal) cancelSessionModal.classList.add("hidden");
+  if (cancelSessionBtn && studySession && !studySession.classList.contains("hidden")) {
     cancelSessionBtn.focus();
   }
 }
@@ -521,13 +525,16 @@ function confirmCancelSession() {
 function dismissVersePopup() {
   clearInterval(popupIntervalId);
   popupIntervalId = null;
-  versePopup.classList.add("hidden");
+  if (versePopup) versePopup.classList.add("hidden");
   document.body.classList.remove("popup-open");
-  popupOverlay.classList.add("hidden");
+  if (popupOverlay) popupOverlay.classList.add("hidden");
 
   if (popupRejectCallback) {
     var callback = popupRejectCallback;
     popupRejectCallback = null;
+    // Revert session panel state since timer will never start.
+    if (studySession) studySession.classList.add("hidden");
+    if (studyPrep) studyPrep.classList.remove("hidden");
     callback(new Error("Session cancelled during verse popup."));
   }
 }
@@ -557,8 +564,8 @@ function cancelCurrentSession(options = {}) {
   updateTimerButtons();
   updateSessionStatus();
 
-  studySession.classList.add("hidden");
-  studyPrep.classList.remove("hidden");
+  if (studySession) studySession.classList.add("hidden");
+  if (studyPrep) studyPrep.classList.remove("hidden");
   closeSessionReviewPrompt();
   clearFocusCommitState();
   updateMiniTimerWidget();
@@ -626,12 +633,13 @@ function showMotivationToast(message) {
 }
 
 function showAchievementToast(achievement) {
+  if (!achievementToast) return;
   clearTimeout(achievementToastTimeoutId);
   clearTimeout(achievementToastCleanupId);
 
-  achievementToastMedal.textContent = achievement.medalText || achievement.days || "★";
-  achievementToastTitle.textContent = achievement.title;
-  achievementToastMessage.textContent = achievement.message;
+  if (achievementToastMedal) achievementToastMedal.textContent = achievement.medalText || achievement.days || "★";
+  if (achievementToastTitle) achievementToastTitle.textContent = achievement.title;
+  if (achievementToastMessage) achievementToastMessage.textContent = achievement.message;
 
   achievementToast.classList.remove("hidden", "hide");
   achievementToast.classList.add("show");
@@ -648,6 +656,7 @@ function showAchievementToast(achievement) {
 }
 
 function showToastMessage(message) {
+  if (!motivationToast) return;
   clearTimeout(toastTimeoutId);
   clearTimeout(toastCleanupId);
 
@@ -667,12 +676,12 @@ function showToastMessage(message) {
 }
 
 function updateMiniTimerWidget() {
-  miniTimerPhase.textContent = timerState.phase === "study" ? "Study" : "Break";
-  miniTimerTime.textContent = timerDisplay.textContent;
+  if (miniTimerPhase) miniTimerPhase.textContent = timerState.phase === "study" ? "Study" : "Break";
+  if (miniTimerTime && timerDisplay) miniTimerTime.textContent = timerDisplay.textContent;
 
-  const sessionStarted = !studySession.classList.contains("hidden");
+  const sessionStarted = studySession && !studySession.classList.contains("hidden");
   const outsideStudyPage = currentView !== "study";
-  miniTimerWidget.classList.toggle("hidden", !(sessionStarted && outsideStudyPage));
+  if (miniTimerWidget) miniTimerWidget.classList.toggle("hidden", !(sessionStarted && outsideStudyPage));
 }
 
 function isStudyBlockRunning() {
@@ -813,19 +822,22 @@ function updateTimerDisplay() {
   const minutes = Math.floor(safeSeconds / 60);
   const seconds = safeSeconds % 60;
   const formatted = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  timerDisplay.textContent = formatted;
-  miniTimerTime.textContent = formatted;
+  if (timerDisplay) timerDisplay.textContent = formatted;
+  if (miniTimerTime) miniTimerTime.textContent = formatted;
 }
 
 function updatePhaseBadge() {
   const inStudy = timerState.phase === "study";
-  phaseBadge.textContent = inStudy ? "Study" : "Break";
-  phaseBadge.classList.toggle("study", inStudy);
-  phaseBadge.classList.toggle("break", !inStudy);
-  miniTimerPhase.textContent = phaseBadge.textContent;
+  if (phaseBadge) {
+    phaseBadge.textContent = inStudy ? "Study" : "Break";
+    phaseBadge.classList.toggle("study", inStudy);
+    phaseBadge.classList.toggle("break", !inStudy);
+  }
+  if (miniTimerPhase) miniTimerPhase.textContent = inStudy ? "Study" : "Break";
 }
 
 function updateSessionStatus() {
+  if (!sessionStatus) return;
   if (timerState.running) {
     sessionStatus.textContent = timerState.phase === "study" ? "Focus block in progress" : "Break block in progress";
     return;
@@ -835,23 +847,23 @@ function updateSessionStatus() {
 }
 
 function updateTimerButtons() {
-  startBtn.disabled = timerState.running;
-  pauseBtn.disabled = !timerState.running;
+  if (startBtn) startBtn.disabled = timerState.running;
+  if (pauseBtn) pauseBtn.disabled = !timerState.running;
 }
 
 function showVersePopupForSeconds(focus, seconds) {
   clearInterval(popupIntervalId);
   popupRejectCallback = null;
-  popupVerseText.textContent = `"${focus.text}"`;
-  popupVerseRef.textContent = focus.reference;
-  versePopup.classList.remove("hidden");
+  if (popupVerseText) popupVerseText.textContent = `"${focus.text}"`;
+  if (popupVerseRef) popupVerseRef.textContent = focus.reference;
+  if (versePopup) versePopup.classList.remove("hidden");
   document.body.classList.add("popup-open");
-  popupOverlay.classList.remove("hidden");
+  if (popupOverlay) popupOverlay.classList.remove("hidden");
 
   return new Promise((resolve, reject) => {
     popupRejectCallback = reject;
     let remaining = seconds;
-    popupCountdown.textContent = `Starting in ${remaining}s`;
+    if (popupCountdown) popupCountdown.textContent = `Starting in ${remaining}s`;
 
     popupIntervalId = setInterval(() => {
       remaining -= 1;
@@ -860,12 +872,12 @@ function showVersePopupForSeconds(focus, seconds) {
         clearInterval(popupIntervalId);
         popupIntervalId = null;
         popupRejectCallback = null;
-        versePopup.classList.add("hidden");
+        if (versePopup) versePopup.classList.add("hidden");
         document.body.classList.remove("popup-open");
-        popupOverlay.classList.add("hidden");
+        if (popupOverlay) popupOverlay.classList.add("hidden");
         resolve();
       } else {
-        popupCountdown.textContent = `Starting in ${remaining}s`;
+        if (popupCountdown) popupCountdown.textContent = `Starting in ${remaining}s`;
       }
     }, 1000);
   });

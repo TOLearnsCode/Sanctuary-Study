@@ -47,15 +47,16 @@
     return themes.includes(resolved) ? resolved : "";
   };
 
-  let initialTheme = normalizeTheme(localStorage.getItem("selectedTheme"))
-    || normalizeTheme(localStorage.getItem("theme"));
-  if (!initialTheme) {
-    try {
+  let initialTheme = "";
+  try {
+    initialTheme = normalizeTheme(localStorage.getItem("selectedTheme"))
+      || normalizeTheme(localStorage.getItem("theme"));
+    if (!initialTheme) {
       const parsed = JSON.parse(localStorage.getItem("sanctuaryStudySettingsV1") || "{}");
       initialTheme = normalizeTheme(parsed.theme);
-    } catch (error) {
-      initialTheme = "";
     }
+  } catch (error) {
+    initialTheme = "";
   }
 
   const theme = initialTheme || "dark";

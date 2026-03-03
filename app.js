@@ -2194,7 +2194,9 @@ function setStudyTheme(theme) {
 
   selectedStudyTheme = theme;
   themePills.forEach((pill) => {
-    pill.classList.toggle("active", pill.dataset.studyTheme === theme);
+    const isActive = pill.dataset.studyTheme === theme;
+    pill.classList.toggle("active", isActive);
+    pill.setAttribute("aria-checked", String(isActive));
   });
 
   homeThemeBadge.textContent = theme;

@@ -811,7 +811,17 @@ function destroyYouTubePlayer() {
   }
 
   youtubePlayer = null;
-  if (musicFrame) {
+
+  // YT.Player.destroy() replaces the original <div id="musicFrame"> with an
+  // <iframe>, invalidating the cached reference.  Re-create the div so future
+  // createYouTubePlayer calls work and update the global reference.
+  var existing = document.getElementById("musicFrame");
+  if (existing) {
+    var fresh = document.createElement("div");
+    fresh.id = "musicFrame";
+    existing.parentNode.replaceChild(fresh, existing);
+    musicFrame = fresh;
+  } else if (musicFrame) {
     musicFrame.innerHTML = "";
   }
 }

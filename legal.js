@@ -126,7 +126,12 @@ function syncThemeToAppSettings(theme) {
 }
 
 function initializeLegalThemeSync() {
-  const savedTheme = localStorage.getItem(LEGAL_THEME_KEY) || localStorage.getItem(LEGACY_THEME_KEY);
+  let savedTheme = null;
+  try {
+    savedTheme = localStorage.getItem(LEGAL_THEME_KEY) || localStorage.getItem(LEGACY_THEME_KEY);
+  } catch (error) {
+    // localStorage may be unavailable in private browsing.
+  }
   applyTheme(savedTheme || "dark", { persist: false, syncSettings: false });
 
   const toggleBtn = document.getElementById("legalThemeToggle");

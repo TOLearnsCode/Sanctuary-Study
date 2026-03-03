@@ -384,11 +384,18 @@ function saveUserProfile(uid, profileInput) {
 
   const map = loadProfilesMap();
   const existing = map[uid] && typeof map[uid] === "object" ? map[uid] : {};
+  const pickField = (newVal, oldVal) => {
+    // Allow explicitly setting a field to empty string (newVal !== undefined).
+    if (newVal !== undefined && newVal !== null) {
+      return String(newVal).trim();
+    }
+    return String(oldVal || "").trim();
+  };
   const profile = {
-    firstName: String(profileInput.firstName || existing.firstName || "").trim(),
-    lastName: String(profileInput.lastName || existing.lastName || "").trim(),
-    email: String(profileInput.email || existing.email || "").trim(),
-    dob: String(profileInput.dob || existing.dob || "").trim(),
+    firstName: pickField(profileInput.firstName, existing.firstName),
+    lastName: pickField(profileInput.lastName, existing.lastName),
+    email: pickField(profileInput.email, existing.email),
+    dob: pickField(profileInput.dob, existing.dob),
     createdAt: String(existing.createdAt || profileInput.createdAt || new Date().toISOString())
   };
 
@@ -465,6 +472,12 @@ function isValidDob(value) {
 
   const dobDate = new Date(`${value}T00:00:00`);
   if (Number.isNaN(dobDate.getTime())) {
+    return false;
+  }
+
+  // Reject invalid calendar dates (e.g. Feb 31) that roll forward silently.
+  const [year, month, day] = value.split("-").map(Number);
+  if (dobDate.getFullYear() !== year || dobDate.getMonth() + 1 !== month || dobDate.getDate() !== day) {
     return false;
   }
 
@@ -657,13 +670,14 @@ async function onSignInClick() {
         try {
           await withTimeout(signOut(auth), AUTH_REQUEST_TIMEOUT_MS);
         } catch (error) {
-          // If sign-out fails, still surface a trust-gate event.
-          emitAuthChanged({
-            mode: "verification_required",
-            email: verificationRequiredEmail,
-            verificationEmailSent: verificationResult.ok
-          });
+          // Sign-out failed; fall through to emit below.
         }
+
+        emitAuthChanged({
+          mode: "verification_required",
+          email: verificationRequiredEmail,
+          verificationEmailSent: verificationResult.ok
+        });
 
         setAuthMessage(
           `Verify your email before signing in. ${getVerificationSendMessage(verificationResult)}`,
@@ -750,12 +764,14 @@ async function onSignUpClick() {
     try {
       await withTimeout(signOut(auth), AUTH_REQUEST_TIMEOUT_MS);
     } catch (error) {
-      emitAuthChanged({
-        mode: "verification_required",
-        email: verificationRequiredEmail,
-        verificationEmailSent: verificationResult.ok
-      });
+      // Sign-out failed; fall through to emit below.
     }
+
+    emitAuthChanged({
+      mode: "verification_required",
+      email: verificationRequiredEmail,
+      verificationEmailSent: verificationResult.ok
+    });
 
     setAuthFormMode("signin");
     if (authPasswordInput) {
@@ -780,12 +796,16 @@ async function onSignUpClick() {
 async function resendVerificationEmail() {
   const user = auth.currentUser;
   if (!user) {
-    throw new Error("No signed-in user to verify.");
+    const noUserError = new Error("No signed-in user to verify.");
+    noUserError.code = "auth/missing-user";
+    throw noUserError;
   }
 
   const verificationResult = await sendVerificationEmailIfPossible(user, { skipCooldown: true });
   if (!verificationResult.ok) {
-    throw new Error(getVerificationSendMessage(verificationResult));
+    const sendError = new Error(getVerificationSendMessage(verificationResult));
+    sendError.code = verificationResult.code || "auth/verification-send-failed";
+    throw sendError;
   }
 
   console.log("Verification email resent.");
@@ -805,7 +825,11 @@ async function onGoogleSignInClick() {
       const signedInUser = auth.currentUser || credential.user;
       if (!signedInUser.emailVerified) {
         setVerificationRequiredEmail(String(signedInUser.email || "").trim());
-        await withTimeout(signOut(auth), AUTH_REQUEST_TIMEOUT_MS);
+        try {
+          await withTimeout(signOut(auth), AUTH_REQUEST_TIMEOUT_MS);
+        } catch (error) {
+          // Sign-out failed; still show verification message.
+        }
         setAuthMessage("This Google account email must be verified before sign-in.", true);
         return;
       }
@@ -920,6 +944,9 @@ function initializeAuthPageBindings() {
 
   if (authGoogleBtn) {
     authGoogleBtn.addEventListener("click", () => {
+      if (authRequestInProgress) {
+        return;
+      }
       onGoogleSignInClick();
     });
   }
@@ -942,6 +969,9 @@ function initializeAuthPageBindings() {
 
   authForm.addEventListener("submit", (event) => {
     event.preventDefault();
+    if (authRequestInProgress) {
+      return;
+    }
     if (authFormMode === "signup") {
       onSignUpClick();
       return;
@@ -951,6 +981,9 @@ function initializeAuthPageBindings() {
 
   if (authResendVerificationBtn) {
     authResendVerificationBtn.addEventListener("click", () => {
+      if (authRequestInProgress) {
+        return;
+      }
       onResendVerificationClick();
     });
   }
@@ -1074,6 +1107,13 @@ function initializeAuthBridge() {
     }
 
     try {
+      if (!user.email) {
+        window.dispatchEvent(new CustomEvent("sanctuary:delete-account-result", {
+          detail: { ok: false, message: "No email associated with this account." }
+        }));
+        return;
+      }
+
       const credential = EmailAuthProvider.credential(user.email, password);
       await reauthenticateWithCredential(user, credential);
       await deleteUserFirestoreData(user.uid);
@@ -1081,6 +1121,7 @@ function initializeAuthBridge() {
       removeStoredProfile(user.uid);
       clearVerificationRequiredEmail();
       clearLocalAppData();
+      purgeUserLocalData();
       emitAuthChanged({ mode: "signed_out" });
       window.dispatchEvent(new CustomEvent("sanctuary:delete-account-result", {
         detail: { ok: true }

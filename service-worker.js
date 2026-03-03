@@ -1,4 +1,4 @@
-const ASSET_VERSION = "20260222-acctdeletion1";
+const ASSET_VERSION = "20260303-nullguards1";
 const CACHE_NAME = `sanctuary-study-core-${ASSET_VERSION}`;
 const withVersion = (path) => `${path}?v=${ASSET_VERSION}`;
 const CORE_ASSETS = [
@@ -16,6 +16,7 @@ const CORE_ASSETS = [
   withVersion("/js/music.js"),
   withVersion("/app.js"),
   withVersion("/legal.js"),
+  withVersion("/legal-init.js"),
   withVersion("/auth.js"),
   withVersion("/firebase.js"),
   "/favicon.ico",
@@ -38,6 +39,7 @@ const APP_SHELL_PATHS = new Set([
   "/js/music.js",
   "/app.js",
   "/legal.js",
+  "/legal-init.js",
   "/auth.js",
   "/firebase.js"
 ]);

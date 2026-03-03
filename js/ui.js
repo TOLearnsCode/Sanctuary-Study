@@ -68,11 +68,12 @@ function saveSessionNotesState(state) {
 }
 
 function renderSessionNotes() {
-  sessionNotesInput.value = sessionNotesState.text;
+  if (sessionNotesInput) sessionNotesInput.value = sessionNotesState.text;
   renderSessionTodoList();
 }
 
 function renderSessionTodoList() {
+  if (!sessionTodoList) return;
   sessionTodoList.innerHTML = "";
 
   if (!sessionNotesState.todos.length) {
@@ -112,7 +113,7 @@ function renderSessionTodoList() {
 }
 
 function addSessionTodoItem() {
-  const text = String(sessionTodoInput.value || "").trim();
+  const text = String(sessionTodoInput ? sessionTodoInput.value : "").trim();
   if (!text) {
     showToastMessage("Type a task first.");
     return;
@@ -124,7 +125,7 @@ function addSessionTodoItem() {
     done: false
   });
   saveSessionNotesState(sessionNotesState);
-  sessionTodoInput.value = "";
+  if (sessionTodoInput) sessionTodoInput.value = "";
   renderSessionTodoList();
 }
 
@@ -259,6 +260,7 @@ function saveCurrentFocusToFavourites() {
 
 function renderFavourites() {
   const favourites = loadFavourites();
+  if (!favouritesList) return;
   favouritesList.innerHTML = "";
 
   if (!favourites.length) {
@@ -547,13 +549,13 @@ function onSettingsSubmit(event) {
   }
 
   const weeklyTargets = sanitizeWeeklyPlanTargets({
-    mon: weeklyPlanMonSetting.value,
-    tue: weeklyPlanTueSetting.value,
-    wed: weeklyPlanWedSetting.value,
-    thu: weeklyPlanThuSetting.value,
-    fri: weeklyPlanFriSetting.value,
-    sat: weeklyPlanSatSetting.value,
-    sun: weeklyPlanSunSetting.value
+    mon: weeklyPlanMonSetting ? weeklyPlanMonSetting.value : 0,
+    tue: weeklyPlanTueSetting ? weeklyPlanTueSetting.value : 0,
+    wed: weeklyPlanWedSetting ? weeklyPlanWedSetting.value : 0,
+    thu: weeklyPlanThuSetting ? weeklyPlanThuSetting.value : 0,
+    fri: weeklyPlanFriSetting ? weeklyPlanFriSetting.value : 0,
+    sat: weeklyPlanSatSetting ? weeklyPlanSatSetting.value : 0,
+    sun: weeklyPlanSunSetting ? weeklyPlanSunSetting.value : 0
   });
 
   settings = {
@@ -561,16 +563,16 @@ function onSettingsSubmit(event) {
     breakMinutes: clampMinutes(breakMinutesSetting.value, 1, 120),
     dailyGoalMinutes: clampMinutes(dailyGoalMinutesSetting.value, 10, 600),
     weeklyPlanTargets: weeklyTargets,
-    remindersEnabled: Boolean(remindersEnabledSetting.checked),
-    reminderTime: sanitizeTimeInput(reminderTimeSetting.value, defaultSettings.reminderTime),
-    quietHoursStart: sanitizeTimeInput(quietHoursStartSetting.value, defaultSettings.quietHoursStart),
-    quietHoursEnd: sanitizeTimeInput(quietHoursEndSetting.value, defaultSettings.quietHoursEnd),
+    remindersEnabled: Boolean(remindersEnabledSetting ? remindersEnabledSetting.checked : settings.remindersEnabled),
+    reminderTime: sanitizeTimeInput(reminderTimeSetting ? reminderTimeSetting.value : settings.reminderTime, defaultSettings.reminderTime),
+    quietHoursStart: sanitizeTimeInput(quietHoursStartSetting ? quietHoursStartSetting.value : settings.quietHoursStart, defaultSettings.quietHoursStart),
+    quietHoursEnd: sanitizeTimeInput(quietHoursEndSetting ? quietHoursEndSetting.value : settings.quietHoursEnd, defaultSettings.quietHoursEnd),
     theme: getThemeSettingValue(),
     focusMode: sanitizeFocusMode(focusModeSetting.value),
-    focusCommitMinutes: clampFocusCommitMinutes(focusCommitMinutesSetting.value),
-    blockedSites: sanitizeBlockedSites(blockedSitesSetting.value),
+    focusCommitMinutes: clampFocusCommitMinutes(focusCommitMinutesSetting ? focusCommitMinutesSetting.value : settings.focusCommitMinutes),
+    blockedSites: sanitizeBlockedSites(blockedSitesSetting ? blockedSitesSetting.value : ""),
     alarmMode: sanitizeAlarmMode(alarmModeSetting.value),
-    customAlarmUrl: sanitizeAudioUrl(customAlarmUrlSetting.value),
+    customAlarmUrl: sanitizeAudioUrl(customAlarmUrlSetting ? customAlarmUrlSetting.value : ""),
     musicVolume: clampMusicVolume(bgAudio ? (bgAudio.volume * 100) : settings.musicVolume),
     youtubeMusicUrl: sanitizeAudioUrl(youtubeMusicUrlSetting ? youtubeMusicUrlSetting.value : ""),
     musicPresetId: sanitizeMusicPresetId(lofiPresetSelect ? lofiPresetSelect.value : "")

@@ -301,41 +301,49 @@ function getMotivationalMessage(context) {
 
 function renderAnalytics() {
   if (!canUseAnalyticsFeatures()) {
-    todayMinutesEl.textContent = "Sign in";
-    totalHoursEl.textContent = "Sign in";
-    streakDaysEl.textContent = "Sign in";
-    studyDaysEl.textContent = "Sign in";
-    goalProgressEl.textContent = `Goal: ${settings.dailyGoalMinutes} min`;
+    if (todayMinutesEl) todayMinutesEl.textContent = "Sign in";
+    if (totalHoursEl) totalHoursEl.textContent = "Sign in";
+    if (streakDaysEl) streakDaysEl.textContent = "Sign in";
+    if (studyDaysEl) studyDaysEl.textContent = "Sign in";
+    if (goalProgressEl) goalProgressEl.textContent = `Goal: ${settings.dailyGoalMinutes} min`;
 
-    chartSummaryEl.textContent = "Sign in to view your study analytics.";
-    studyGraphEl.innerHTML = "";
-    const graphLocked = document.createElement("p");
-    graphLocked.className = "favourite-empty";
-    graphLocked.textContent = "Analytics are unavailable in guest mode.";
-    studyGraphEl.appendChild(graphLocked);
+    if (chartSummaryEl) chartSummaryEl.textContent = "Sign in to view your study analytics.";
+    if (studyGraphEl) {
+      studyGraphEl.innerHTML = "";
+      const graphLocked = document.createElement("p");
+      graphLocked.className = "favourite-empty";
+      graphLocked.textContent = "Analytics are unavailable in guest mode.";
+      studyGraphEl.appendChild(graphLocked);
+    }
 
-    tagSummaryEl.textContent = "Sign in to view weekly tag breakdown.";
-    tagBreakdownListEl.innerHTML = "";
-    const tagLocked = document.createElement("p");
-    tagLocked.className = "favourite-empty";
-    tagLocked.textContent = "Tag analytics require an account sign-in.";
-    tagBreakdownListEl.appendChild(tagLocked);
+    if (tagSummaryEl) tagSummaryEl.textContent = "Sign in to view weekly tag breakdown.";
+    if (tagBreakdownListEl) {
+      tagBreakdownListEl.innerHTML = "";
+      const tagLocked = document.createElement("p");
+      tagLocked.className = "favourite-empty";
+      tagLocked.textContent = "Tag analytics require an account sign-in.";
+      tagBreakdownListEl.appendChild(tagLocked);
+    }
 
-    weeklyPlanSummaryEl.textContent = "Sign in to track plan progress.";
-    weeklyPlanProgressFillEl.style.width = "0%";
-    weeklyPlanBreakdownEl.innerHTML = "";
-    const planLocked = document.createElement("p");
-    planLocked.className = "favourite-empty";
-    planLocked.textContent = "Weekly plan progress appears after sign in.";
-    weeklyPlanBreakdownEl.appendChild(planLocked);
+    if (weeklyPlanSummaryEl) weeklyPlanSummaryEl.textContent = "Sign in to track plan progress.";
+    if (weeklyPlanProgressFillEl) weeklyPlanProgressFillEl.style.width = "0%";
+    if (weeklyPlanBreakdownEl) {
+      weeklyPlanBreakdownEl.innerHTML = "";
+      const planLocked = document.createElement("p");
+      planLocked.className = "favourite-empty";
+      planLocked.textContent = "Weekly plan progress appears after sign in.";
+      weeklyPlanBreakdownEl.appendChild(planLocked);
+    }
 
-    deepInsightsSummaryEl.textContent = "Sign in to unlock deeper insights.";
-    deepInsightsListEl.innerHTML = "";
-    const insightLocked = document.createElement("p");
-    insightLocked.className = "favourite-empty";
-    insightLocked.textContent = "Best times, weekly comparison, and forecasts are account features.";
-    deepInsightsListEl.appendChild(insightLocked);
-    tagTrendListEl.innerHTML = "";
+    if (deepInsightsSummaryEl) deepInsightsSummaryEl.textContent = "Sign in to unlock deeper insights.";
+    if (deepInsightsListEl) {
+      deepInsightsListEl.innerHTML = "";
+      const insightLocked = document.createElement("p");
+      insightLocked.className = "favourite-empty";
+      insightLocked.textContent = "Best times, weekly comparison, and forecasts are account features.";
+      deepInsightsListEl.appendChild(insightLocked);
+    }
+    if (tagTrendListEl) tagTrendListEl.innerHTML = "";
 
     renderAchievements();
     return;
@@ -351,11 +359,11 @@ function renderAnalytics() {
   const streak = calculateStreak(log);
   const studyDays = countStudyDays(log);
 
-  todayMinutesEl.textContent = `${Math.round(todayMinutes)} min`;
-  totalHoursEl.textContent = `${totalHours.toFixed(1)} hrs`;
-  streakDaysEl.textContent = `${streak} day${streak === 1 ? "" : "s"}`;
-  studyDaysEl.textContent = `${studyDays} day${studyDays === 1 ? "" : "s"}`;
-  goalProgressEl.textContent = `${Math.round(todayMinutes)} / ${settings.dailyGoalMinutes} min`;
+  if (todayMinutesEl) todayMinutesEl.textContent = `${Math.round(todayMinutes)} min`;
+  if (totalHoursEl) totalHoursEl.textContent = `${totalHours.toFixed(1)} hrs`;
+  if (streakDaysEl) streakDaysEl.textContent = `${streak} day${streak === 1 ? "" : "s"}`;
+  if (studyDaysEl) studyDaysEl.textContent = `${studyDays} day${studyDays === 1 ? "" : "s"}`;
+  if (goalProgressEl) goalProgressEl.textContent = `${Math.round(todayMinutes)} / ${settings.dailyGoalMinutes} min`;
 
   renderWeeklyPlanProgress(log);
   renderStudyGraph(log);
@@ -457,7 +465,7 @@ function renderWeeklyPlanProgress(log) {
 
   let totalActual = 0;
   let totalTarget = 0;
-  weeklyPlanBreakdownEl.innerHTML = "";
+  if (weeklyPlanBreakdownEl) weeklyPlanBreakdownEl.innerHTML = "";
 
   dates.forEach((date, index) => {
     const key = getDateKey(date);
@@ -479,19 +487,19 @@ function renderWeeklyPlanProgress(log) {
 
     row.appendChild(label);
     row.appendChild(value);
-    weeklyPlanBreakdownEl.appendChild(row);
+    if (weeklyPlanBreakdownEl) weeklyPlanBreakdownEl.appendChild(row);
   });
 
   const safeTarget = totalTarget > 0 ? totalTarget : weeklyTarget;
   const progressPercent = safeTarget > 0 ? Math.min(100, Math.round((totalActual / safeTarget) * 100)) : 0;
-  weeklyPlanProgressFillEl.style.width = `${progressPercent}%`;
+  if (weeklyPlanProgressFillEl) weeklyPlanProgressFillEl.style.width = `${progressPercent}%`;
 
   if (safeTarget <= 0) {
-    weeklyPlanSummaryEl.textContent = "Set daily targets in Settings to enable weekly progress.";
+    if (weeklyPlanSummaryEl) weeklyPlanSummaryEl.textContent = "Set daily targets in Settings to enable weekly progress.";
     return;
   }
 
-  weeklyPlanSummaryEl.textContent = `${Math.round(totalActual)} / ${Math.round(safeTarget)} min (${progressPercent}%)`;
+  if (weeklyPlanSummaryEl) weeklyPlanSummaryEl.textContent = `${Math.round(totalActual)} / ${Math.round(safeTarget)} min (${progressPercent}%)`;
 }
 
 function formatHourRange(hour) {
@@ -560,6 +568,7 @@ function getTagTotalsForWeek(tagLog, weekStart) {
 }
 
 function renderTagTrends(tagLog) {
+  if (!tagTrendListEl) return;
   tagTrendListEl.innerHTML = "";
 
   const thisWeekStart = getWeekStart(new Date());
@@ -626,7 +635,8 @@ function renderDeepInsights(log, tagLog, sessionHistory) {
     ? `${projectedMinutes} / ${weekTarget} min projected`
     : "Set weekly targets to unlock forecast";
 
-  deepInsightsSummaryEl.textContent = `${Math.round(thisWeekMinutes)} min this week (${deltaPrefix}${Math.round(deltaMinutes)} vs last week)`;
+  if (deepInsightsSummaryEl) deepInsightsSummaryEl.textContent = `${Math.round(thisWeekMinutes)} min this week (${deltaPrefix}${Math.round(deltaMinutes)} vs last week)`;
+  if (!deepInsightsListEl) return;
   deepInsightsListEl.innerHTML = "";
 
   const insights = [
@@ -684,7 +694,8 @@ function renderStudyGraph(log) {
   const activeDays = points.filter((point) => point.minutes > 0).length;
   const maxMinutes = Math.max(1, ...points.map((point) => point.minutes));
 
-  chartSummaryEl.textContent = `${Math.round(windowMinutes)} min (${(windowMinutes / 60).toFixed(1)} hrs) across ${activeDays} active day${activeDays === 1 ? "" : "s"}`;
+  if (chartSummaryEl) chartSummaryEl.textContent = `${Math.round(windowMinutes)} min (${(windowMinutes / 60).toFixed(1)} hrs) across ${activeDays} active day${activeDays === 1 ? "" : "s"}`;
+  if (!studyGraphEl) return;
   studyGraphEl.innerHTML = "";
 
   points.forEach((point, index) => {
@@ -723,10 +734,11 @@ function renderWeeklyTagBreakdown(tagLog) {
     .filter((row) => row.minutes > 0)
     .sort((a, b) => b.minutes - a.minutes);
 
+  if (!tagBreakdownListEl) return;
   tagBreakdownListEl.innerHTML = "";
 
   if (!rows.length) {
-    tagSummaryEl.textContent = "No tagged study yet this week.";
+    if (tagSummaryEl) tagSummaryEl.textContent = "No tagged study yet this week.";
     const empty = document.createElement("p");
     empty.className = "favourite-empty";
     empty.textContent = "Complete a tagged study block to see weekly tag analytics.";
@@ -735,7 +747,7 @@ function renderWeeklyTagBreakdown(tagLog) {
   }
 
   const totalMinutes = rows.reduce((sum, row) => sum + row.minutes, 0);
-  tagSummaryEl.textContent = `${Math.round(totalMinutes)} min total this week`;
+  if (tagSummaryEl) tagSummaryEl.textContent = `${Math.round(totalMinutes)} min total this week`;
   const maxMinutes = Math.max(...rows.map((row) => row.minutes));
 
   rows.forEach((row) => {
@@ -772,9 +784,10 @@ function renderAchievements() {
   const unlockedCount = analyticsAvailable
     ? achievementDefinitions.filter((achievement) => Boolean(unlocked[achievement.id])).length
     : 0;
-  achievementSummaryEl.textContent = analyticsAvailable
+  if (achievementSummaryEl) achievementSummaryEl.textContent = analyticsAvailable
     ? `${unlockedCount} / ${achievementDefinitions.length} unlocked`
     : "Sign in to unlock achievements";
+  if (!achievementsGridEl) return;
   achievementsGridEl.innerHTML = "";
 
   achievementDefinitions.forEach((achievement) => {
