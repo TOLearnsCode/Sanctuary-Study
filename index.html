@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./style.css?v=20260222-acctdeletion1" />
+  <link rel="stylesheet" href="./style.css?v=20260303-biblecontext1" />
 </head>
 <body data-theme="dark">
   <noscript>
@@ -285,14 +285,25 @@
       <article class="home-focus-card fade-up delay-2">
         <div class="home-focus-head">
           <p id="homeThemeBadge" class="home-theme-badge">Perseverance</p>
-          <button id="homeSaveVerseBtn" class="save-btn" type="button" aria-label="Save current verse to favourites">
-            <span class="icon-wrap" aria-hidden="true">
-              <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 21s-7-4.35-9.1-8.14A5.3 5.3 0 0 1 12 4.5a5.3 5.3 0 0 1 9.1 8.36C19 16.65 12 21 12 21z" />
-              </svg>
-            </span>
-            <span>Save</span>
-          </button>
+          <div class="verse-actions">
+            <button id="homeContextBtn" class="context-btn" type="button" aria-label="Read verse in full chapter context">
+              <span class="icon-wrap" aria-hidden="true">
+                <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                  <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15z"/>
+                </svg>
+              </span>
+              <span>Read in Context</span>
+            </button>
+            <button id="homeSaveVerseBtn" class="save-btn" type="button" aria-label="Save current verse to favourites">
+              <span class="icon-wrap" aria-hidden="true">
+                <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 21s-7-4.35-9.1-8.14A5.3 5.3 0 0 1 12 4.5a5.3 5.3 0 0 1 9.1 8.36C19 16.65 12 21 12 21z" />
+                </svg>
+              </span>
+              <span>Save</span>
+            </button>
+          </div>
         </div>
         <blockquote id="homeVerseText" class="scripture-text"></blockquote>
         <p id="homeVerseRef" class="scripture-ref"></p>
@@ -300,7 +311,18 @@
       </article>
 
       <article class="daily-scripture-card fade-up delay-2">
-        <p class="quote-label">Scripture for Today</p>
+        <div class="daily-scripture-head">
+          <p class="quote-label">Scripture for Today</p>
+          <button id="dailyContextBtn" class="context-btn" type="button" aria-label="Read verse in full chapter context">
+            <span class="icon-wrap" aria-hidden="true">
+              <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15z"/>
+              </svg>
+            </span>
+            <span>Read in Context</span>
+          </button>
+        </div>
         <blockquote id="dailyVerseText" class="scripture-text"></blockquote>
         <p id="dailyVerseRef" class="scripture-ref"></p>
         <blockquote id="dailyQuoteText" class="daily-quote-text"></blockquote>
@@ -385,14 +407,25 @@
         <article class="quote-card">
           <div class="quote-head">
             <p class="quote-label">Focus Scripture</p>
-            <button id="studySaveVerseBtn" class="save-btn" type="button" aria-label="Save current verse to favourites">
-              <span class="icon-wrap" aria-hidden="true">
-                <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 21s-7-4.35-9.1-8.14A5.3 5.3 0 0 1 12 4.5a5.3 5.3 0 0 1 9.1 8.36C19 16.65 12 21 12 21z" />
-                </svg>
-              </span>
-              <span>Save</span>
-            </button>
+            <div class="verse-actions">
+              <button id="studyContextBtn" class="context-btn" type="button" aria-label="Read verse in full chapter context">
+                <span class="icon-wrap" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                    <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15z"/>
+                  </svg>
+                </span>
+                <span>Read in Context</span>
+              </button>
+              <button id="studySaveVerseBtn" class="save-btn" type="button" aria-label="Save current verse to favourites">
+                <span class="icon-wrap" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" class="icon-svg" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 21s-7-4.35-9.1-8.14A5.3 5.3 0 0 1 12 4.5a5.3 5.3 0 0 1 9.1 8.36C19 16.65 12 21 12 21z" />
+                  </svg>
+                </span>
+                <span>Save</span>
+              </button>
+            </div>
           </div>
           <blockquote id="sessionVerseText" class="scripture-text"></blockquote>
           <p id="sessionVerseRef" class="scripture-ref"></p>
@@ -942,6 +975,17 @@
 
   <div id="popupOverlay" class="popup-overlay hidden" aria-hidden="true"></div>
 
+  <div id="bibleContextModal" class="bible-context-modal hidden" role="dialog" aria-modal="true" aria-labelledby="bibleContextTitle">
+    <div class="bible-context-card">
+      <div class="bible-context-header">
+        <h3 id="bibleContextTitle" class="bible-context-title"></h3>
+        <button id="bibleContextCloseBtn" class="btn btn-glass bible-context-close" type="button" aria-label="Close Bible reader">Close</button>
+      </div>
+      <div id="bibleContextBody" class="bible-context-body"></div>
+      <p id="bibleContextTranslation" class="bible-context-translation"></p>
+    </div>
+  </div>
+
   <div id="cancelSessionModal" class="cancel-session-modal hidden" role="dialog" aria-modal="true" aria-labelledby="cancelSessionTitle" aria-describedby="cancelSessionMessage">
     <div class="cancel-session-card">
       <h3 id="cancelSessionTitle">Cancel study session?</h3>
@@ -965,13 +1009,13 @@
     </div>
   </div>
 
-  <script src="./js/constants.js?v=20260222-acctdeletion1"></script>
-  <script src="./js/sync.js?v=20260222-acctdeletion1"></script>
-  <script src="./js/analytics.js?v=20260222-acctdeletion1"></script>
-  <script src="./js/ui.js?v=20260222-acctdeletion1"></script>
-  <script src="./js/timer.js?v=20260222-acctdeletion1"></script>
-  <script src="./js/music.js?v=20260222-acctdeletion1"></script>
-  <script type="module" src="./auth.js?v=20260222-acctdeletion1"></script>
-  <script src="./app.js?v=20260222-acctdeletion1"></script>
+  <script src="./js/constants.js?v=20260303-biblecontext1"></script>
+  <script src="./js/sync.js?v=20260303-biblecontext1"></script>
+  <script src="./js/analytics.js?v=20260303-biblecontext1"></script>
+  <script src="./js/ui.js?v=20260303-biblecontext1"></script>
+  <script src="./js/timer.js?v=20260303-biblecontext1"></script>
+  <script src="./js/music.js?v=20260303-biblecontext1"></script>
+  <script type="module" src="./auth.js?v=20260303-biblecontext1"></script>
+  <script src="./app.js?v=20260303-biblecontext1"></script>
 </body>
 </html>

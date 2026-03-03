@@ -900,6 +900,139 @@ function normalizeVerseText(text) {
   return String(text).replace(/\s+/g, " ").trim();
 }
 
+/**
+ * Parse a Bible reference string into book, chapter, and verse numbers.
+ * Examples:
+ *   "John 3:16"          -> { book: "John", chapter: 3, verses: [16] }
+ *   "Philippians 4:6-7"  -> { book: "Philippians", chapter: 4, verses: [6, 7] }
+ *   "1 Thessalonians 5:18" -> { book: "1 Thessalonians", chapter: 5, verses: [18] }
+ *   "Psalm 119:105"      -> { book: "Psalm", chapter: 119, verses: [105] }
+ */
+function parseChapterFromReference(reference) {
+  var ref = String(reference).trim();
+  // Match: optional leading number + book name, then chapter:verse(s)
+  var match = ref.match(/^(.+?)\s+(\d+):(\d+)(?:\s*-\s*(\d+))?$/);
+  if (!match) {
+    return null;
+  }
+  var book = match[1];
+  var chapter = parseInt(match[2], 10);
+  var startVerse = parseInt(match[3], 10);
+  var endVerse = match[4] ? parseInt(match[4], 10) : startVerse;
+  var verses = [];
+  for (var v = startVerse; v <= endVerse; v++) {
+    verses.push(v);
+  }
+  return { book: book, chapter: chapter, verses: verses };
+}
+
+/**
+ * Fetch the full chapter for a given Bible reference.
+ * Returns { reference, verses: [{ verse, text }], translation } or throws.
+ */
+async function fetchChapterContext(reference) {
+  var parsed = parseChapterFromReference(reference);
+  if (!parsed) {
+    throw new Error("Could not parse reference: " + reference);
+  }
+  var chapterRef = parsed.book + " " + parsed.chapter;
+  var response = await fetch(BIBLE_API_BASE_URL + encodeURIComponent(chapterRef));
+  if (!response.ok) {
+    throw new Error("Bible API status " + response.status);
+  }
+  var data = await response.json();
+  if (!data || !Array.isArray(data.verses)) {
+    throw new Error("Unexpected Bible API response shape");
+  }
+  return {
+    reference: data.reference || chapterRef,
+    verses: data.verses.map(function (v) {
+      return { verse: v.verse, text: normalizeVerseText(v.text) };
+    }),
+    highlightVerses: parsed.verses,
+    translation: data.translation_name || "World English Bible"
+  };
+}
+
+/**
+ * Open the Bible context reader modal for the given reference.
+ */
+async function openBibleContext(reference) {
+  if (!reference || reference === "Session Preview") {
+    if (typeof showToastMessage === "function") {
+      showToastMessage("No verse to look up yet. Start a session first.");
+    }
+    return;
+  }
+
+  var modal = document.getElementById("bibleContextModal");
+  var titleEl = document.getElementById("bibleContextTitle");
+  var bodyEl = document.getElementById("bibleContextBody");
+  var translationEl = document.getElementById("bibleContextTranslation");
+  if (!modal || !bodyEl) {
+    return;
+  }
+
+  // Show modal with loading state
+  if (titleEl) {
+    titleEl.textContent = reference;
+  }
+  bodyEl.innerHTML = "<p class=\"bible-context-loading\">Loading chapter\u2026</p>";
+  if (translationEl) {
+    translationEl.textContent = "";
+  }
+  modal.classList.remove("hidden");
+  document.body.classList.add("bible-context-open");
+
+  try {
+    var chapter = await fetchChapterContext(reference);
+    if (titleEl) {
+      titleEl.textContent = chapter.reference;
+    }
+    if (translationEl) {
+      translationEl.textContent = chapter.translation;
+    }
+
+    var html = "";
+    for (var i = 0; i < chapter.verses.length; i++) {
+      var v = chapter.verses[i];
+      var isHighlighted = chapter.highlightVerses.indexOf(v.verse) !== -1;
+      var cls = isHighlighted ? "bible-verse bible-verse-highlight" : "bible-verse";
+      var id = isHighlighted && i === chapter.highlightVerses[0] - 1 ? " id=\"bible-verse-target\"" : "";
+      html += "<p class=\"" + cls + "\"" + id + ">";
+      html += "<sup class=\"bible-verse-num\">" + v.verse + "</sup> ";
+      html += escapeHtml(v.text);
+      html += "</p>";
+    }
+    bodyEl.innerHTML = html;
+
+    // Scroll the highlighted verse into view
+    var target = document.getElementById("bible-verse-target");
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  } catch (error) {
+    bodyEl.innerHTML = "<p class=\"bible-context-error\">Could not load chapter. Please try again later.</p>";
+  }
+}
+
+function escapeHtml(text) {
+  var div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+/**
+ * Close the Bible context reader modal.
+ */
+function closeBibleContext() {
+  var modal = document.getElementById("bibleContextModal");
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+  document.body.classList.remove("bible-context-open");
+}
+
 function getThemeEncouragement(theme) {
   const encouragementByTheme = {
     Perseverance: "Keep showing up one block at a time. God can strengthen your focus through steady effort.",

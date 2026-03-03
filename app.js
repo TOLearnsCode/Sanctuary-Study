@@ -48,8 +48,10 @@ const homeVerseText = document.getElementById("homeVerseText");
 const homeVerseRef = document.getElementById("homeVerseRef");
 const homeEncouragementText = document.getElementById("homeEncouragementText");
 const homeSaveVerseBtn = document.getElementById("homeSaveVerseBtn");
+const homeContextBtn = document.getElementById("homeContextBtn");
 const dailyVerseText = document.getElementById("dailyVerseText");
 const dailyVerseRef = document.getElementById("dailyVerseRef");
+const dailyContextBtn = document.getElementById("dailyContextBtn");
 const dailyQuoteText = document.getElementById("dailyQuoteText");
 const dailyQuoteAuthor = document.getElementById("dailyQuoteAuthor");
 const themePills = Array.from(document.querySelectorAll(".theme-pill"));
@@ -87,6 +89,9 @@ const sessionVerseText = document.getElementById("sessionVerseText");
 const sessionVerseRef = document.getElementById("sessionVerseRef");
 const sessionEncouragementText = document.getElementById("sessionEncouragementText");
 const studySaveVerseBtn = document.getElementById("studySaveVerseBtn");
+const studyContextBtn = document.getElementById("studyContextBtn");
+const bibleContextCloseBtn = document.getElementById("bibleContextCloseBtn");
+const bibleContextModal = document.getElementById("bibleContextModal");
 const sessionNotesInput = document.getElementById("sessionNotesInput");
 const addSessionTodoBtn = document.getElementById("addSessionTodoBtn");
 const sessionTodoInput = document.getElementById("sessionTodoInput");
@@ -1646,10 +1651,24 @@ function wireEvents() {
   listen(homeBeginBtn, "click", () => beginStudyExperience().catch(console.error));
   listen(homeSettingsBtn, "click", () => switchSection("settings"));
   listen(homeSaveVerseBtn, "click", saveCurrentFocusToFavourites);
+  listen(homeContextBtn, "click", () => openBibleContext(currentFocus.reference));
 
   listen(prepBeginBtn, "click", () => beginStudyExperience().catch(console.error));
   listen(prepSettingsBtn, "click", () => switchSection("settings"));
   listen(studySaveVerseBtn, "click", saveCurrentFocusToFavourites);
+  listen(studyContextBtn, "click", () => openBibleContext(currentFocus.reference));
+
+  listen(dailyContextBtn, "click", () => {
+    var ref = dailyVerseRef ? dailyVerseRef.textContent : "";
+    openBibleContext(ref);
+  });
+
+  listen(bibleContextCloseBtn, "click", closeBibleContext);
+  listen(bibleContextModal, "click", (e) => {
+    if (e.target === bibleContextModal) {
+      closeBibleContext();
+    }
+  });
 
   themePills.forEach((pill) => {
     pill.addEventListener("click", () => {
@@ -1967,6 +1986,11 @@ function wireEvents() {
     });
   }
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && bibleContextModal && !bibleContextModal.classList.contains("hidden")) {
+      closeBibleContext();
+      return;
+    }
+
     if (event.key === "Escape" && musicPopupBackdrop && !musicPopupBackdrop.classList.contains("hidden")) {
       setMusicPopupOpen(false);
       return;
