@@ -261,6 +261,8 @@ let reminderIntervalId = null;
 let lastReminderSentDayKey = loadLastReminderSentDayKey();
 let lastSuccessfulSyncAt = loadLastSuccessfulSyncAt();
 let syncIndicatorState = "idle"; // "idle" | "syncing" | "error"
+let syncErrorRetryTimerId = null;
+let syncErrorRetryCount = 0;
 let lastLocalSettingsMutationAt = loadLastLocalSettingsMutationAt();
 let lastLocalThemeMutationAt = 0;
 let pendingSessionReviewId = null;
@@ -575,12 +577,20 @@ function setSyncIndicatorState(state) {
   const safeState = state === "syncing" || state === "error" ? state : "idle";
   syncIndicatorState = safeState;
   renderSyncStatus();
+  if (safeState === "error") {
+    scheduleSyncErrorRetry();
+  }
 }
 
 function markSuccessfulSync(isoString = new Date().toISOString()) {
   lastSuccessfulSyncAt = String(isoString || "").trim();
   saveLastSuccessfulSyncAt(lastSuccessfulSyncAt);
   syncIndicatorState = "idle";
+  syncErrorRetryCount = 0;
+  if (syncErrorRetryTimerId) {
+    window.clearTimeout(syncErrorRetryTimerId);
+    syncErrorRetryTimerId = null;
+  }
   renderSyncStatus();
 }
 
@@ -1572,6 +1582,7 @@ function wireEvents() {
     }
   });
   window.addEventListener("online", () => {
+    syncErrorRetryCount = 0;
     renderSyncStatus();
     scheduleCloudAnalyticsSync("online");
     scheduleUserDocSync("online");

@@ -17,6 +17,9 @@ function resetCloudSyncState() {
   if (userDocSyncTimerId) {
     window.clearTimeout(userDocSyncTimerId);
   }
+  if (syncErrorRetryTimerId) {
+    window.clearTimeout(syncErrorRetryTimerId);
+  }
   if (typeof userDocUnsubscribe === "function") {
     try {
       userDocUnsubscribe();
@@ -26,6 +29,8 @@ function resetCloudSyncState() {
   }
   cloudSyncTimerId = null;
   userDocSyncTimerId = null;
+  syncErrorRetryTimerId = null;
+  syncErrorRetryCount = 0;
   userDocUnsubscribe = null;
   userDocApplyingRemote = false;
   cloudSyncInFlight = false;
@@ -33,6 +38,41 @@ function resetCloudSyncState() {
   cloudSyncHydrating = false;
   lastCloudHydrateAt = 0;
   syncIndicatorState = "idle";
+}
+
+/**
+ * Schedules an automatic retry after a sync error.
+ * Uses exponential-ish backoff: base delay doubles each attempt.
+ * Stops after SYNC_ERROR_MAX_RETRIES to avoid hammering the server.
+ */
+function scheduleSyncErrorRetry() {
+  if (!canUseAnalyticsFeatures() || !currentUser || !currentUser.uid) {
+    return;
+  }
+
+  if (syncErrorRetryCount >= SYNC_ERROR_MAX_RETRIES) {
+    return;
+  }
+
+  if (syncErrorRetryTimerId) {
+    window.clearTimeout(syncErrorRetryTimerId);
+  }
+
+  var delay = SYNC_ERROR_RETRY_MS * Math.pow(2, syncErrorRetryCount);
+  syncErrorRetryCount += 1;
+
+  syncErrorRetryTimerId = window.setTimeout(function () {
+    syncErrorRetryTimerId = null;
+    if (!canUseAnalyticsFeatures() || !currentUser || !currentUser.uid) {
+      return;
+    }
+    if (!navigator.onLine) {
+      return;
+    }
+    // Re-attempt both sync channels
+    scheduleUserDocSync("error-retry");
+    scheduleCloudAnalyticsSync("error-retry");
+  }, delay);
 }
 
 function sanitizeStudyLog(logInput) {
@@ -717,13 +757,14 @@ async function syncNow() {
   }
 
   // Pull latest analytics from cloud (force bypass cooldown)
+  var refreshOk = false;
   try {
-    await refreshAnalyticsFromCloud("manual-sync", true);
+    refreshOk = await refreshAnalyticsFromCloud("manual-sync", true);
   } catch (_ignored) {
     // non-critical
   }
 
-  if (!userDocOk && !analyticsOk) {
+  if (!userDocOk && !analyticsOk && !refreshOk) {
     setSyncIndicatorState("error");
     return false;
   }
