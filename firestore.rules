@@ -6,21 +6,55 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function ownsUserDoc(uid) {
+    function ownsDoc(uid) {
       return signedIn() && request.auth.uid == uid;
     }
 
-    // Canonical app data lives under users/{uid}.
-    // Users can only read/write their own subtree.
-    match /users/{uid} {
-      allow read, write: if ownsUserDoc(uid);
+    // Cap field count to prevent payload abuse on any write.
+    function fieldCountBelow(limit) {
+      return request.resource.data.keys().size() <= limit;
+    }
 
-      match /{document=**} {
-        allow read, write: if ownsUserDoc(uid);
+    // ── User profile document ─────────────────────────────────
+    // Fields: studyTheme, preferences, preferencesUpdatedAt,
+    //         streakCount, lastSessionAt, updatedAt, schemaVersion, source
+    match /users/{uid} {
+      allow read: if ownsDoc(uid);
+      allow create, update: if ownsDoc(uid)
+                            && fieldCountBelow(20)
+                            && request.resource.data.schemaVersion is int;
+      allow delete: if ownsDoc(uid);
+
+      // ── Analytics document (single fixed-name doc) ──────────
+      // Fields: studyLog, tagLog, achievements, sessionHistory,
+      //         updatedAt, schemaVersion, source
+      match /private/appData {
+        allow read: if ownsDoc(uid);
+        allow create, update: if ownsDoc(uid)
+                              && fieldCountBelow(15)
+                              && request.resource.data.schemaVersion is int;
+      }
+
+      // Block creation of any other document inside /private.
+      match /private/{docId} {
+        allow read, write: if false;
+      }
+
+      // ── Legacy subcollections (account deletion cleanup only) ─
+      // The app reads then deletes these during account deletion.
+      // No new docs should ever be created here.
+      match /sessions/{docId} {
+        allow read, delete: if ownsDoc(uid);
+      }
+      match /streaks/{docId} {
+        allow read, delete: if ownsDoc(uid);
+      }
+      match /settings/{docId} {
+        allow read, delete: if ownsDoc(uid);
       }
     }
 
-    // Deny everything else by default.
+    // ── Deny everything else by default ───────────────────────
     match /{document=**} {
       allow read, write: if false;
     }

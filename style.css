@@ -517,6 +517,9 @@ table,
   gap: 8px;
   cursor: pointer;
   transition: transform 0.16s ease, background-color 0.2s ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .home-nav-btn:hover {
@@ -538,6 +541,9 @@ table,
   gap: 10px;
   cursor: pointer;
   transition: transform 0.16s ease, background-color 0.2s ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .theme-toggle:hover {
@@ -3093,8 +3099,10 @@ body.theme-dark .achievement-tier.tier-platinum {
   color: var(--text);
 }
 
-/* Music dock is hidden by default via the .hidden class in HTML.
-   JS removes .hidden when the dock should be visible. */
+/* Music dock is intentionally hidden; music controls live in the FAB popup. */
+.music-dock {
+  display: none !important;
+}
 
 .music-dock-head {
   display: flex;
@@ -3513,7 +3521,7 @@ body.theme-dark .btn-danger {
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 768px) and (orientation: portrait) {
   body {
     padding: 12px 10px 20px;
   }
@@ -3525,12 +3533,15 @@ body.theme-dark .btn-danger {
 
   .top-left-controls {
     width: 100%;
-    justify-content: flex-start;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
   }
 
   .mobile-nav-toggle {
     display: inline-flex;
-    margin-left: auto;
+    justify-content: center;
+    width: 100%;
   }
 
   .top-nav-desktop {
@@ -3753,11 +3764,6 @@ body.theme-dark .btn-danger {
     padding: 0;
     justify-content: center;
     flex: none;
-  }
-
-  .top-left-controls {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .top-nav-desktop {
@@ -4197,9 +4203,7 @@ body.theme-dark .btn-danger {
     gap: 6px;
   }
 
-  button,
-  .btn,
-  .nav-btn,
+  .app-logo-btn,
   .home-nav-btn,
   .theme-toggle,
   .mobile-nav-toggle {
