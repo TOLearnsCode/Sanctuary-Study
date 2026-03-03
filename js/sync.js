@@ -690,3 +690,43 @@ async function refreshAnalyticsFromCloud(_reason = "view", force = false) {
 
   return true;
 }
+
+/**
+ * Manual sync: push local data to cloud, pull latest from cloud.
+ * Returns true if at least one operation succeeded.
+ */
+async function syncNow() {
+  if (!canUseAnalyticsFeatures() || !currentUser || !currentUser.uid) {
+    return false;
+  }
+
+  setSyncIndicatorState("syncing");
+
+  var userDocOk = false;
+  var analyticsOk = false;
+
+  try {
+    var results = await Promise.allSettled([
+      pushUserDocToCloud("manual-sync"),
+      pushAnalyticsToCloud("manual-sync")
+    ]);
+    userDocOk = results[0].status === "fulfilled" && results[0].value !== false;
+    analyticsOk = results[1].status === "fulfilled" && results[1].value !== false;
+  } catch (_ignored) {
+    // individual push functions already handle errors
+  }
+
+  // Pull latest analytics from cloud (force bypass cooldown)
+  try {
+    await refreshAnalyticsFromCloud("manual-sync", true);
+  } catch (_ignored) {
+    // non-critical
+  }
+
+  if (!userDocOk && !analyticsOk) {
+    setSyncIndicatorState("error");
+    return false;
+  }
+
+  return true;
+}

@@ -2443,6 +2443,26 @@ body.theme-dark .achievement-tier.tier-platinum {
   font-size: 1.35rem;
 }
 
+.sync-status-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sync-now-btn {
+  font-size: 0.82rem;
+  padding: 6px 14px;
+  min-height: 34px;
+  border-radius: 10px;
+}
+
+.sync-now-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .sync-status-line {
   display: flex;
   align-items: center;

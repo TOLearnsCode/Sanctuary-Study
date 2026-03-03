@@ -790,7 +790,10 @@
             </article>
 
             <article id="syncStatusCard" class="sync-status-card">
-              <h3>Sync Status</h3>
+              <div class="sync-status-header">
+                <h3>Sync Status</h3>
+                <button id="syncNowBtn" class="btn btn-glass sync-now-btn" type="button" disabled>Sync Now</button>
+              </div>
               <div class="sync-status-line">
                 <span id="syncStatusDot" class="sync-status-dot" aria-hidden="true"></span>
                 <p id="syncStatusPrimary" class="sync-status-primary">Sign in to enable cloud sync.</p>

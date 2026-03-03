@@ -157,6 +157,7 @@ const settingsDeleteAccountBtn = document.getElementById("settingsDeleteAccountB
 const syncStatusDot = document.getElementById("syncStatusDot");
 const syncStatusPrimary = document.getElementById("syncStatusPrimary");
 const syncStatusSecondary = document.getElementById("syncStatusSecondary");
+const syncNowBtn = document.getElementById("syncNowBtn");
 
 const favouritesList = document.getElementById("favouritesList");
 const motivationToast = document.getElementById("motivationToast");
@@ -603,9 +604,15 @@ function renderSyncStatus() {
   }
 
   const online = navigator.onLine;
+  const signedIn = canUseAnalyticsFeatures();
+  const canSync = signedIn && online && syncIndicatorState !== "syncing";
   syncStatusDot.classList.remove("online", "offline", "syncing", "error");
 
-  if (!canUseAnalyticsFeatures()) {
+  if (syncNowBtn) {
+    syncNowBtn.disabled = !canSync;
+  }
+
+  if (!signedIn) {
     syncStatusDot.classList.add("offline");
     syncStatusPrimary.textContent = "Sign in to enable cloud sync.";
     syncStatusSecondary.textContent = "Last synced: --";
@@ -1635,6 +1642,11 @@ function wireEvents() {
 
       showSettingsSuccess("Deleting account...");
       requestDeleteAccount();
+    });
+  }
+  if (syncNowBtn) {
+    syncNowBtn.addEventListener("click", () => {
+      syncNow().catch(() => {});
     });
   }
   window.addEventListener("sanctuary:delete-account-result", (event) => {
