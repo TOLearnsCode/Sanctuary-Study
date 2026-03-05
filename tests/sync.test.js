@@ -1,7 +1,10 @@
+import { readFileSync } from "fs";
+import { resolve } from "path";
 import { describe, it, expect } from "vitest";
 import { loadWithSync } from "./helpers.js";
 
 let ctx;
+const ROOT = resolve(import.meta.dirname, "..");
 
 describe("Sync sanitize and merge functions (sync.js)", () => {
   ctx = loadWithSync();
@@ -196,6 +199,127 @@ describe("Sync sanitize and merge functions (sync.js)", () => {
       expect(merged).toHaveLength(1);
       // Remote is processed first, then local — local has review, so it should win
       expect(merged[0].review).toBe("focused");
+    });
+  });
+
+  describe("sync regression guards", () => {
+    it("uses parent-relative firebase import path in sync.js", () => {
+      const source = readFileSync(resolve(ROOT, "js/sync.js"), "utf8");
+      expect(source.includes('import("../firebase.js")')).toBe(true);
+      expect(source.includes('import("./firebase.js")')).toBe(false);
+    });
+
+    it("returns false and sets error state when ensureCloudSyncClient fails", async () => {
+      ctx.cloudSyncReady = false;
+      ctx.cloudSyncDb = null;
+      ctx.cloudSyncApi = null;
+      ctx.currentUser = { uid: "u_1" };
+      ctx.authMode = "user";
+      ctx.syncIndicatorState = "idle";
+
+      const ok = await ctx.ensureCloudSyncClient();
+      expect(ok).toBe(false);
+      expect(ctx.syncIndicatorState).toBe("error");
+    });
+  });
+
+  describe("syncNow behavior", () => {
+    it("returns false when analytics are unavailable (guest/not signed in)", async () => {
+      ctx.authMode = "guest";
+      ctx.currentUser = null;
+      const result = await ctx.syncNow();
+      expect(result).toBe(false);
+    });
+
+    it("returns true when at least one sync operation succeeds", async () => {
+      const originalPushUserDocToCloud = ctx.pushUserDocToCloud;
+      const originalPushAnalyticsToCloud = ctx.pushAnalyticsToCloud;
+      const originalRefreshAnalyticsFromCloud = ctx.refreshAnalyticsFromCloud;
+
+      ctx.authMode = "user";
+      ctx.currentUser = { uid: "u_2" };
+      ctx.pushUserDocToCloud = async () => true;
+      ctx.pushAnalyticsToCloud = async () => false;
+      ctx.refreshAnalyticsFromCloud = async () => false;
+
+      const result = await ctx.syncNow();
+      expect(result).toBe(true);
+
+      ctx.pushUserDocToCloud = originalPushUserDocToCloud;
+      ctx.pushAnalyticsToCloud = originalPushAnalyticsToCloud;
+      ctx.refreshAnalyticsFromCloud = originalRefreshAnalyticsFromCloud;
+    });
+
+    it("returns false and sets error state when all sync operations fail", async () => {
+      const originalPushUserDocToCloud = ctx.pushUserDocToCloud;
+      const originalPushAnalyticsToCloud = ctx.pushAnalyticsToCloud;
+      const originalRefreshAnalyticsFromCloud = ctx.refreshAnalyticsFromCloud;
+
+      ctx.authMode = "user";
+      ctx.currentUser = { uid: "u_3" };
+      ctx.syncIndicatorState = "idle";
+      ctx.pushUserDocToCloud = async () => false;
+      ctx.pushAnalyticsToCloud = async () => false;
+      ctx.refreshAnalyticsFromCloud = async () => false;
+
+      const result = await ctx.syncNow();
+      expect(result).toBe(false);
+      expect(ctx.syncIndicatorState).toBe("error");
+
+      ctx.pushUserDocToCloud = originalPushUserDocToCloud;
+      ctx.pushAnalyticsToCloud = originalPushAnalyticsToCloud;
+      ctx.refreshAnalyticsFromCloud = originalRefreshAnalyticsFromCloud;
+    });
+  });
+
+  describe("renderSyncStatus button gating", () => {
+    function makeClassList() {
+      const classes = new Set();
+      return {
+        add: (...values) => values.forEach((v) => classes.add(v)),
+        remove: (...values) => values.forEach((v) => classes.delete(v)),
+        toggle: (value, force) => {
+          if (force === true) {
+            classes.add(value);
+            return true;
+          }
+          if (force === false) {
+            classes.delete(value);
+            return false;
+          }
+          if (classes.has(value)) {
+            classes.delete(value);
+            return false;
+          }
+          classes.add(value);
+          return true;
+        },
+        contains: (value) => classes.has(value)
+      };
+    }
+
+    it("enables Sync Now only for signed-in, online, idle state", () => {
+      ctx.syncStatusPrimary = { textContent: "" };
+      ctx.syncStatusSecondary = { textContent: "" };
+      ctx.syncStatusDot = { classList: makeClassList() };
+      ctx.syncNowBtn = { disabled: true };
+      ctx.lastSuccessfulSyncAt = "";
+      ctx.navigator.onLine = true;
+
+      ctx.authMode = "user";
+      ctx.syncIndicatorState = "idle";
+      ctx.renderSyncStatus();
+      expect(ctx.syncNowBtn.disabled).toBe(false);
+
+      ctx.authMode = "guest";
+      ctx.syncIndicatorState = "idle";
+      ctx.renderSyncStatus();
+      expect(ctx.syncNowBtn.disabled).toBe(true);
+
+      ctx.authMode = "user";
+      ctx.syncIndicatorState = "syncing";
+      ctx.renderSyncStatus();
+      expect(ctx.syncNowBtn.disabled).toBe(true);
     });
   });
 });
