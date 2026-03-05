@@ -1,4 +1,4 @@
-const ASSET_VERSION = "20260305-navfix1";
+const ASSET_VERSION = "20260305-syncfix1";
 const CACHE_NAME = `sanctuary-study-core-${ASSET_VERSION}`;
 const withVersion = (path) => `${path}?v=${ASSET_VERSION}`;
 const CORE_ASSETS = [

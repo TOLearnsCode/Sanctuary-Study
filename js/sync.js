@@ -262,7 +262,7 @@ async function ensureCloudSyncClient() {
 
   try {
     const [{ db }, firestoreModule] = await Promise.all([
-      import("./firebase.js"),
+      import("../firebase.js"),
       import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js")
     ]);
 
