@@ -435,7 +435,10 @@
         <article class="notes-card">
           <div class="notes-head">
             <p class="quote-label">Study Notes</p>
-            <button id="clearSessionNotesBtn" class="btn btn-glass notes-clear-btn" type="button">Clear</button>
+            <div class="notes-head-actions">
+              <button id="saveSessionNotesBtn" class="btn btn-primary notes-save-btn" type="button">Save to Sanctuary</button>
+              <button id="clearSessionNotesBtn" class="btn btn-glass notes-clear-btn" type="button">Clear</button>
+            </div>
           </div>
 
           <label class="notes-input-label" for="sessionNotesInput">Quick notes</label>
@@ -814,6 +817,14 @@
       </div>
 
       <div id="favouritesList" class="favourites-list"></div>
+
+      <article class="saved-notes-panel">
+        <div class="panel-heading">
+          <h3>Saved Study Notes</h3>
+          <p>Keep key reflections from Bible study and focused sessions.</p>
+        </div>
+        <div id="savedNotesList" class="saved-notes-list"></div>
+      </article>
     </section>
 
     <footer class="app-footer" role="contentinfo">

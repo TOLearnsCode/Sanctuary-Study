@@ -93,6 +93,7 @@ const studyContextBtn = document.getElementById("studyContextBtn");
 const bibleContextCloseBtn = document.getElementById("bibleContextCloseBtn");
 const bibleContextModal = document.getElementById("bibleContextModal");
 const sessionNotesInput = document.getElementById("sessionNotesInput");
+const saveSessionNotesBtn = document.getElementById("saveSessionNotesBtn");
 const addSessionTodoBtn = document.getElementById("addSessionTodoBtn");
 const sessionTodoInput = document.getElementById("sessionTodoInput");
 const sessionTodoList = document.getElementById("sessionTodoList");
@@ -160,6 +161,7 @@ const syncStatusSecondary = document.getElementById("syncStatusSecondary");
 const syncNowBtn = document.getElementById("syncNowBtn");
 
 const favouritesList = document.getElementById("favouritesList");
+const savedNotesList = document.getElementById("savedNotesList");
 const motivationToast = document.getElementById("motivationToast");
 const achievementToast = document.getElementById("achievementToast");
 const achievementToastMedal = document.getElementById("achievementToastMedal");
@@ -339,6 +341,7 @@ function init() {
   updateSessionStatus();
   renderAnalytics();
   renderFavourites();
+  renderSavedNotes();
   try {
     preloadCommonsAlarmIfNeeded();
   } catch (error) {
@@ -1945,11 +1948,22 @@ function wireEvents() {
     renderFavourites();
     showToastMessage("Removed from Sanctuary.");
   });
+  listen(savedNotesList, "click", (event) => {
+    const deleteButton = event.target.closest(".delete-saved-note-btn");
+    if (!deleteButton) {
+      return;
+    }
+
+    deleteSavedNoteItem(deleteButton.dataset.id);
+    renderSavedNotes();
+    showToastMessage("Saved note removed.");
+  });
 
   listen(sessionNotesInput, "input", () => {
     sessionNotesState.text = sessionNotesInput.value;
     saveSessionNotesState(sessionNotesState);
   });
+  listen(saveSessionNotesBtn, "click", saveCurrentSessionNoteToSanctuary);
   listen(addSessionTodoBtn, "click", addSessionTodoItem);
   listen(sessionTodoInput, "keydown", (event) => {
     if (event.key === "Enter") {
@@ -2083,6 +2097,7 @@ function switchSection(sectionName, options = {}) {
     sections.settings.scrollTop = 0;
   } else if (sectionName === "favourites") {
     renderFavourites();
+    renderSavedNotes();
   }
 
   updateMiniTimerWidget();

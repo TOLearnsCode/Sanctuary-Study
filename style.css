@@ -1292,6 +1292,19 @@ body.theme-dark .focus-lock-status {
   gap: 8px;
 }
 
+.notes-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.notes-save-btn {
+  padding: 7px 12px;
+  font-size: 0.82rem;
+}
+
 .notes-clear-btn {
   padding: 7px 12px;
   font-size: 0.82rem;
@@ -2610,6 +2623,72 @@ body.theme-dark .achievement-tier.tier-platinum {
 .favourites-list {
   display: grid;
   gap: 10px;
+}
+
+.saved-notes-panel {
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.saved-notes-panel .panel-heading {
+  margin-bottom: 2px;
+}
+
+.saved-notes-panel .panel-heading h3 {
+  margin: 0;
+  font-size: 1.06rem;
+}
+
+.saved-notes-panel .panel-heading p {
+  margin: 4px 0 0;
+}
+
+.saved-notes-list {
+  display: grid;
+  gap: 10px;
+}
+
+.saved-note-card {
+  gap: 10px;
+}
+
+.saved-note-title {
+  margin: 0;
+  font-size: 0.84rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.saved-note-text {
+  margin: 0;
+  line-height: 1.5;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+
+.saved-note-todos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.saved-note-todos li {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.saved-note-todos li.done {
+  text-decoration: line-through;
 }
 
 .favourite-empty {

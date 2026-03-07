@@ -18,6 +18,7 @@ const FAVOURITES_KEY = "sanctuaryFavouritesV1";
 const DAILY_SCRIPTURE_CACHE_KEY = "sanctuaryDailyScriptureV1";
 const DAILY_SCRIPTURE_HISTORY_KEY = "sanctuaryDailyScriptureHistoryV1";
 const SESSION_NOTES_KEY = "sanctuarySessionNotesV1";
+const SAVED_NOTES_KEY = "sanctuarySavedNotesV1";
 const SESSION_HISTORY_KEY = "sanctuarySessionHistoryV1";
 const ACHIEVEMENTS_KEY = "sanctuaryAchievementsV1";
 const ACHIEVEMENT_PROGRESS_KEY = "sanctuaryAchievementProgressV1";

@@ -175,6 +175,196 @@ function clearSessionNotes() {
 }
 
 /*
+SAVED NOTES MODULE
+Persists meaningful study notes into Sanctuary so users can revisit them later.
+*/
+function loadSavedNotes() {
+  const raw = safeGetItem(SAVED_NOTES_KEY);
+  if (!raw) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed
+      .filter((item) => item && typeof item === "object")
+      .map((item) => {
+        const todos = Array.isArray(item.todos)
+          ? item.todos
+            .filter((todo) => todo && typeof todo === "object")
+            .map((todo) => ({
+              text: String(todo.text || "").trim(),
+              done: Boolean(todo.done)
+            }))
+            .filter((todo) => todo.text.length > 0)
+          : [];
+
+        const text = String(item.text || "").trim();
+        if (!text && todos.length === 0) {
+          return null;
+        }
+
+        const savedAtRaw = String(item.savedAt || "").trim();
+        const savedAt = Number.isFinite(Date.parse(savedAtRaw))
+          ? new Date(savedAtRaw).toISOString()
+          : new Date().toISOString();
+
+        return {
+          id: String(item.id || createLocalId("saved_note")),
+          key: String(item.key || ""),
+          theme: String(item.theme || "Study Notes"),
+          reference: String(item.reference || "Study Notes"),
+          text,
+          todos,
+          savedAt
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => Date.parse(b.savedAt) - Date.parse(a.savedAt))
+      .slice(0, 200);
+  } catch (error) {
+    return [];
+  }
+}
+
+function saveSavedNotes(items) {
+  const safeItems = Array.isArray(items) ? items : [];
+  safeSetItem(SAVED_NOTES_KEY, JSON.stringify(safeItems.slice(0, 200)));
+}
+
+function buildSavedNoteKey(noteText, todos, reference) {
+  const todoSignature = Array.isArray(todos)
+    ? todos.map((todo) => `${todo.done ? "1" : "0"}:${String(todo.text || "").trim().toLowerCase()}`).join("|")
+    : "";
+  return `${String(reference || "").trim().toLowerCase()}::${String(noteText || "").trim().toLowerCase()}::${todoSignature}`;
+}
+
+function saveCurrentSessionNoteToSanctuary() {
+  const text = String((sessionNotesState && sessionNotesState.text) || "").trim();
+  const todos = Array.isArray(sessionNotesState && sessionNotesState.todos)
+    ? sessionNotesState.todos
+      .map((todo) => ({
+        text: String((todo && todo.text) || "").trim(),
+        done: Boolean(todo && todo.done)
+      }))
+      .filter((todo) => todo.text.length > 0)
+    : [];
+
+  if (!text && !todos.length) {
+    showToastMessage("Write a note or task before saving.");
+    return;
+  }
+
+  const reference = currentFocus && currentFocus.reference && currentFocus.reference !== "Session Preview"
+    ? currentFocus.reference
+    : "Study Notes";
+  const theme = currentFocus && currentFocus.theme
+    ? currentFocus.theme
+    : (selectedStudyTheme || "Study Notes");
+
+  const key = buildSavedNoteKey(text, todos, reference);
+  const savedNotes = loadSavedNotes();
+  const alreadyExists = savedNotes.some((entry) => entry.key === key);
+  if (alreadyExists) {
+    showToastMessage("This note is already saved in Sanctuary.");
+    return;
+  }
+
+  savedNotes.unshift({
+    id: typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `saved_note_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    key,
+    theme,
+    reference,
+    text,
+    todos,
+    savedAt: new Date().toISOString()
+  });
+  saveSavedNotes(savedNotes);
+  renderSavedNotes();
+  showToastMessage("Study note saved to Sanctuary.");
+}
+
+function deleteSavedNoteItem(savedNoteId) {
+  const savedNotes = loadSavedNotes();
+  const updated = savedNotes.filter((entry) => entry.id !== savedNoteId);
+  saveSavedNotes(updated);
+}
+
+function renderSavedNotes() {
+  if (!savedNotesList) return;
+
+  const savedNotes = loadSavedNotes();
+  savedNotesList.innerHTML = "";
+
+  if (!savedNotes.length) {
+    const empty = document.createElement("p");
+    empty.className = "favourite-empty";
+    empty.textContent = "No saved notes yet. Use Save to Sanctuary in Study Notes.";
+    savedNotesList.appendChild(empty);
+    return;
+  }
+
+  savedNotes.forEach((item) => {
+    const card = document.createElement("article");
+    card.className = "favourite-card saved-note-card";
+
+    const topRow = document.createElement("div");
+    topRow.className = "favourite-top";
+
+    const themeBadge = document.createElement("p");
+    themeBadge.className = "home-theme-badge";
+    themeBadge.textContent = item.theme || "Study Notes";
+
+    const deleteButton = document.createElement("button");
+    deleteButton.className = "delete-favourite-btn delete-saved-note-btn";
+    deleteButton.type = "button";
+    deleteButton.dataset.id = item.id;
+    deleteButton.textContent = "Delete";
+
+    topRow.appendChild(themeBadge);
+    topRow.appendChild(deleteButton);
+
+    const title = document.createElement("p");
+    title.className = "saved-note-title";
+    title.textContent = item.reference || "Study Notes";
+
+    const body = document.createElement("p");
+    body.className = "saved-note-text";
+    body.textContent = item.text || "No text note. Tasks saved below.";
+
+    card.appendChild(topRow);
+    card.appendChild(title);
+    card.appendChild(body);
+
+    if (item.todos.length) {
+      const todoList = document.createElement("ul");
+      todoList.className = "saved-note-todos";
+      item.todos.forEach((todo) => {
+        const todoItem = document.createElement("li");
+        todoItem.className = todo.done ? "done" : "";
+        todoItem.textContent = `${todo.done ? "Done" : "Pending"}: ${todo.text}`;
+        todoList.appendChild(todoItem);
+      });
+      card.appendChild(todoList);
+    }
+
+    const meta = document.createElement("p");
+    meta.className = "favourite-meta";
+    const safeSavedAt = typeof item.savedAt === "string" ? item.savedAt : new Date().toISOString();
+    meta.textContent = `Saved ${formatDate(parseDateKey(safeSavedAt.slice(0, 10)))}`;
+    card.appendChild(meta);
+
+    savedNotesList.appendChild(card);
+  });
+}
+
+/*
 FAVOURITES MODULE
 Simple helpers to keep localStorage logic clear.
 */
