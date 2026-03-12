@@ -684,37 +684,227 @@ function renderStudyGraph(log) {
   updateStudyGraphTitle(graphDayCount);
   const points = graphDays.map((date) => {
     const key = getDateKey(date);
+    const rawMinutes = Number(log[key] || 0);
     return {
       date,
-      minutes: Number(log[key] || 0)
+      minutes: Number.isFinite(rawMinutes) && rawMinutes > 0 ? rawMinutes : 0
     };
   });
 
   const windowMinutes = points.reduce((sum, point) => sum + point.minutes, 0);
   const activeDays = points.filter((point) => point.minutes > 0).length;
-  const maxMinutes = Math.max(1, ...points.map((point) => point.minutes));
 
   if (chartSummaryEl) chartSummaryEl.textContent = `${Math.round(windowMinutes)} min (${(windowMinutes / 60).toFixed(1)} hrs) across ${activeDays} active day${activeDays === 1 ? "" : "s"}`;
   if (!studyGraphEl) return;
   studyGraphEl.innerHTML = "";
 
-  points.forEach((point, index) => {
-    const col = document.createElement("div");
-    col.className = "graph-col";
+  try {
+    if (!points.length) {
+      const empty = document.createElement("p");
+      empty.className = "favourite-empty";
+      empty.textContent = "No graph data yet.";
+      studyGraphEl.appendChild(empty);
+      return;
+    }
 
-    const bar = document.createElement("div");
-    bar.className = "graph-bar";
-    bar.style.height = `${Math.max(2, Math.round((point.minutes / maxMinutes) * 190))}px`;
-    bar.title = `${formatDate(point.date)} • ${Math.round(point.minutes)} min`;
+    const yMaxRaw = Math.max(0, ...points.map((point) => Number(point.minutes || 0)));
+    const yMax = yMaxRaw <= 10 ? 10 : Math.ceil(yMaxRaw / 10) * 10;
+    const ySteps = 5;
 
-    const label = document.createElement("span");
-    label.className = "graph-label";
-    label.textContent = index % 7 === 0 || index === points.length - 1 ? String(point.date.getDate()) : "";
+    const padding = { top: 14, right: 14, bottom: 28, left: 40 };
+    const chartHeight = 208;
+    const chartWidth = Math.max(300, (points.length - 1) * 11);
+    const width = padding.left + chartWidth + padding.right;
+    const height = padding.top + chartHeight + padding.bottom;
+    const xStep = points.length > 1 ? chartWidth / (points.length - 1) : 0;
 
-    col.appendChild(bar);
-    col.appendChild(label);
-    studyGraphEl.appendChild(col);
-  });
+    const plottedPoints = points.map((point, index) => {
+      const normalized = yMax > 0 ? point.minutes / yMax : 0;
+      return {
+        ...point,
+        x: padding.left + (index * xStep),
+        y: padding.top + chartHeight - (normalized * chartHeight)
+      };
+    });
+
+    const toSmoothPath = (entries) => {
+      if (!entries.length) return "";
+      if (entries.length === 1) {
+        return `M ${entries[0].x} ${entries[0].y}`;
+      }
+
+      let path = `M ${entries[0].x} ${entries[0].y}`;
+      for (let index = 1; index < entries.length - 1; index += 1) {
+        const current = entries[index];
+        const next = entries[index + 1];
+        const controlX = (current.x + next.x) / 2;
+        const controlY = (current.y + next.y) / 2;
+        path += ` Q ${current.x} ${current.y} ${controlX} ${controlY}`;
+      }
+
+      const penultimate = entries[entries.length - 2];
+      const last = entries[entries.length - 1];
+      path += ` Q ${penultimate.x} ${penultimate.y} ${last.x} ${last.y}`;
+      return path;
+    };
+
+    const linePath = toSmoothPath(plottedPoints);
+    const firstPoint = plottedPoints[0];
+    const lastPoint = plottedPoints[plottedPoints.length - 1];
+    const areaPath = `${linePath} L ${lastPoint.x} ${padding.top + chartHeight} L ${firstPoint.x} ${padding.top + chartHeight} Z`;
+
+    const svgNS = "http://www.w3.org/2000/svg";
+    const wrapper = document.createElement("div");
+    wrapper.className = "line-graph";
+
+    const svg = document.createElementNS(svgNS, "svg");
+    svg.classList.add("line-graph-svg");
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    svg.setAttribute("aria-hidden", "true");
+
+    const gridGroup = document.createElementNS(svgNS, "g");
+    gridGroup.classList.add("line-graph-grid");
+    for (let step = 0; step <= ySteps; step += 1) {
+      const ratio = step / ySteps;
+      const y = padding.top + (ratio * chartHeight);
+      const labelValue = Math.round(yMax - (ratio * yMax));
+
+      const line = document.createElementNS(svgNS, "line");
+      line.classList.add("line-graph-grid-line");
+      line.setAttribute("x1", String(padding.left));
+      line.setAttribute("x2", String(padding.left + chartWidth));
+      line.setAttribute("y1", String(y));
+      line.setAttribute("y2", String(y));
+      gridGroup.appendChild(line);
+
+      const label = document.createElementNS(svgNS, "text");
+      label.classList.add("line-graph-y-label");
+      label.setAttribute("x", String(padding.left - 8));
+      label.setAttribute("y", String(y + 4));
+      label.setAttribute("text-anchor", "end");
+      label.textContent = String(labelValue);
+      gridGroup.appendChild(label);
+    }
+    svg.appendChild(gridGroup);
+
+    const xLabelGroup = document.createElementNS(svgNS, "g");
+    xLabelGroup.classList.add("line-graph-x-labels");
+    plottedPoints.forEach((point, index) => {
+      if (!(index % 7 === 0 || index === plottedPoints.length - 1)) {
+        return;
+      }
+      const label = document.createElementNS(svgNS, "text");
+      label.classList.add("line-graph-x-label");
+      label.setAttribute("x", String(point.x));
+      label.setAttribute("y", String(height - 8));
+      label.setAttribute("text-anchor", "middle");
+      label.textContent = String(point.date.getDate());
+      xLabelGroup.appendChild(label);
+    });
+    svg.appendChild(xLabelGroup);
+
+    const area = document.createElementNS(svgNS, "path");
+    area.classList.add("line-graph-area");
+    area.setAttribute("d", areaPath);
+    svg.appendChild(area);
+
+    const line = document.createElementNS(svgNS, "path");
+    line.classList.add("line-graph-line");
+    line.setAttribute("d", linePath);
+    svg.appendChild(line);
+
+    const pointsGroup = document.createElementNS(svgNS, "g");
+    pointsGroup.classList.add("line-graph-points");
+    plottedPoints.forEach((point, index) => {
+      const visiblePoint = document.createElementNS(svgNS, "circle");
+      visiblePoint.classList.add("line-graph-point");
+      visiblePoint.setAttribute("cx", String(point.x));
+      visiblePoint.setAttribute("cy", String(point.y));
+      visiblePoint.setAttribute("r", "2.4");
+      pointsGroup.appendChild(visiblePoint);
+
+      const hitPoint = document.createElementNS(svgNS, "circle");
+      hitPoint.classList.add("line-graph-hit");
+      hitPoint.setAttribute("cx", String(point.x));
+      hitPoint.setAttribute("cy", String(point.y));
+      hitPoint.setAttribute("r", "9");
+      hitPoint.dataset.pointIndex = String(index);
+      hitPoint.setAttribute("tabindex", "0");
+      pointsGroup.appendChild(hitPoint);
+    });
+    svg.appendChild(pointsGroup);
+
+    const tooltip = document.createElement("div");
+    tooltip.className = "line-graph-tooltip hidden";
+    tooltip.setAttribute("role", "status");
+    tooltip.setAttribute("aria-live", "polite");
+    wrapper.appendChild(svg);
+    wrapper.appendChild(tooltip);
+    studyGraphEl.appendChild(wrapper);
+
+    const hideTooltip = () => {
+      tooltip.classList.add("hidden");
+    };
+
+    const showTooltipForIndex = (index) => {
+      const safeIndex = Number(index);
+      if (!Number.isInteger(safeIndex) || safeIndex < 0 || safeIndex >= plottedPoints.length) {
+        return;
+      }
+
+      const point = plottedPoints[safeIndex];
+      tooltip.textContent = `${formatDate(point.date)} • ${Math.round(point.minutes)} min`;
+      tooltip.classList.remove("hidden");
+
+      const bounds = wrapper.getBoundingClientRect();
+      const xPx = (point.x / width) * bounds.width;
+      const yPx = (point.y / height) * bounds.height;
+
+      tooltip.style.left = `${xPx}px`;
+      tooltip.style.top = `${Math.max(30, yPx)}px`;
+
+      const tooltipWidth = tooltip.offsetWidth || 0;
+      const half = tooltipWidth / 2;
+      const clampedLeft = Math.min(
+        Math.max(xPx, half + 10),
+        Math.max(half + 10, bounds.width - half - 10)
+      );
+      tooltip.style.left = `${clampedLeft}px`;
+    };
+
+    pointsGroup.addEventListener("pointerenter", (event) => {
+      const target = event.target.closest(".line-graph-hit");
+      if (!target) return;
+      showTooltipForIndex(target.dataset.pointIndex);
+    }, true);
+    pointsGroup.addEventListener("pointermove", (event) => {
+      const target = event.target.closest(".line-graph-hit");
+      if (!target) return;
+      showTooltipForIndex(target.dataset.pointIndex);
+    }, true);
+    pointsGroup.addEventListener("click", (event) => {
+      const target = event.target.closest(".line-graph-hit");
+      if (!target) return;
+      showTooltipForIndex(target.dataset.pointIndex);
+    });
+    pointsGroup.addEventListener("focusin", (event) => {
+      const target = event.target.closest(".line-graph-hit");
+      if (!target) return;
+      showTooltipForIndex(target.dataset.pointIndex);
+    });
+    pointsGroup.addEventListener("focusout", hideTooltip);
+    wrapper.addEventListener("pointerleave", hideTooltip);
+    wrapper.addEventListener("touchend", () => {
+      window.setTimeout(hideTooltip, 1200);
+    }, { passive: true });
+  } catch (error) {
+    console.warn("Study graph render failed:", error);
+    studyGraphEl.innerHTML = "";
+    const fallback = document.createElement("p");
+    fallback.className = "favourite-empty";
+    fallback.textContent = "Could not render study graph right now. Try refreshing.";
+    studyGraphEl.appendChild(fallback);
+  }
 }
 
 function renderWeeklyTagBreakdown(tagLog) {
