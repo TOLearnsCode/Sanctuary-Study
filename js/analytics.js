@@ -685,9 +685,11 @@ function renderStudyGraph(log) {
   const points = graphDays.map((date) => {
     const key = getDateKey(date);
     const rawMinutes = Number(log[key] || 0);
+    const safeMinutes = Number.isFinite(rawMinutes) && rawMinutes > 0 ? rawMinutes : 0;
     return {
       date,
-      minutes: Number.isFinite(rawMinutes) && rawMinutes > 0 ? rawMinutes : 0
+      minutes: safeMinutes,
+      plotMinutes: safeMinutes > 0 ? safeMinutes : null
     };
   });
 
@@ -707,9 +709,13 @@ function renderStudyGraph(log) {
       return;
     }
 
-    const yMaxRaw = Math.max(0, ...points.map((point) => Number(point.minutes || 0)));
-    const yMax = yMaxRaw <= 10 ? 10 : Math.ceil(yMaxRaw / 10) * 10;
-    const ySteps = 5;
+    const yMaxRaw = Math.max(0, ...points.map((point) => Number(point.plotMinutes || 0)));
+    const yTickStep = 30;
+    const yMax = Math.max(120, Math.ceil(yMaxRaw / yTickStep) * yTickStep || 120);
+    const yTicks = [];
+    for (let value = 0; value <= yMax; value += yTickStep) {
+      yTicks.push(value);
+    }
 
     const padding = { top: 14, right: 14, bottom: 28, left: 40 };
     const chartHeight = 208;
@@ -719,13 +725,15 @@ function renderStudyGraph(log) {
     const xStep = points.length > 1 ? chartWidth / (points.length - 1) : 0;
 
     const plottedPoints = points.map((point, index) => {
-      const normalized = yMax > 0 ? point.minutes / yMax : 0;
+      const safePlotMinutes = point.plotMinutes === null ? 0 : point.plotMinutes;
+      const normalized = yMax > 0 ? safePlotMinutes / yMax : 0;
       return {
         ...point,
         x: padding.left + (index * xStep),
         y: padding.top + chartHeight - (normalized * chartHeight)
       };
     });
+    const baselineY = padding.top + chartHeight;
 
     const toSmoothPath = (entries) => {
       if (!entries.length) return "";
@@ -748,10 +756,21 @@ function renderStudyGraph(log) {
       return path;
     };
 
-    const linePath = toSmoothPath(plottedPoints);
-    const firstPoint = plottedPoints[0];
-    const lastPoint = plottedPoints[plottedPoints.length - 1];
-    const areaPath = `${linePath} L ${lastPoint.x} ${padding.top + chartHeight} L ${firstPoint.x} ${padding.top + chartHeight} Z`;
+    const segments = [];
+    let currentSegment = [];
+    plottedPoints.forEach((point) => {
+      if (point.plotMinutes === null) {
+        if (currentSegment.length) {
+          segments.push(currentSegment);
+          currentSegment = [];
+        }
+        return;
+      }
+      currentSegment.push(point);
+    });
+    if (currentSegment.length) {
+      segments.push(currentSegment);
+    }
 
     const svgNS = "http://www.w3.org/2000/svg";
     const wrapper = document.createElement("div");
@@ -762,35 +781,63 @@ function renderStudyGraph(log) {
     svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
     svg.setAttribute("aria-hidden", "true");
 
+    const defs = document.createElementNS(svgNS, "defs");
+    const gradientId = `study-graph-gradient-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    const gradient = document.createElementNS(svgNS, "linearGradient");
+    gradient.setAttribute("id", gradientId);
+    gradient.setAttribute("x1", "0");
+    gradient.setAttribute("y1", "0");
+    gradient.setAttribute("x2", "0");
+    gradient.setAttribute("y2", "1");
+
+    const gradientTop = document.createElementNS(svgNS, "stop");
+    gradientTop.setAttribute("offset", "0%");
+    gradientTop.classList.add("line-graph-gradient-stop-top");
+
+    const gradientBottom = document.createElementNS(svgNS, "stop");
+    gradientBottom.setAttribute("offset", "100%");
+    gradientBottom.classList.add("line-graph-gradient-stop-bottom");
+
+    gradient.appendChild(gradientTop);
+    gradient.appendChild(gradientBottom);
+    defs.appendChild(gradient);
+    svg.appendChild(defs);
+
     const gridGroup = document.createElementNS(svgNS, "g");
     gridGroup.classList.add("line-graph-grid");
-    for (let step = 0; step <= ySteps; step += 1) {
-      const ratio = step / ySteps;
-      const y = padding.top + (ratio * chartHeight);
-      const labelValue = Math.round(yMax - (ratio * yMax));
+    yTicks.forEach((tick) => {
+      const ratio = yMax > 0 ? tick / yMax : 0;
+      const y = padding.top + chartHeight - (ratio * chartHeight);
 
-      const line = document.createElementNS(svgNS, "line");
-      line.classList.add("line-graph-grid-line");
-      line.setAttribute("x1", String(padding.left));
-      line.setAttribute("x2", String(padding.left + chartWidth));
-      line.setAttribute("y1", String(y));
-      line.setAttribute("y2", String(y));
-      gridGroup.appendChild(line);
+      const gridLine = document.createElementNS(svgNS, "line");
+      gridLine.classList.add("line-graph-grid-line");
+      gridLine.setAttribute("x1", String(padding.left));
+      gridLine.setAttribute("x2", String(padding.left + chartWidth));
+      gridLine.setAttribute("y1", String(y));
+      gridLine.setAttribute("y2", String(y));
+      gridGroup.appendChild(gridLine);
 
       const label = document.createElementNS(svgNS, "text");
       label.classList.add("line-graph-y-label");
       label.setAttribute("x", String(padding.left - 8));
       label.setAttribute("y", String(y + 4));
       label.setAttribute("text-anchor", "end");
-      label.textContent = String(labelValue);
+      label.textContent = String(tick);
       gridGroup.appendChild(label);
-    }
+    });
     svg.appendChild(gridGroup);
 
+    const formatXAxisLabel = (date) => date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric"
+    });
+    const xLabelInterval = Math.max(1, Math.ceil(plottedPoints.length / 7));
     const xLabelGroup = document.createElementNS(svgNS, "g");
     xLabelGroup.classList.add("line-graph-x-labels");
     plottedPoints.forEach((point, index) => {
-      if (!(index % 7 === 0 || index === plottedPoints.length - 1)) {
+      const isFirst = index === 0;
+      const isLast = index === plottedPoints.length - 1;
+      if (!(isFirst || isLast || index % xLabelInterval === 0)) {
         return;
       }
       const label = document.createElementNS(svgNS, "text");
@@ -798,30 +845,45 @@ function renderStudyGraph(log) {
       label.setAttribute("x", String(point.x));
       label.setAttribute("y", String(height - 8));
       label.setAttribute("text-anchor", "middle");
-      label.textContent = String(point.date.getDate());
+      label.textContent = formatXAxisLabel(point.date);
       xLabelGroup.appendChild(label);
     });
     svg.appendChild(xLabelGroup);
 
-    const area = document.createElementNS(svgNS, "path");
-    area.classList.add("line-graph-area");
-    area.setAttribute("d", areaPath);
-    svg.appendChild(area);
+    const areaGroup = document.createElementNS(svgNS, "g");
+    areaGroup.classList.add("line-graph-areas");
+    const lineGroup = document.createElementNS(svgNS, "g");
+    lineGroup.classList.add("line-graph-lines");
 
-    const line = document.createElementNS(svgNS, "path");
-    line.classList.add("line-graph-line");
-    line.setAttribute("d", linePath);
-    svg.appendChild(line);
+    segments.forEach((segment) => {
+      if (segment.length < 2) {
+        return;
+      }
+      const segmentLinePath = toSmoothPath(segment);
+      const firstPoint = segment[0];
+      const lastPoint = segment[segment.length - 1];
+      const segmentAreaPath = `${segmentLinePath} L ${lastPoint.x} ${baselineY} L ${firstPoint.x} ${baselineY} Z`;
+
+      const area = document.createElementNS(svgNS, "path");
+      area.classList.add("line-graph-area");
+      area.setAttribute("fill", `url(#${gradientId})`);
+      area.setAttribute("d", segmentAreaPath);
+      areaGroup.appendChild(area);
+
+      const linePath = document.createElementNS(svgNS, "path");
+      linePath.classList.add("line-graph-line");
+      linePath.setAttribute("d", segmentLinePath);
+      lineGroup.appendChild(linePath);
+    });
+    svg.appendChild(areaGroup);
+    svg.appendChild(lineGroup);
 
     const pointsGroup = document.createElementNS(svgNS, "g");
     pointsGroup.classList.add("line-graph-points");
     plottedPoints.forEach((point, index) => {
-      const visiblePoint = document.createElementNS(svgNS, "circle");
-      visiblePoint.classList.add("line-graph-point");
-      visiblePoint.setAttribute("cx", String(point.x));
-      visiblePoint.setAttribute("cy", String(point.y));
-      visiblePoint.setAttribute("r", "2.4");
-      pointsGroup.appendChild(visiblePoint);
+      if (point.plotMinutes === null) {
+        return;
+      }
 
       const hitPoint = document.createElementNS(svgNS, "circle");
       hitPoint.classList.add("line-graph-hit");
@@ -834,16 +896,28 @@ function renderStudyGraph(log) {
     });
     svg.appendChild(pointsGroup);
 
+    const hoverMarker = document.createElementNS(svgNS, "circle");
+    hoverMarker.classList.add("line-graph-hover-dot", "hidden");
+    hoverMarker.setAttribute("r", "5");
+    svg.appendChild(hoverMarker);
+
     const tooltip = document.createElement("div");
     tooltip.className = "line-graph-tooltip hidden";
     tooltip.setAttribute("role", "status");
     tooltip.setAttribute("aria-live", "polite");
+    const tooltipDate = document.createElement("p");
+    tooltipDate.className = "line-graph-tooltip-date";
+    const tooltipValue = document.createElement("p");
+    tooltipValue.className = "line-graph-tooltip-value";
+    tooltip.appendChild(tooltipDate);
+    tooltip.appendChild(tooltipValue);
     wrapper.appendChild(svg);
     wrapper.appendChild(tooltip);
     studyGraphEl.appendChild(wrapper);
 
     const hideTooltip = () => {
       tooltip.classList.add("hidden");
+      hoverMarker.classList.add("hidden");
     };
 
     const showTooltipForIndex = (index) => {
@@ -853,15 +927,23 @@ function renderStudyGraph(log) {
       }
 
       const point = plottedPoints[safeIndex];
-      tooltip.textContent = `${formatDate(point.date)} • ${Math.round(point.minutes)} min`;
+      if (point.plotMinutes === null) {
+        return;
+      }
+
+      tooltipDate.textContent = formatDate(point.date);
+      tooltipValue.textContent = `${Math.round(point.minutes)} min`;
       tooltip.classList.remove("hidden");
+      hoverMarker.setAttribute("cx", String(point.x));
+      hoverMarker.setAttribute("cy", String(point.y));
+      hoverMarker.classList.remove("hidden");
 
       const bounds = wrapper.getBoundingClientRect();
       const xPx = (point.x / width) * bounds.width;
       const yPx = (point.y / height) * bounds.height;
 
       tooltip.style.left = `${xPx}px`;
-      tooltip.style.top = `${Math.max(30, yPx)}px`;
+      tooltip.style.top = `${Math.max(24, yPx)}px`;
 
       const tooltipWidth = tooltip.offsetWidth || 0;
       const half = tooltipWidth / 2;
@@ -872,23 +954,32 @@ function renderStudyGraph(log) {
       tooltip.style.left = `${clampedLeft}px`;
     };
 
+    const resolveHitTarget = (event) => {
+      const rawTarget = event && event.target;
+      if (!rawTarget) return null;
+      if (rawTarget.classList && rawTarget.classList.contains("line-graph-hit")) {
+        return rawTarget;
+      }
+      return typeof rawTarget.closest === "function" ? rawTarget.closest(".line-graph-hit") : null;
+    };
+
     pointsGroup.addEventListener("pointerenter", (event) => {
-      const target = event.target.closest(".line-graph-hit");
+      const target = resolveHitTarget(event);
       if (!target) return;
       showTooltipForIndex(target.dataset.pointIndex);
     }, true);
     pointsGroup.addEventListener("pointermove", (event) => {
-      const target = event.target.closest(".line-graph-hit");
+      const target = resolveHitTarget(event);
       if (!target) return;
       showTooltipForIndex(target.dataset.pointIndex);
     }, true);
     pointsGroup.addEventListener("click", (event) => {
-      const target = event.target.closest(".line-graph-hit");
+      const target = resolveHitTarget(event);
       if (!target) return;
       showTooltipForIndex(target.dataset.pointIndex);
     });
     pointsGroup.addEventListener("focusin", (event) => {
-      const target = event.target.closest(".line-graph-hit");
+      const target = resolveHitTarget(event);
       if (!target) return;
       showTooltipForIndex(target.dataset.pointIndex);
     });
